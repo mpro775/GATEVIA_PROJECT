@@ -1,5 +1,5 @@
 # GATEVIA — المتطلبات غير الوظيفية
-**الإصدار:** Draft v0.1 — للمراجعة مع العميل قبل الاعتماد  
+**الإصدار:** Draft v0.2 — للمراجعة مع العميل قبل الاعتماد  
 **الحالة:** غير معتمد  
 **المرجع:** GATEVIA Functional Requirements v0.1
 
@@ -507,3 +507,29 @@ Environment configuration خارج Source Code.
 12. هل Staging إلزامي ودائم.
 13. هل يوجد متطلب Hosting/Data Residency محدد من العميل أو الجهة القانونية.
 14. هل يوجد معيار أمني/امتثال خاص بالعميل يتجاوز المتطلبات العامة المذكورة.
+
+
+---
+
+# 21. Theme Quality & Rendering
+
+## NFR-THEME-001
+يجب أن يكون Light Mode وDark Mode مبنيين على Semantic Design Tokens مشتركة، وليس على HEX values متناثرة أو Overrides عشوائية.
+
+## NFR-THEME-002
+يجب ألا يظهر Theme Flash / FOUC واضح عند التحميل الأول، وألا تحدث Hydration Mismatch بسبب تحديد الـTheme.
+
+## NFR-THEME-003
+يجب أن يحقق النص والعناصر التفاعلية والـFocus States تباينًا مناسبًا في كل من Light وDark، بما يتوافق مع هدف WCAG 2.2 AA ضمن نطاق المشروع.
+
+## NFR-THEME-004
+اختيار Theme يجب أن يكون Server-readable أو مهيأ قبل أول Paint بطريقة آمنة؛ لا يُقبل الاعتماد على `localStorage` بعد hydration باعتباره الحل الوحيد إذا كان سيؤدي إلى وميض أو اختلاف في الرندر.
+
+## NFR-THEME-005
+تبديل Theme يجب ألا يتطلب إعادة تحميل الصفحة، وألا يسبب Layout Shift ملحوظًا.
+
+## NFR-THEME-006
+يجب اختبار كلا الوضعين على الصفحات المرجعية، RTL/LTR، Responsive breakpoints، والمتصفحات المدعومة.
+
+## NFR-THEME-007
+الصور والشعارات والرسوم البيانية التي تحتاج معاملة مختلفة حسب الخلفية يجب أن تستخدم Asset variants أو Containers معتمدة؛ لا يجوز عكس ألوان شعارات العملاء/الشركاء آليًا بصورة تشوه الهوية.

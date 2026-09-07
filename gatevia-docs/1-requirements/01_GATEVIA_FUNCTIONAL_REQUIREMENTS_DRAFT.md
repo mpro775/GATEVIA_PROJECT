@@ -1,5 +1,5 @@
 # GATEVIA — المتطلبات الوظيفية
-**الإصدار:** Draft v0.1 — للمراجعة مع العميل قبل الاعتماد  
+**الإصدار:** Draft v0.2 — للمراجعة مع العميل قبل الاعتماد  
 **الحالة:** غير معتمد  
 **المرجع:** GATEVIA Project Overview v0.1
 
@@ -732,3 +732,41 @@ Navigation متوافقة مع الشاشات الصغيرة.
 16. هل Audit Log كامل مطلوب؟
 17. ما حسابات Analytics المطلوبة؟
 18. هل توجد تكاملات خارجية يجب تضمينها من الإصدار الأول؟
+
+
+---
+
+# 21. Theme / Appearance
+
+## FR-THEME-001 — Light & Dark Mode
+يجب أن يدعم كل من الموقع العام ولوحة الإدارة وضعين كاملين:
+- Light Mode.
+- Dark Mode.
+
+ولا يُقبل اعتبار أقسام فاتحة/داكنة داخل Theme واحد بديلاً عن هذا المتطلب.
+
+## FR-THEME-002 — Theme Toggle
+يجب أن يستطيع المستخدم التبديل بين Light وDark من واجهة واضحة وسهلة الوصول:
+- في Header / Navigation للموقع العام Desktop وMobile.
+- في App Shell / User controls للوحة الإدارة.
+
+## FR-THEME-003 — Theme Persistence
+يجب حفظ اختيار المستخدم بحيث يستمر عبر:
+- إعادة تحميل الصفحة.
+- التنقل بين الصفحات.
+- تغيير اللغة.
+- العودة للموقع لاحقًا ضمن مدة الحفظ المعتمدة.
+
+## FR-THEME-004 — First-Visit Preference
+إذا لم يوجد اختيار محفوظ للمستخدم، يتم تحديد الوضع الأولي من `prefers-color-scheme`، مع fallback إلى Dark عند عدم توفر تفضيل واضح.
+
+## FR-THEME-005 — Complete Component Coverage
+يجب أن تعمل جميع Components والحالات في الوضعين، بما يشمل:
+- Header / Mega Menu / Mobile Menu / Footer.
+- Hero / Sections / Cards / Forms / Buttons.
+- Tables / Filters / Modals / Dropdowns / Tooltips / Toasts.
+- Loading / Skeleton / Empty / Error / Disabled / Focus / Hover states.
+- Rich Content / Charts / Search / Pagination.
+
+## FR-THEME-006 — Brand Integrity
+Light Mode وDark Mode يجب أن يحافظا على نفس هوية GATEVIA ووضوح Lime Accent، ولا يجوز تنفيذ Light Mode كـCSS inversion آلي أو نسخة منخفضة الجودة من Dark Mode.
