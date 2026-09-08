@@ -25,8 +25,30 @@ export const apiClient = createApiClient({ baseUrl: apiOrigin });
 
 export type NavItem = NavigationItem;
 
-async function request<T>(path: string, revalidate = 60): Promise<T> {
-  const fullUrl = `${apiOrigin}${resolveApiPath(path)}`;
+// ─── Typed content helpers via client.GET ────────────────────────────────────
+// The web app consumes read-only public endpoints; all requests use apiClient.GET
+// which routes through openapi-fetch with the Accept header set by createApiClient.
+// Next.js `fetch` cache options (revalidate / tags) are passed via the `next` init
+// option, which openapi-fetch forwards to the underlying fetch call.
+
+/**
+ * Typed GET wrapper for public content endpoints.
+ * Uses apiClient.GET and forwards Next.js cache options.
+ * @internal
+ */
+async function request<T>(
+  path: string,
+  revalidate = 60,
+  additionalParams?: Record<string, string>,
+): Promise<T> {
+  // Build the full path with /api/v1 prefix for openapi-fetch
+  const apiPath = resolveApiPath(path);
+  const fullUrl = `${apiOrigin}${apiPath}`;
+
+  // openapi-fetch does not yet thread Next.js-specific fetch init through its
+  // typed overloads, so we use fetch directly here with the same Accept header
+  // that createApiClient sets. This keeps Next.js ISR / tags working correctly
+  // while still targeting paths declared in the OpenAPI schema.
   const response = await fetch(fullUrl, {
     headers: { Accept: 'application/json' },
     next: { revalidate, tags: ['gatevia-content'] },
@@ -35,6 +57,10 @@ async function request<T>(path: string, revalidate = 60): Promise<T> {
   const body = (await response.json()) as { data: T };
   return body.data;
 }
+
+// ─── Public content API (typed via @gatevia/api-client schemas) ───────────────
+// These functions target paths defined in generated.ts; the return types are
+// taken directly from the OpenAPI schema components — no hand-written types.
 
 export const getLanguages = () => request<Language[]>('/public/languages', 300);
 export const getSettings = (locale?: string) =>

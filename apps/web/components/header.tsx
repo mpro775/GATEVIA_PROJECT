@@ -3,7 +3,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ThemeToggle } from '@gatevia/ui';
-import { publicApiUrl, type Language, type NavItem } from '@/lib/api';
+import { apiClient, type Language, type NavItem } from '@/lib/api';
 import { copy } from '@/lib/ui-copy';
 
 // Hardcoded fallback nav used ONLY when CMS returns no items.
@@ -125,21 +125,23 @@ export function Header({
     }
     if (resource && slug) {
       try {
-        const response = await fetch(
-          `${publicApiUrl}/public/${resource}/${encodeURIComponent(slug)}?locale=${encodeURIComponent(locale)}`,
-          { headers: { Accept: 'application/json' } },
+        const { data: body } = await apiClient.GET(
+          '/api/v1/public/{resource}/{slug}' as never,
+          {
+            params: {
+              path: { resource, slug: encodeURIComponent(slug) },
+              query: { locale },
+            },
+          } as never,
         );
-        if (response.ok) {
-          const body = (await response.json()) as {
-            data?: { alternates?: Record<string, string> };
-          };
-          const target = Object.entries(body.data?.alternates ?? {}).find(
-            ([code]) => code.toLowerCase() === language.code.toLowerCase(),
-          )?.[1];
-          if (target) {
-            window.location.assign(target);
-            return;
-          }
+        const alternates = (body as { data?: { alternates?: Record<string, string> } } | undefined)
+          ?.data?.alternates;
+        const target = Object.entries(alternates ?? {}).find(
+          ([code]) => code.toLowerCase() === language.code.toLowerCase(),
+        )?.[1];
+        if (target) {
+          window.location.assign(target);
+          return;
         }
       } catch {
         /* Fall back to retaining the current route below. */

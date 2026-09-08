@@ -8,7 +8,7 @@ This repository-local `gatevia-docs/` directory is the **authoritative Single So
 
 1. **Self-Contained & Authoritative**: All architectural specifications, functional/non-functional requirements, data schemas, API contracts, and implementation prompts are canonically contained in this directory.
 2. **Direction of Synchronization**: Any external distribution archive, review pack, or backup must be generated **from** this directory. External archives are historical snapshots and must **never** overwrite repository-local contracts.
-3. **Master Prompt Integration**: `GATEVIA_MASTER_IMPLEMENTATION_PROMPT.md` is housed directly inside `gatevia-docs/` as the canonical master prompt. An exact synchronized mirror is also preserved at the repository root (`/GATEVIA_MASTER_IMPLEMENTATION_PROMPT.md`) for developer convenience and tooling shortcuts.
+3. **Master Prompt Integration**: `gatevia-docs/GATEVIA_MASTER_IMPLEMENTATION_PROMPT.md` is the canonical master implementation prompt, housed entirely within this directory as part of the self-contained Single Source of Truth.
 
 ---
 
@@ -64,6 +64,6 @@ A prior external comparison against older distributed zip drafts noted:
 ### Root Cause & Resolution:
 1. **The 7 Different Files**: The 7 modified files (`00`, `01`, `02`, `13`, `17`, `21`, `24`) in `gatevia-docs/` are the **newer, ratified specifications** that formally incorporated **Full Light Mode + Dark Mode (Dual-Theme)** requirements into brand, frontend, testing, and Definition of Done. The repository version is canonical and strictly superior to older single-mode drafts.
 2. **The 1 Repository-Only File**: This was `gatevia-docs/README.md`, which serves as the central documentation index for the repository.
-3. **The 1 External-Only File / Master Prompt**: `GATEVIA_MASTER_IMPLEMENTATION_PROMPT.md` previously existed only in the external pack root and monorepo root. It is now housed directly within `gatevia-docs/GATEVIA_MASTER_IMPLEMENTATION_PROMPT.md`, unifying the entire documentation corpus under `gatevia-docs/`.
+3. **The 1 External-Only File / Master Prompt**: `GATEVIA_MASTER_IMPLEMENTATION_PROMPT.md` originally existed in the external root. It is now housed canonically and exclusively inside `gatevia-docs/GATEVIA_MASTER_IMPLEMENTATION_PROMPT.md`, unifying the entire documentation corpus strictly under `gatevia-docs/`.
 
 With this reconciliation, `gatevia-docs/` achieves **100% complete unification** as the single, authoritative source of truth.

@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ContentRecord, Language, SubmissionReceipt } from '@gatevia/api-client';
 import { Button, Field, Input, Textarea } from '@gatevia/ui';
-import { getLanguages, getList, publicApiUrl } from '@/lib/api';
+import { apiClient, getLanguages, getList } from '@/lib/api';
 import { copy } from '@/lib/ui-copy';
 import { track } from './analytics';
 
@@ -380,13 +380,14 @@ function AssessmentForm({ locale }: { locale: string }) {
     };
 
     try {
-      const response = await fetch(`${publicApiUrl}/public/forms/market-entry-assessment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() },
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) throw new Error('submit');
-      (await response.json()) as { data: SubmissionReceipt };
+      const { error } = await apiClient.POST(
+        '/api/v1/public/forms/market-entry-assessment',
+        {
+          params: { header: { 'Idempotency-Key': crypto.randomUUID() } },
+          body: payload as never,
+        },
+      );
+      if (error) throw error;
       setSubmitState('success');
       track('assessment_complete', { locale });
     } catch {
@@ -725,13 +726,18 @@ function SimpleForm({ kind, locale }: { kind: 'contact' | 'consultation'; locale
           }
         : base;
     try {
-      const response = await fetch(`${publicApiUrl}/public/forms/${kind}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() },
-        body: JSON.stringify(body),
-      });
-      if (!response.ok) throw new Error('submit');
-      (await response.json()) as { data: SubmissionReceipt };
+      const endpoint =
+        kind === 'consultation'
+          ? '/api/v1/public/forms/consultation'
+          : '/api/v1/public/forms/contact';
+      const { error } = await apiClient.POST(
+        endpoint as '/api/v1/public/forms/contact',
+        {
+          params: { header: { 'Idempotency-Key': crypto.randomUUID() } },
+          body: body as never,
+        },
+      );
+      if (error) throw error;
       setState('success');
       track(`${kind}_submit`, { locale });
       (event.currentTarget as HTMLFormElement).reset();

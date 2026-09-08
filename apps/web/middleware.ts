@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveApiUrl, type Language, type RedirectMatch } from '@gatevia/api-client';
 
+// ─── Why fetch() and not client.GET() here? ───────────────────────────────────
+// Next.js middleware runs on the Edge Runtime. openapi-fetch works on Edge, but
+// the `next: { revalidate, tags }` cache options on fetch() are Next.js-specific
+// extensions that are NOT forwarded through openapi-fetch's typed call layer.
+// Keeping native fetch() here is intentional: it preserves ISR + cache tags
+// while still using the generated types (Language, RedirectMatch) from
+// @gatevia/api-client for response-body assertions.
+// ─────────────────────────────────────────────────────────────────────────────
+
 const API = resolveApiUrl(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3002/api/v1');
 
 export async function middleware(request: NextRequest) {
