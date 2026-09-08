@@ -1,4 +1,30 @@
-import type { Metadata } from 'next'; import { cookies } from 'next/headers'; import Script from 'next/script'; import { Analytics } from '@/components/analytics'; import './globals.css';
-export const metadata:Metadata={title:{default:'GATEVIA',template:'%s | GATEVIA'},description:'GATEVIA corporate website',robots:{index:true,follow:true}};
-const themeScript=`(()=>{try{const m=document.cookie.match(/(?:^|; )gatevia_theme=(light|dark)/);const t=m?m[1]:(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t}catch{document.documentElement.dataset.theme='dark'}})()`;
-export default async function RootLayout({children}:{children:React.ReactNode}){const store=await cookies();const saved=store.get('gatevia_theme')?.value;const theme=saved==='light'?'light':'dark';return <html lang="en" data-theme={theme} suppressHydrationWarning><body>{children}<Analytics/><Script id="gatevia-theme" strategy="beforeInteractive">{themeScript}</Script></body></html>}
+import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
+import Script from 'next/script';
+import { Analytics } from '@/components/analytics';
+import { JsonLd, organizationSchema } from '@/lib/seo';
+import './globals.css';
+
+export const metadata: Metadata = {
+  title: { default: 'GATEVIA', template: '%s | GATEVIA' },
+  description: 'GATEVIA — Saudi market access, execution and growth.',
+  robots: { index: true, follow: true, 'max-image-preview': 'large' },
+};
+
+const themeScript = `(()=>{try{const m=document.cookie.match(/(?:^|; )gatevia_theme=(light|dark)/);const t=m?m[1]:(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t}catch{document.documentElement.dataset.theme='dark'}})()`;
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const store = await cookies();
+  const saved = store.get('gatevia_theme')?.value;
+  const theme = saved === 'light' ? 'light' : 'dark';
+  return (
+    <html lang="en" data-theme={theme} suppressHydrationWarning>
+      <body>
+        {children}
+        <Analytics />
+        <Script id="gatevia-theme" strategy="beforeInteractive">{themeScript}</Script>
+        <JsonLd schema={organizationSchema()} />
+      </body>
+    </html>
+  );
+}

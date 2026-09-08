@@ -8,7 +8,14 @@ import { QueueService } from '../queue/queue.service';
 import { AuditService } from '../audit/audit.service';
 
 type FormInput = ContactSubmission | ConsultationSubmission | AssessmentSubmission;
-const stableHash = (input: unknown) => createHash('sha256').update(JSON.stringify(input, Object.keys(input as object).sort())).digest('hex');
+/** Recursively produces a canonical JSON string with all object keys sorted at every depth level. */
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+  const sorted = Object.keys(value as Record<string, unknown>).sort();
+  return `{${sorted.map((k) => `${JSON.stringify(k)}:${stableStringify((value as Record<string, unknown>)[k])}`).join(',')}}`;
+}
+const stableHash = (input: unknown) => createHash('sha256').update(stableStringify(input)).digest('hex');
 
 @Injectable()
 export class LeadsService {

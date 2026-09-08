@@ -15,7 +15,12 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     const details = typeof exceptionResponse === 'object' && exceptionResponse !== null ? exceptionResponse as Record<string, unknown> : {};
     const rawMessage = details.message;
     const detail = status >= 500 ? 'An unexpected error occurred.' : Array.isArray(rawMessage) ? 'One or more fields are invalid.' : String(rawMessage ?? exceptionResponse ?? 'Request failed.');
-    if (status >= 500) this.logger.error(JSON.stringify({ requestId: request.requestId, route: request.originalUrl, error: error instanceof Error ? error.name : 'UnknownError' }));
+    if (status >= 500) {
+      import('@sentry/node').then(Sentry => {
+        Sentry.captureException(error, { extra: { requestId: request.requestId, route: request.originalUrl } });
+      });
+      this.logger.error(JSON.stringify({ requestId: request.requestId, route: request.originalUrl, error: error instanceof Error ? error.name : 'UnknownError' }));
+    }
     response.status(status).type('application/problem+json').send({
       type: `https://gatevia.example/problems/${status === 422 ? 'validation-error' : 'request-error'}`,
       title: status >= 500 ? 'Internal server error' : HttpStatus[status] ?? 'Request error',

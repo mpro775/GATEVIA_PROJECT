@@ -16,6 +16,7 @@
     "@aws-sdk/s3-request-presigner": "^3.758.0",
     "@gatevia/contracts": "workspace:*",
     "@nestjs/common": "^11.0.11",
+    "@sentry/node": "^8.38.0",
     "@nestjs/config": "^4.0.1",
     "@nestjs/core": "^11.0.11",
     "@nestjs/platform-express": "^11.0.11",
