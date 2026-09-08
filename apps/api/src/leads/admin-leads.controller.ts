@@ -6,7 +6,7 @@ import { SessionGuard, PermissionGuard } from '../common/auth.guard'; import { C
 @ApiTags('admin/leads') @ApiCookieAuth() @UseGuards(SessionGuard, CsrfGuard, PermissionGuard) @Controller('admin/leads')
 export class AdminLeadsController {
   constructor(private readonly leads: LeadsService) {}
-  @Get() @RequirePermissions('leads.read') async list(@Query() query: { page?: string; pageSize?: string; status?: string; source?: string; q?: string }) { return this.leads.list(query); }
+  @Get() @RequirePermissions('leads.read') async list(@Query() query: { page?: string; pageSize?: string; status?: string; source?: string; q?: string; sort?: string }) { return this.leads.list(query); }
   @Get(':id') @RequirePermissions('leads.read') async detail(@Param('id') id: string) { return { data: await this.leads.detail(id) }; }
   @Patch(':id/status') @RequirePermissions('leads.update_status') async status(@Param('id') id: string, @Body() body: { status: LeadStatus }, @Req() request: GateviaRequest) { return { data: await this.leads.updateStatus(id, body.status, request.user!.id, request.requestId) }; }
   @Patch(':id/assignee') @RequirePermissions('leads.assign') async assign(@Param('id') id: string, @Body() body: { assignedToUserId: string | null }, @Req() request: GateviaRequest) { return { data: await this.leads.assign(id, body.assignedToUserId, request.user!.id, request.requestId) }; }

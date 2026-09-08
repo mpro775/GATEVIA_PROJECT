@@ -102,7 +102,7 @@ export default async function Workspace({
     if (isNew || recordId) {
       return (
         <main className="admin-content">
-          <UserEditor id={recordId} returnPath={basePath} />
+        <UserEditor {...(recordId ? { id: recordId } : {})} returnPath={basePath} />
         </main>
       );
     }
@@ -118,7 +118,7 @@ export default async function Workspace({
     if (isNew || recordId) {
       return (
         <main className="admin-content">
-          <RoleEditor id={recordId} returnPath={basePath} />
+        <RoleEditor {...(recordId ? { id: recordId } : {})} returnPath={basePath} />
         </main>
       );
     }
@@ -134,7 +134,7 @@ export default async function Workspace({
     if (isNew || recordId) {
       return (
         <main className="admin-content">
-          <LanguageEditor id={recordId} returnPath={basePath} />
+        <LanguageEditor {...(recordId ? { id: recordId } : {})} returnPath={basePath} />
         </main>
       );
     }
@@ -150,7 +150,7 @@ export default async function Workspace({
     if (isNew || recordId) {
       return (
         <main className="admin-content">
-          <RedirectEditor id={recordId} returnPath={basePath} />
+        <RedirectEditor {...(recordId ? { id: recordId } : {})} returnPath={basePath} />
         </main>
       );
     }
@@ -165,7 +165,7 @@ export default async function Workspace({
   if (isNew || (recordId && CONTENT_MODULES.has(module))) {
     return (
       <main className="admin-content">
-        <ContentEditor resource={resource} id={recordId} returnPath={basePath} />
+        <ContentEditor resource={resource} {...(recordId ? { id: recordId } : {})} returnPath={basePath} />
       </main>
     );
   }
@@ -191,6 +191,7 @@ export default async function Workspace({
                     ? 'role'
                     : 'content'
         }
+        {...(key === 'consultation' ? { source: 'consultation' as const } : key === 'assessments' ? { source: 'assessment' as const } : {})}
       />
     </main>
   );

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, Field, Input } from '@gatevia/ui';
 import { api } from '@/lib/api';
+import { useAdminAuth } from './auth-context';
 
 interface LangData {
   id: string;
@@ -17,6 +18,7 @@ interface LangData {
 
 export function LanguageEditor({ id, returnPath }: { id?: string; returnPath: string }) {
   const router = useRouter();
+  const { can } = useAdminAuth(); const canManage = can('languages.manage');
   const [lang, setLang] = useState<Partial<LangData>>({
     direction: 'ltr',
     isDefault: false,
@@ -83,12 +85,12 @@ export function LanguageEditor({ id, returnPath }: { id?: string; returnPath: st
           <h1>{id ? 'Edit Language' : 'Add Language'}</h1>
           <p>Configure locale code, display names, text direction and enabled state.</p>
         </div>
-        <div className="toolbar">
+        {canManage && <div className="toolbar">
           <Button disabled={busy} onClick={save}>Save language</Button>
-        </div>
+        </div>}
       </div>
 
-      <div className="editor">
+      <fieldset disabled={!canManage} style={{border:0,padding:0,margin:0,minWidth:0}}><div className="editor">
         <div className="editor-main">
           <section className="panel">
             <div className="field-stack">
@@ -165,13 +167,13 @@ export function LanguageEditor({ id, returnPath }: { id?: string; returnPath: st
             </Badge>
             {lang.isDefault && (
               <div style={{ marginBlockStart: '.5rem' }}>
-                <Badge tone="info">Default</Badge>
+                <Badge tone="warning">Default</Badge>
               </div>
             )}
           </section>
           {message && <div className="form-status" role="status">{message}</div>}
         </aside>
-      </div>
+      </div></fieldset>
     </>
   );
 }

@@ -7,19 +7,19 @@ const BRAND = 'GATEVIA';
 // ─── Metadata builder ─────────────────────────────────────────────────────────
 
 export interface SeoInput {
-  title?: string;
-  description?: string;
+  title?: string | undefined;
+  description?: string | undefined;
   canonical: string;
   locale: string;
-  languages?: Language[];
-  localizedAlternates?: Record<string, string>;
-  siteName?: string;
-  imageUrl?: string;
-  imageAlt?: string;
-  type?: 'website' | 'article';
-  publishedAt?: string;
-  updatedAt?: string;
-  noindex?: boolean;
+  languages?: Language[] | undefined;
+  localizedAlternates?: Record<string, string> | undefined;
+  siteName?: string | undefined;
+  imageUrl?: string | undefined;
+  imageAlt?: string | undefined;
+  type?: 'website' | 'article' | undefined;
+  publishedAt?: string | undefined;
+  updatedAt?: string | undefined;
+  noindex?: boolean | undefined;
 }
 
 export function buildMetadata(input: SeoInput): Metadata {
@@ -35,7 +35,7 @@ export function buildMetadata(input: SeoInput): Metadata {
       : input.languages
       ? Object.fromEntries(
           input.languages
-            .filter((l) => l.isEnabled !== false)
+            .filter(Boolean)
             .map((l) => {
               const lc = l.code.toLowerCase();
               // Derive alternate URL: swap /en/ or /ar-sa/ prefix
@@ -83,7 +83,7 @@ export function buildMetadata(input: SeoInput): Metadata {
 // ─── JSON-LD schemas ──────────────────────────────────────────────────────────
 
 /** Organization — goes on every page, injected at root layout level */
-export function organizationSchema(input: { name?: string; legalName?: string; logoUrl?: string; linkedInUrl?: string; address?: string; email?: string; phone?: string } = {}) {
+export function organizationSchema(input: { name?: string | undefined; legalName?: string | undefined; logoUrl?: string | undefined; linkedInUrl?: string | undefined; address?: string | undefined; email?: string | undefined; phone?: string | undefined } = {}) {
   const name = input.name ?? BRAND;
   return {
     '@context': 'https://schema.org',
@@ -149,11 +149,11 @@ export function articleSchema(input: {
   headline: string;
   description: string;
   url: string;
-  imageUrl?: string;
+  imageUrl?: string | undefined;
   publishedAt: string;
-  updatedAt?: string;
+  updatedAt?: string | undefined;
   locale: string;
-  authorName?: string;
+  authorName?: string | undefined;
 }) {
   return {
     '@context': 'https://schema.org',
@@ -205,8 +205,8 @@ export function caseStudySchema(input: {
   headline: string;
   description: string;
   url: string;
-  imageUrl?: string;
-  publishedAt?: string;
+  imageUrl?: string | undefined;
+  publishedAt?: string | undefined;
   locale: string;
 }) {
   return {

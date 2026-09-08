@@ -17,6 +17,8 @@ interface UtmParams {
   utm_term?: string;
   utm_content?: string;
 }
+interface FormLanguage { code: string; nativeName: string }
+interface IndustryOption { id: string; translations?: Array<{ name?: string; title?: string }> }
 
 function captureUtm(): UtmParams {
   if (typeof window === 'undefined') return {};
@@ -123,21 +125,22 @@ function StepProgress({ current, total }: { current: number; total: number }) {
   );
 }
 
-function validateStep(step: AssessmentStep, data: AssessmentData): string | null {
+function validateStep(step: AssessmentStep, data: AssessmentData, ar=false): string | null {
   switch (step) {
     case 'Company':
-      if (!data.companyName.trim()) return 'Company name is required.';
+      if (!data.companyName.trim()) return ar?'اسم الشركة مطلوب.':'Company name is required.';
       return null;
     case 'Business':
+      if (!data.industryId) return ar?'اختيار القطاع مطلوب.':'Industry is required.';
       return null;
     case 'Objective':
       return null;
     case 'Support':
       return null;
     case 'Contact':
-      if (!data.fullName.trim()) return 'Full name is required.';
-      if (!data.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return 'A valid email is required.';
-      if (!data.consent) return 'You must agree to the privacy notice.';
+      if (!data.fullName.trim()) return ar?'الاسم الكامل مطلوب.':'Full name is required.';
+      if (!data.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return ar?'أدخل بريدًا إلكترونيًا صحيحًا.':'A valid email is required.';
+      if (!data.consent) return ar?'يجب الموافقة على إشعار الخصوصية.':'You must agree to the privacy notice.';
       return null;
     case 'Review':
       return null;
@@ -145,11 +148,17 @@ function validateStep(step: AssessmentStep, data: AssessmentData): string | null
 }
 
 function AssessmentForm({ locale }: { locale: string }) {
+  const ar=locale.toLowerCase().startsWith('ar');
+  const labels=ar?{
+    steps:['الشركة','النشاط','الهدف','الدعم','التواصل','المراجعة'],step:'الخطوة',of:'من',companyName:'اسم الشركة *',country:'الدولة',countryHint:'مثال: SA، AE، GB',website:'الموقع الإلكتروني',presence:'التواجد الحالي في السعودية',noPresence:'لا يوجد تواجد بعد',exploring:'في مرحلة الاستكشاف أو البحث',operating:'نعمل حاليًا في السوق',industry:'القطاع *',selectIndustry:'— اختر القطاع —',objective:'الهدف الرئيسي',research:'دراسة السوق',setup:'تأسيس الشركة وتسجيلها',partner:'البحث عن شريك محلي',growth:'النمو والتوسع',other:'أخرى',targetTimeline:'المدة المستهدفة',immediate:'فوري (أقل من شهر)',months13:'من شهر إلى 3 أشهر',months36:'من 3 إلى 6 أشهر',months6:'أكثر من 6 أشهر',support:'ما الدعم الذي تحتاجه؟',supportOptions:['أبحاث السوق والمعلومات','تأسيس الشركة والإعداد القانوني','تحديد الشريك المحلي','التراخيص والامتثال التنظيمي','استراتيجية دخول السوق وتنفيذها','دعم آخر'],notes:'ملاحظات إضافية (اختياري)',notesHint:'أي سياق أو أسئلة محددة لفريقنا…',fullName:'الاسم الكامل *',email:'البريد الإلكتروني للعمل *',phone:'الهاتف (اختياري)',preferred:'لغة التواصل المفضلة',review:'راجع بيانات التقييم',reviewLabels:['الشركة','الدولة','التواجد في السعودية','القطاع','الهدف','المدة','الدعم المطلوب','الاسم','البريد الإلكتروني','الهاتف'],back:'رجوع',next:'التالي',submit:'إرسال التقييم',received:'تم استلام التقييم ✓',receivedBody:'سيراجع فريقنا بياناتك ويتواصل معك قريبًا.'
+  }:{steps:['Company','Business','Objective','Support','Contact','Review'],step:'Step',of:'of',companyName:'Company name *',country:'Country',countryHint:'e.g. AE, GB, US',website:'Website',presence:'Current Saudi Arabia presence',noPresence:'No presence yet',exploring:'Exploring / researching',operating:'Already operating',industry:'Industry *',selectIndustry:'— Select industry —',objective:'Primary objective',research:'Market research',setup:'Company setup / registration',partner:'Local partner search',growth:'Business growth / expansion',other:'Other',targetTimeline:'Target timeline',immediate:'Immediate (under 1 month)',months13:'1–3 months',months36:'3–6 months',months6:'6+ months',support:'What support do you need?',supportOptions:['Market research & intelligence','Company formation & legal setup','Local partner identification','Licensing & regulatory compliance','Go-to-market strategy & execution','Other support'],notes:'Additional notes (optional)',notesHint:'Any specific context or questions for our team…',fullName:'Full name *',email:'Work email *',phone:'Phone (optional)',preferred:'Preferred language for follow-up',review:'Review your assessment',reviewLabels:['Company','Country','Saudi presence','Industry','Objective','Timeline','Support needed','Name','Email','Phone'],back:'Back',next:'Next',submit:'Submit assessment',received:'Assessment received ✓',receivedBody:'Our team will review your profile and be in touch shortly.'};
   const [step, setStep] = useState<number>(1);
   const [data, setData] = useState<AssessmentData>({ ...INITIAL_ASSESSMENT, preferredLocale: locale });
   const [error, setError] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
   const [utm, setUtm] = useState<UtmParams>({});
+  const [languages, setLanguages] = useState<FormLanguage[]>([]);
+  const [industries, setIndustries] = useState<IndustryOption[]>([]);
   const topRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -162,12 +171,22 @@ function AssessmentForm({ locale }: { locale: string }) {
     track('assessment_start', { locale });
   }, [locale]);
 
+  useEffect(() => {
+    void Promise.all([
+      fetch(`${publicApiUrl}/public/languages`).then((response) => response.json() as Promise<{ data: FormLanguage[] }>),
+      fetch(`${publicApiUrl}/public/industries?locale=${encodeURIComponent(locale)}&pageSize=100`).then((response) => response.json() as Promise<{ data: IndustryOption[] }>),
+    ]).then(([languageResult, industryResult]) => {
+      setLanguages(languageResult.data ?? []);
+      setIndustries(industryResult.data ?? []);
+    }).catch(() => undefined);
+  }, [locale]);
+
   const totalSteps = ASSESSMENT_STEPS.length;
-  const currentStepName = ASSESSMENT_STEPS[step - 1];
+  const currentStepName = ASSESSMENT_STEPS[step - 1] ?? 'Company';
   const isLast = step === totalSteps;
 
   function next() {
-    const err = validateStep(currentStepName, data);
+    const err = validateStep(currentStepName, data, ar);
     if (err) { setError(err); return; }
     setError(null);
     setStep((s) => Math.min(s + 1, totalSteps));
@@ -192,7 +211,7 @@ function AssessmentForm({ locale }: { locale: string }) {
   }
 
   async function submit() {
-    const err = validateStep('Contact', data);
+    const err = validateStep('Contact', data, ar);
     if (err) { setError(err); return; }
     setError(null);
     setSubmitState('sending');
@@ -236,9 +255,9 @@ function AssessmentForm({ locale }: { locale: string }) {
     return (
       <div className="form-status" role="status" style={{ padding: '2rem', textAlign: 'center' }}>
         <strong style={{ display: 'block', marginBlockEnd: '.5rem', fontSize: '1.2rem' }}>
-          Assessment received ✓
+          {labels.received}
         </strong>
-        <p>Our team will review your profile and be in touch shortly.</p>
+        <p>{labels.receivedBody}</p>
       </div>
     );
   }
@@ -247,19 +266,19 @@ function AssessmentForm({ locale }: { locale: string }) {
     <div ref={topRef}>
       <StepProgress current={step} total={totalSteps} />
       <p className="cell-meta" style={{ marginBlockEnd: '1rem' }}>
-        Step {step} of {totalSteps} — {currentStepName}
+        {labels.step} {step} {labels.of} {totalSteps} — {labels.steps[step-1]}
       </p>
 
       {/* Step 1: Company */}
       {step === 1 && (
         <div className="form-grid">
-          <Field label="Company name *">
+          <Field label={labels.companyName}>
             <Input value={data.companyName} onChange={(e) => field('companyName')(e.target.value)} required maxLength={160} />
           </Field>
-          <Field label="Country">
-            <Input value={data.countryCode} onChange={(e) => field('countryCode')(e.target.value)} maxLength={8} placeholder="e.g. AE, GB, US" />
+          <Field label={labels.country}>
+            <Input value={data.countryCode} onChange={(e) => field('countryCode')(e.target.value)} maxLength={8} placeholder={labels.countryHint} />
           </Field>
-          <Field label="Website">
+          <Field label={labels.website}>
             <Input type="url" dir="ltr" value={data.website} onChange={(e) => field('website')(e.target.value)} maxLength={300} placeholder="https://..." />
           </Field>
         </div>
@@ -268,11 +287,17 @@ function AssessmentForm({ locale }: { locale: string }) {
       {/* Step 2: Business */}
       {step === 2 && (
         <div className="form-grid">
-          <Field label="Current Saudi Arabia presence">
+          <Field label={labels.presence}>
             <select className="gv-input" value={data.currentSaudiPresence} onChange={(e) => field('currentSaudiPresence')(e.target.value)}>
-              <option value="none">No presence yet</option>
-              <option value="exploring">Exploring / researching</option>
-              <option value="operating">Already operating</option>
+              <option value="none">{labels.noPresence}</option>
+              <option value="exploring">{labels.exploring}</option>
+              <option value="operating">{labels.operating}</option>
+            </select>
+          </Field>
+          <Field label={labels.industry}>
+            <select className="gv-input" value={data.industryId} onChange={(e) => field('industryId')(e.target.value)} required>
+              <option value="">{labels.selectIndustry}</option>
+              {industries.map((industry) => <option key={industry.id} value={industry.id}>{industry.translations?.[0]?.name ?? industry.translations?.[0]?.title ?? industry.id}</option>)}
             </select>
           </Field>
         </div>
@@ -281,21 +306,21 @@ function AssessmentForm({ locale }: { locale: string }) {
       {/* Step 3: Objective */}
       {step === 3 && (
         <div className="form-grid">
-          <Field label="Primary objective">
+          <Field label={labels.objective}>
             <select className="gv-input" value={data.objective} onChange={(e) => field('objective')(e.target.value)}>
-              <option value="research">Market research</option>
-              <option value="setup">Company setup / registration</option>
-              <option value="partner_search">Local partner search</option>
-              <option value="growth">Business growth / expansion</option>
-              <option value="other">Other</option>
+              <option value="research">{labels.research}</option>
+              <option value="setup">{labels.setup}</option>
+              <option value="partner_search">{labels.partner}</option>
+              <option value="growth">{labels.growth}</option>
+              <option value="other">{labels.other}</option>
             </select>
           </Field>
-          <Field label="Target timeline">
+          <Field label={labels.targetTimeline}>
             <select className="gv-input" value={data.timeline} onChange={(e) => field('timeline')(e.target.value)}>
-              <option value="immediate">Immediate (under 1 month)</option>
-              <option value="1_3_months">1–3 months</option>
-              <option value="3_6_months">3–6 months</option>
-              <option value="6_plus_months">6+ months</option>
+              <option value="immediate">{labels.immediate}</option>
+              <option value="1_3_months">{labels.months13}</option>
+              <option value="3_6_months">{labels.months36}</option>
+              <option value="6_plus_months">{labels.months6}</option>
             </select>
           </Field>
         </div>
@@ -304,15 +329,15 @@ function AssessmentForm({ locale }: { locale: string }) {
       {/* Step 4: Support needed */}
       {step === 4 && (
         <div className="form-grid">
-          <Field label="What support do you need?">
-            {[
-              ['research', 'Market research & intelligence'],
-              ['company_formation', 'Company formation & legal setup'],
-              ['local_partner', 'Local partner identification'],
-              ['licensing', 'Licensing & regulatory compliance'],
-              ['gtm', 'Go-to-market strategy & execution'],
-              ['other', 'Other support'],
-            ].map(([value, label]) => (
+          <Field label={labels.support}>
+            {([
+              ['research', labels.supportOptions[0]],
+              ['company_formation', labels.supportOptions[1]],
+              ['local_partner', labels.supportOptions[2]],
+              ['licensing', labels.supportOptions[3]],
+              ['gtm', labels.supportOptions[4]],
+              ['other', labels.supportOptions[5]],
+            ] as const).map(([value, label]) => (
               <label key={value} style={{ display: 'block', marginBlock: '.3rem' }}>
                 <input
                   type="checkbox"
@@ -323,12 +348,12 @@ function AssessmentForm({ locale }: { locale: string }) {
               </label>
             ))}
           </Field>
-          <Field label="Additional notes (optional)">
+          <Field label={labels.notes}>
             <Textarea
               value={data.notes}
               onChange={(e) => field('notes')(e.target.value)}
               maxLength={5000}
-              placeholder="Any specific context or questions for our team…"
+              placeholder={labels.notesHint}
             />
           </Field>
         </div>
@@ -337,19 +362,18 @@ function AssessmentForm({ locale }: { locale: string }) {
       {/* Step 5: Contact */}
       {step === 5 && (
         <div className="form-grid">
-          <Field label="Full name *">
+          <Field label={labels.fullName}>
             <Input value={data.fullName} onChange={(e) => field('fullName')(e.target.value)} required maxLength={120} />
           </Field>
-          <Field label="Work email *">
+          <Field label={labels.email}>
             <Input type="email" value={data.email} onChange={(e) => field('email')(e.target.value)} required maxLength={254} />
           </Field>
-          <Field label="Phone (optional)">
+          <Field label={labels.phone}>
             <Input type="tel" value={data.phone} onChange={(e) => field('phone')(e.target.value)} maxLength={40} />
           </Field>
-          <Field label="Preferred language for follow-up">
+          <Field label={labels.preferred}>
             <select className="gv-input" value={data.preferredLocale} onChange={(e) => field('preferredLocale')(e.target.value)}>
-              <option value="en">English</option>
-              <option value="ar-SA">العربية</option>
+              {(languages.length ? languages : [{ code: locale, nativeName: locale }]).map((language) => <option key={language.code} value={language.code}>{language.nativeName}</option>)}
             </select>
           </Field>
           <div>
@@ -369,19 +393,20 @@ function AssessmentForm({ locale }: { locale: string }) {
       {/* Step 6: Review */}
       {step === 6 && (
         <div className="panel" style={{ fontSize: '.9rem' }}>
-          <h3 style={{ marginBlockStart: 0 }}>Review your assessment</h3>
+          <h3 style={{ marginBlockStart: 0 }}>{labels.review}</h3>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <tbody>
               {[
-                ['Company', data.companyName],
-                ['Country', data.countryCode || '—'],
-                ['Saudi presence', data.currentSaudiPresence],
-                ['Objective', data.objective],
-                ['Timeline', data.timeline],
-                ['Support needed', data.needs.join(', ')],
-                ['Name', data.fullName],
-                ['Email', data.email],
-                ['Phone', data.phone || '—'],
+                [labels.reviewLabels[0], data.companyName],
+                [labels.reviewLabels[1], data.countryCode || '—'],
+                [labels.reviewLabels[2], data.currentSaudiPresence],
+                [labels.reviewLabels[3], industries.find((industry) => industry.id === data.industryId)?.translations?.[0]?.name ?? data.industryId],
+                [labels.reviewLabels[4], data.objective],
+                [labels.reviewLabels[5], data.timeline],
+                [labels.reviewLabels[6], data.needs.join(', ')],
+                [labels.reviewLabels[7], data.fullName],
+                [labels.reviewLabels[8], data.email],
+                [labels.reviewLabels[9], data.phone || '—'],
               ].map(([label, value]) => (
                 <tr key={label}>
                   <td style={{ padding: '.4rem .6rem .4rem 0', color: 'var(--color-text-muted)', width: '40%' }}>{label}</td>
@@ -409,16 +434,16 @@ function AssessmentForm({ locale }: { locale: string }) {
         <div>
           {step > 1 && (
             <button type="button" className="text-link" onClick={back}>
-              ← Back
+              {ar?'→':''} {labels.back} {!ar?'←':''}
             </button>
           )}
         </div>
         {isLast ? (
           <Button disabled={submitState === 'sending'} onClick={submit}>
-            {submitState === 'sending' ? copy(locale).sending : 'Submit assessment'}
+            {submitState === 'sending' ? copy(locale).sending : labels.submit}
           </Button>
         ) : (
-          <Button onClick={next}>Next →</Button>
+          <Button onClick={next}>{labels.next} {ar?'←':'→'}</Button>
         )}
       </div>
     </div>
@@ -497,10 +522,10 @@ function SimpleForm({ kind, locale }: { kind: 'contact' | 'consultation'; locale
         </Field>
         {kind === 'consultation' && (
           <>
-            <Field label="Company stage">
+            <Field label={locale.startsWith('ar') ? 'مرحلة الشركة' : 'Company stage'}>
               <Input name="companyStage" maxLength={120} />
             </Field>
-            <Field label="Timeline">
+            <Field label={locale.startsWith('ar') ? 'المدة المتوقعة' : 'Timeline'}>
               <Input name="timeline" maxLength={120} />
             </Field>
           </>

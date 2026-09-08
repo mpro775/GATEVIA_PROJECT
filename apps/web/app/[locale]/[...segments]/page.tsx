@@ -23,15 +23,15 @@ const formMap: Record<string, 'contact' | 'consultation' | 'market-entry-assessm
   'market-entry-assessment': 'market-entry-assessment',
 };
 
-async function resolve(locale: string, segments: string[]) {
+async function resolve(locale: string, segments: string[], q?: string, preview?: string) {
   const [root, slug] = segments;
   if (root && listResources.has(root)) {
     return slug && detailResources.has(root)
-      ? { kind: 'detail' as const, resource: root, data: await safe(getDetail(root, locale, slug), {}) }
-      : { kind: 'list' as const, resource: root, data: await safe(getList(root, locale), []) };
+      ? { kind: 'detail' as const, resource: root, data: await safe(getDetail(root, locale, slug, preview), {}) }
+      : { kind: 'list' as const, resource: root, data: await safe(getList(root, locale, q ? `&q=${encodeURIComponent(q)}` : ''), []) };
   }
   const pageSlug = segments.join('/');
-  return { kind: 'page' as const, resource: pageSlug, data: await safe(getPage(locale, pageSlug), {}) };
+  return { kind: 'page' as const, resource: pageSlug, data: await safe(getPage(locale, pageSlug, preview), {}) };
 }
 
 export async function generateMetadata({
@@ -105,9 +105,9 @@ async function ServiceDetail({ entity, locale }: { entity: Record<string, unknow
   const tr = translation(entity);
   const t = copy(locale);
   const [relIndustries, relCases, relInsights] = await Promise.all([
-    safe(getList('industries', locale, `&serviceId=${String(entity.id)}&pageSize=6`), []),
-    safe(getList('case-studies', locale, `&serviceId=${String(entity.id)}&pageSize=4`), []),
-    safe(getList('insights', locale, `&serviceId=${String(entity.id)}&pageSize=4`), []),
+    safe(getList('industries', locale, `&service=${String(entity.id)}&pageSize=6`), []),
+    safe(getList('case-studies', locale, `&service=${String(entity.id)}&pageSize=4`), []),
+    safe(getList('insights', locale, `&service=${String(entity.id)}&pageSize=4`), []),
   ]);
   const inline = entity as Record<string, Record<string, unknown>[]>;
   const industries = inline.industries?.length ? inline.industries : relIndustries as Record<string, unknown>[];
@@ -120,46 +120,46 @@ async function ServiceDetail({ entity, locale }: { entity: Record<string, unknow
       {tr.overview && <Section><p>{text(tr.overview)}</p></Section>}
       {tr.whoFor && (
         <Section className="section--surface">
-          <h2>Who is this for</h2>
+          <h2>{t.whoFor}</h2>
           <ContentItems items={tr.whoFor} />
         </Section>
       )}
       {tr.problems && (
         <Section>
-          <h2>Problems we solve</h2>
+          <h2>{t.problems}</h2>
           <ContentItems items={tr.problems} />
         </Section>
       )}
       {tr.deliverables && (
         <Section className="section--surface">
-          <h2>What you get</h2>
+          <h2>{t.deliverables}</h2>
           <ContentItems items={tr.deliverables} />
         </Section>
       )}
       {tr.process && (
         <Section>
-          <h2>How we work</h2>
+          <h2>{t.process}</h2>
           <ContentItems items={tr.process} />
         </Section>
       )}
       {tr.benefits && (
         <Section className="section--surface">
-          <h2>Benefits</h2>
+          <h2>{t.benefits}</h2>
           <ContentItems items={tr.benefits} />
         </Section>
       )}
       {tr.timelineText && (
         <Section>
-          <h2>Timeline</h2>
+          <h2>{t.timeline}</h2>
           <p>{text(tr.timelineText)}</p>
         </Section>
       )}
-      <RelatedGrid items={industries as Record<string, unknown>[]} locale={locale} resource="industries" heading="Related industries" />
-      <RelatedGrid items={caseStudies as Record<string, unknown>[]} locale={locale} resource="case-studies" heading="Related case studies" />
-      <RelatedGrid items={insights as Record<string, unknown>[]} locale={locale} resource="insights" heading="Related insights" />
+      <RelatedGrid items={industries as Record<string, unknown>[]} locale={locale} resource="industries" heading={t.relatedIndustries} />
+      <RelatedGrid items={caseStudies as Record<string, unknown>[]} locale={locale} resource="case-studies" heading={t.relatedCases} />
+      <RelatedGrid items={insights as Record<string, unknown>[]} locale={locale} resource="insights" heading={t.relatedInsights} />
       {faqs.length > 0 && (
         <Section>
-          <h2>Frequently asked questions</h2>
+          <h2>{t.faqs}</h2>
           <div className="faq-list">
             {faqs.map((faq) => {
               const ft = translation(faq);
@@ -175,7 +175,7 @@ async function ServiceDetail({ entity, locale }: { entity: Record<string, unknow
       )}
       <section className="section section--accent">
         <div className="container" style={{ textAlign: 'center' }}>
-          <h2>Ready to enter the Saudi market?</h2>
+          <h2>{t.readyMarket}</h2>
           <Link className="gv-button" href={`/${locale}/book-consultation`}>{t.consultation}</Link>
         </div>
       </section>
@@ -187,9 +187,9 @@ async function IndustryDetail({ entity, locale }: { entity: Record<string, unkno
   const tr = translation(entity);
   const t = copy(locale);
   const [relServices, relCases, relInsights] = await Promise.all([
-    safe(getList('services', locale, `&industryId=${String(entity.id)}&pageSize=6`), []),
-    safe(getList('case-studies', locale, `&industryId=${String(entity.id)}&pageSize=4`), []),
-    safe(getList('insights', locale, `&industryId=${String(entity.id)}&pageSize=4`), []),
+    safe(getList('services', locale, `&industry=${String(entity.id)}&pageSize=6`), []),
+    safe(getList('case-studies', locale, `&industry=${String(entity.id)}&pageSize=4`), []),
+    safe(getList('insights', locale, `&industry=${String(entity.id)}&pageSize=4`), []),
   ]);
   const inline = entity as Record<string, Record<string, unknown>[]>;
   const services = inline.services?.length ? inline.services : relServices as Record<string, unknown>[];
@@ -199,12 +199,12 @@ async function IndustryDetail({ entity, locale }: { entity: Record<string, unkno
   return (
     <>
       {tr.overview && <Section><p>{text(tr.overview)}</p></Section>}
-      <RelatedGrid items={services as Record<string, unknown>[]} locale={locale} resource="services" heading="Our services for this industry" />
-      <RelatedGrid items={caseStudies as Record<string, unknown>[]} locale={locale} resource="case-studies" heading="Case studies" />
-      <RelatedGrid items={insights as Record<string, unknown>[]} locale={locale} resource="insights" heading="Industry insights" />
+      <RelatedGrid items={services as Record<string, unknown>[]} locale={locale} resource="services" heading={t.industryServices} />
+      <RelatedGrid items={caseStudies as Record<string, unknown>[]} locale={locale} resource="case-studies" heading={t.cases} />
+      <RelatedGrid items={insights as Record<string, unknown>[]} locale={locale} resource="insights" heading={t.industryInsights} />
       <section className="section section--accent">
         <div className="container" style={{ textAlign: 'center' }}>
-          <h2>Interested in this market?</h2>
+          <h2>{t.interestedMarket}</h2>
           <Link className="gv-button" href={`/${locale}/book-consultation`}>{t.consultation}</Link>
         </div>
       </section>
@@ -222,28 +222,28 @@ async function CaseStudyDetail({ entity, locale }: { entity: Record<string, unkn
 
   return (
     <>
-      {tr.context && <Section><h2>Context</h2><p>{text(tr.context)}</p></Section>}
+      {tr.context && <Section><h2>{t.context}</h2><p>{text(tr.context)}</p></Section>}
       {tr.challenge && (
         <Section>
-          <h2>The challenge</h2>
+          <h2>{t.challenge}</h2>
           <p>{text(tr.challenge as string)}</p>
         </Section>
       )}
-      {tr.objectives && <Section className="section--surface"><h2>Objectives</h2><ContentItems items={tr.objectives} /></Section>}
+      {tr.objectives && <Section className="section--surface"><h2>{t.objectives}</h2><ContentItems items={tr.objectives} /></Section>}
       {tr.solution && (
         <Section className="section--surface">
-          <h2>Solution</h2>
+          <h2>{t.solution}</h2>
           <p>{text(tr.solution)}</p>
         </Section>
       )}
-      {tr.process && <Section><h2>Process</h2><ContentItems items={tr.process} /></Section>}
+      {tr.process && <Section><h2>{t.process}</h2><ContentItems items={tr.process} /></Section>}
       {tr.results && (
         <Section>
-          <h2>Results</h2>
+          <h2>{t.results}</h2>
           <ContentItems items={tr.results} />
         </Section>
       )}
-      {tr.metrics && <Section className="section--surface"><h2>Metrics</h2><ContentItems items={tr.metrics} /></Section>}
+      {tr.metrics && <Section className="section--surface"><h2>{t.metrics}</h2><ContentItems items={tr.metrics} /></Section>}
       {gallery.length > 0 && (
         <section className="section">
           <div className="container">
@@ -265,11 +265,11 @@ async function CaseStudyDetail({ entity, locale }: { entity: Record<string, unkn
           </div>
         </section>
       )}
-      <RelatedGrid items={services} locale={locale} resource="services" heading="Services involved" />
-      <RelatedGrid items={industries} locale={locale} resource="industries" heading="Industries" />
+      <RelatedGrid items={services} locale={locale} resource="services" heading={t.servicesInvolved} />
+      <RelatedGrid items={industries} locale={locale} resource="industries" heading={t.industries} />
       <section className="section section--accent">
         <div className="container" style={{ textAlign: 'center' }}>
-          <h2>Want similar results?</h2>
+          <h2>{t.similarResults}</h2>
           <Link className="gv-button" href={`/${locale}/book-consultation`}>{t.consultation}</Link>
         </div>
       </section>
@@ -287,22 +287,22 @@ async function InsightDetail({ entity, locale }: { entity: Record<string, unknow
   return (
     <>
       <Section>
-        {entity.publishedAt && (
+        {Boolean(entity.publishedAt) && (
           <p className="cell-meta" style={{ marginBlockEnd: '1rem' }}>
             {new Intl.DateTimeFormat('en', { dateStyle: 'long' }).format(new Date(String(entity.publishedAt)))}
           </p>
         )}
         {tr.content ? (
-          <RichBlocks blocks={tr.content} media={entity.media as Record<string, { url?: string; translations?: Array<{ altText?: string }> }> | undefined} />
+          <RichBlocks blocks={tr.content} media={(entity.media as Record<string, { url?: string; translations?: Array<{ altText?: string }> }> | undefined) ?? {}} />
         ) : (
           <p>{text(tr.overview ?? tr.excerpt)}</p>
         )}
       </Section>
-      <RelatedGrid items={services} locale={locale} resource="services" heading="Related services" />
-      <RelatedGrid items={industries} locale={locale} resource="industries" heading="Related industries" />
+      <RelatedGrid items={services} locale={locale} resource="services" heading={t.services} />
+      <RelatedGrid items={industries} locale={locale} resource="industries" heading={t.relatedIndustries} />
       <section className="section section--accent">
         <div className="container" style={{ textAlign: 'center' }}>
-          <h2>Ready to act on these insights?</h2>
+          <h2>{t.actInsights}</h2>
           <Link className="gv-button" href={`/${locale}/book-consultation`}>{t.consultation}</Link>
         </div>
       </section>
@@ -317,8 +317,8 @@ function BrandOrProductDetail({ entity, locale }: { entity: Record<string, unkno
     <>
       <Section>
         <p>{text(tr.overview ?? tr.excerpt ?? tr.shortDescription)}</p>
-        {tr.fullDescription && <p>{text(tr.fullDescription)}</p>}
-        {entity.website && (
+        {Boolean(tr.fullDescription) && <p>{text(tr.fullDescription)}</p>}
+        {Boolean(entity.website) && (
           <p>
             <a
               href={String(entity.website)}
@@ -326,14 +326,14 @@ function BrandOrProductDetail({ entity, locale }: { entity: Record<string, unkno
               rel="noopener noreferrer"
               className="text-link"
             >
-              Visit website →
+              {t.visitWebsite} →
             </a>
           </p>
         )}
       </Section>
       <section className="section section--accent">
         <div className="container" style={{ textAlign: 'center' }}>
-          <h2>Interested in partnering?</h2>
+          <h2>{t.interestedPartnering}</h2>
           <Link className="gv-button" href={`/${locale}/book-consultation`}>{t.consultation}</Link>
         </div>
       </section>
@@ -345,18 +345,23 @@ function BrandOrProductDetail({ entity, locale }: { entity: Record<string, unkno
 
 export default async function DynamicPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string; segments: string[] }>;
+  searchParams: Promise<{ q?: string; preview?: string }>;
 }) {
   const { locale, segments } = await params;
-  const result = await resolve(locale, segments);
+  const { q = '', preview } = await searchParams;
+  const result = await resolve(locale, segments, q.trim(), preview);
   const pageKey = segments.join('/');
   const t = copy(locale);
 
   // LIST page
   if (result.kind === 'list') {
+    const faqJsonLd = result.resource === 'faqs' ? faqSchema((result.data as Record<string, unknown>[]).map((faq) => { const ft = translation(faq); return { question: text(ft.title ?? ft.question), answer: text(ft.answer ?? ft.content) }; })) : null;
     return (
       <>
+        {faqJsonLd && <JsonLd schema={faqJsonLd} />}
         <section className="page-head">
           <div className="container">
             <span className="eyebrow">GATEVIA</span>
@@ -366,9 +371,10 @@ export default async function DynamicPage({
         <section className="section">
           <div className="container">
             {segments[0] === 'insights' && (
-              <div className="filter-bar">
-                <input className="gv-input search-input" type="search" placeholder={t.search} />
-              </div>
+              <form className="filter-bar" method="get">
+                <input className="gv-input search-input" type="search" name="q" defaultValue={q} placeholder={t.search} />
+                <button className="gv-button" type="submit">{t.searchAction}</button>
+              </form>
             )}
             <ContentGrid
               items={result.data as Record<string, unknown>[]}
@@ -407,10 +413,11 @@ export default async function DynamicPage({
   const tr = translation(entity);
   const heroTr = tr.title || tr.name ? tr : { title: pageKey.replaceAll('-', ' ') };
   const imageUrl = resolvedMediaUrl(entity, tr.ogMediaId);
+  const hasSectionHero = result.kind === 'page' && Array.isArray(entity.sections) && entity.sections.some((section) => (section as Record<string, unknown>).sectionType === 'hero');
 
   return (
     <>
-      <PageHero translation={heroTr} locale={locale} />
+      {!hasSectionHero && <PageHero translation={heroTr} locale={locale} />}
 
       <JsonLd schema={breadcrumbSchema([
         { name: 'Home', url: `/${locale}` },
@@ -449,12 +456,6 @@ export default async function DynamicPage({
           updatedAt: entity.updatedAt ? String(entity.updatedAt) : undefined,
           locale,
         })} />
-      )}
-      {result.kind === 'list' && result.resource === 'faqs' && (
-        <JsonLd schema={faqSchema((result.data as Record<string, unknown>[]).map(faq => {
-          const ft = translation(faq);
-          return { question: text(ft.title ?? ft.question), answer: text(ft.answer ?? ft.content) };
-        }))} />
       )}
       {result.kind === 'detail' && result.resource === 'faqs' && (
         <JsonLd schema={faqSchema([{ question: text(tr.title ?? tr.question), answer: text(tr.answer ?? tr.content) }])} />

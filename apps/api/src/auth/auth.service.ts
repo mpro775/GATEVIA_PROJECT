@@ -23,7 +23,7 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
     if (!user || user.status !== 'active' || !(await argon2.verify(user.passwordHash, password))) throw new UnauthorizedException('Invalid email or password.');
     const refresh = token(); const csrf = token();
-    const session = await this.prisma.authSession.create({ data: { userId: user.id, refreshTokenHash: sha256(refresh), csrfTokenHash: sha256(csrf), userAgent: userAgent?.slice(0, 500), ipHash: ip ? sha256(ip) : null, expiresAt: new Date(Date.now() + 7 * 86400000) } });
+    const session = await this.prisma.authSession.create({ data: { userId: user.id, refreshTokenHash: sha256(refresh), csrfTokenHash: sha256(csrf), userAgent: userAgent?.slice(0, 500) ?? null, ipHash: ip ? sha256(ip) : null, expiresAt: new Date(Date.now() + 7 * 86400000) } });
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
     this.setCookies(response, session.id, refresh, csrf);
     return { id: user.id, email: user.email, displayName: user.displayName, mustChangePassword: user.mustChangePassword };

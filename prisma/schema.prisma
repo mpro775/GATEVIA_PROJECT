@@ -9,15 +9,58 @@ datasource db {
   extensions = [citext]
 }
 
-enum UserStatus { active suspended invited }
-enum Direction { ltr rtl }
-enum ContentStatus { draft review published archived }
-enum MediaStatus { pending_upload processing ready failed archived }
-enum InsightType { article guide report }
-enum NavigationItemType { internal external }
-enum LeadStatus { new contacted qualified proposal won lost }
-enum LeadSource { contact consultation assessment landing_page manual }
-enum NotificationStatus { pending queued sent failed }
+enum UserStatus {
+  active
+  suspended
+  invited
+}
+enum Direction {
+  ltr
+  rtl
+}
+enum ContentStatus {
+  draft
+  review
+  published
+  archived
+}
+enum MediaStatus {
+  pending_upload
+  processing
+  ready
+  failed
+  archived
+}
+enum InsightType {
+  article
+  guide
+  report
+}
+enum NavigationItemType {
+  internal
+  external
+}
+enum LeadStatus {
+  new
+  contacted
+  qualified
+  proposal
+  won
+  lost
+}
+enum LeadSource {
+  contact
+  consultation
+  assessment
+  landing_page
+  manual
+}
+enum NotificationStatus {
+  pending
+  queued
+  sent
+  failed
+}
 
 model User {
   id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid

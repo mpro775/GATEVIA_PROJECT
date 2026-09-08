@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Badge, Button, Field, Input } from '@gatevia/ui';
 import { api } from '@/lib/api';
+import { useAdminAuth } from './auth-context';
 
 interface Language { code: string; name: string; }
 interface NavMenu { id: string; key: string; location: string; status: 'draft' | 'review' | 'published' | 'archived'; items: NavItem[] }
@@ -17,6 +18,27 @@ interface NavItem {
   _expanded?: boolean;
 }
 
+function normalizeItems(value: unknown): NavItem[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((raw) => {
+    const item = raw as NavItem & { translations: unknown };
+    const translations = Array.isArray(item.translations)
+      ? Object.fromEntries(
+          item.translations
+            .filter((row): row is { locale: string; label: string } => Boolean(row) && typeof row === 'object' && typeof (row as { locale?: unknown }).locale === 'string')
+            .map((row) => [row.locale, { label: row.label ?? '' }]),
+        )
+      : item.translations && typeof item.translations === 'object'
+        ? item.translations as Record<string, { label: string }>
+        : {};
+    return { ...item, translations, _expanded: false } as NavItem;
+  });
+}
+
+function normalizeMenu(menu: NavMenu): NavMenu {
+  return { ...menu, items: normalizeItems(menu.items) };
+}
+
 const emptyItem = (): NavItem => ({
   id: crypto.randomUUID(),
   parentId: null,
@@ -30,6 +52,8 @@ const emptyItem = (): NavItem => ({
 });
 
 export function NavigationEditor() {
+  const { can } = useAdminAuth();
+  const canManage = can('navigation.manage');
   const [menus, setMenus] = useState<NavMenu[]>([]);
   const [selected, setSelected] = useState<NavMenu | null>(null);
   const [languages, setLanguages] = useState<Language[]>([]);
@@ -38,7 +62,7 @@ export function NavigationEditor() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    void api<NavMenu[]>('/admin/navigation?pageSize=50').then((rows) => setMenus(rows || []));
+    void api<NavMenu[]>('/admin/navigation?pageSize=50').then((rows) => setMenus((rows || []).map(normalizeMenu)));
     void api<Language[]>('/public/languages').then(setLanguages);
     // Fetch common entities for picker
     const fetchEntities = async () => {
@@ -58,7 +82,7 @@ export function NavigationEditor() {
   async function selectMenu(menu: NavMenu) {
     try {
       const full = await api<NavMenu>(`/admin/navigation/${menu.id}`);
-      setSelected(full);
+      setSelected(normalizeMenu(full));
       setMessage('');
     } catch {
       setMessage('Failed to load menu details.');
@@ -68,14 +92,18 @@ export function NavigationEditor() {
   function updateItem(index: number, field: keyof NavItem, value: unknown) {
     if (!selected) return;
     const items = [...selected.items];
-    items[index] = { ...items[index], [field]: value };
+    const current = items[index];
+    if (!current) return;
+    items[index] = { ...current, [field]: value };
     setSelected({ ...selected, items });
   }
   
   function updateTranslation(index: number, locale: string, label: string) {
     if (!selected) return;
     const items = [...selected.items];
-    items[index] = { ...items[index], translations: { ...items[index].translations, [locale]: { label } } };
+    const current = items[index];
+    if (!current) return;
+    items[index] = { ...current, translations: { ...current.translations, [locale]: { label } } };
     setSelected({ ...selected, items });
   }
 
@@ -87,7 +115,10 @@ export function NavigationEditor() {
 
   function removeItem(index: number) {
     if (!selected || !confirm('Remove this item?')) return;
-    const items = selected.items.filter((_, i) => i !== index);
+    const removedId = selected.items[index]?.id;
+    const items = selected.items
+      .filter((_, i) => i !== index)
+      .map((item) => item.parentId === removedId ? { ...item, parentId: null } : item);
     setSelected({ ...selected, items });
   }
 
@@ -96,11 +127,13 @@ export function NavigationEditor() {
     const items = [...selected.items];
     const target = index + dir;
     if (target < 0 || target >= items.length) return;
-    [items[index], items[target]] = [items[target], items[index]];
+    const current = items[index]; const destination = items[target];
+    if (!current || !destination) return;
+    items[index] = destination; items[target] = current;
     setSelected({ ...selected, items });
   }
 
-  async function save() {
+  async function save(): Promise<NavMenu | undefined> {
     if (!selected) return;
     setBusy(true);
     setMessage('');
@@ -108,7 +141,7 @@ export function NavigationEditor() {
       const payload = {
         key: selected.key,
         location: selected.location,
-        status: selected.status === 'published' ? 'review' : selected.status,
+        status: selected.status === 'published' || selected.status === 'archived' ? undefined : selected.status,
         items: selected.items.map(item => ({
           id: item.id || crypto.randomUUID(),
           parentId: item.parentId || null,
@@ -125,11 +158,32 @@ export function NavigationEditor() {
         method: 'PATCH',
         body: JSON.stringify(payload),
       });
-      setMenus((prev) => prev.map((m) => (m.id === saved.id ? saved : m)));
-      setSelected(saved);
+      const normalized = normalizeMenu(saved);
+      setMenus((prev) => prev.map((m) => (m.id === normalized.id ? normalized : m)));
+      setSelected(normalized);
       setMessage('Navigation saved.');
+      return normalized;
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'Save failed.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function transition(action: 'publish' | 'unpublish' | 'archive') {
+    if (!selected) return;
+    setBusy(true);
+    setMessage('');
+    try {
+      const saved = await save();
+      if (!saved) return;
+      const updated = await api<NavMenu>(`/admin/navigation/${selected.id}/${action}`, { method: 'POST' });
+      const full = normalizeMenu(await api<NavMenu>(`/admin/navigation/${updated.id}`));
+      setSelected(full);
+      setMenus((previous) => previous.map((menu) => menu.id === full.id ? full : menu));
+      setMessage(`Navigation ${action === 'publish' ? 'published' : action === 'unpublish' ? 'unpublished' : 'archived'}.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : `Unable to ${action} navigation.`);
     } finally {
       setBusy(false);
     }
@@ -142,9 +196,12 @@ export function NavigationEditor() {
           <h1>Navigation Builder</h1>
           <p>Edit menus and their items. Changes take effect after saving and publishing.</p>
         </div>
-        {selected && (
+        {selected && canManage && (
           <div className="toolbar">
             <Button disabled={busy} onClick={save}>Save navigation</Button>
+            {selected.status !== 'published' && <Button disabled={busy} onClick={() => void transition('publish')}>Publish</Button>}
+            {selected.status === 'published' && <Button disabled={busy} onClick={() => void transition('unpublish')}>Unpublish</Button>}
+            {selected.status !== 'archived' && <Button disabled={busy} onClick={() => void transition('archive')}>Archive</Button>}
           </div>
         )}
       </div>
@@ -177,7 +234,7 @@ export function NavigationEditor() {
 
           {/* Items editor */}
           {selected && (
-            <section className="panel">
+            <fieldset disabled={!canManage} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}><section className="panel">
               <h2>Items — {selected.key}</h2>
               <div style={{ marginBlockEnd: '.8rem' }}>
                 <p className="cell-meta">Location: {selected.location}</p>
@@ -191,9 +248,9 @@ export function NavigationEditor() {
                   <div key={item.id} className="section-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
                       <span style={{ flex: 1, fontWeight: 600, fontSize: '.9rem' }}>
-                        {item.translations[languages[0]?.code]?.label || '(untitled)'}
+                        {(languages[0]?.code ? item.translations[languages[0].code]?.label : '') || '(untitled)'}
                       </span>
-                      <Badge tone={item.itemType === 'internal' ? 'primary' : 'neutral'}>
+                      <Badge tone={item.itemType === 'internal' ? 'warning' : 'neutral'}>
                         {item.itemType}
                       </Badge>
                       <Badge tone={item.visible ? 'success' : 'neutral'}>
@@ -260,7 +317,7 @@ export function NavigationEditor() {
 
                         {item.itemType === 'internal' ? (
                           <div style={{ display: 'flex', gap: '1rem' }}>
-                            <Field label="Content Type" style={{ flex: 1 }}>
+                            <div style={{ flex: 1 }}><Field label="Content Type">
                               <select
                                 className="gv-input"
                                 value={item.internalEntityType}
@@ -275,8 +332,8 @@ export function NavigationEditor() {
                                 <option value="case-studies">Case Studies</option>
                                 <option value="insights">Insights</option>
                               </select>
-                            </Field>
-                            <Field label="Target Item" style={{ flex: 2 }}>
+                            </Field></div>
+                            <div style={{ flex: 2 }}><Field label="Target Item">
                               <select
                                 className="gv-input"
                                 value={item.internalEntityId}
@@ -287,7 +344,7 @@ export function NavigationEditor() {
                                   <option key={ent.id} value={ent.id}>{ent.label}</option>
                                 ))}
                               </select>
-                            </Field>
+                            </Field></div>
                           </div>
                         ) : (
                           <Field label="External URL (must start with http:// or https://)">
@@ -299,6 +356,23 @@ export function NavigationEditor() {
                             />
                           </Field>
                         )}
+
+                        <Field label="Parent item">
+                          <select
+                            className="gv-input"
+                            value={item.parentId ?? ''}
+                            onChange={(event) => updateItem(i, 'parentId', event.target.value || null)}
+                          >
+                            <option value="">— Top level —</option>
+                            {selected.items
+                              .filter((candidate) => candidate.id !== item.id && candidate.parentId !== item.id)
+                              .map((candidate) => (
+                                <option key={candidate.id} value={candidate.id}>
+                                  {(languages[0]?.code ? candidate.translations[languages[0].code]?.label : '') || '(untitled)'}
+                                </option>
+                              ))}
+                          </select>
+                        </Field>
                         
                         <div style={{ display: 'flex', gap: '1rem' }}>
                           <label>
@@ -319,7 +393,7 @@ export function NavigationEditor() {
               <div style={{ marginBlockStart: '.8rem' }}>
                 <Button type="button" onClick={addItem}>+ Add item</Button>
               </div>
-            </section>
+            </section></fieldset>
           )}
         </div>
 

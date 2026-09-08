@@ -38,7 +38,7 @@ function FallbackFooter({ locale }: { locale: string }) {
   );
 }
 
-export function Footer({ locale, navItems, identity }: { locale: string; navItems: NavItem[]; identity: { name: string; email?: string; phone?: string; linkedInUrl?: string } }) {
+export function Footer({ locale, navItems, identity }: { locale: string; navItems: NavItem[]; identity: { name: string; email?: string | undefined; phone?: string | undefined; linkedInUrl?: string | undefined } }) {
   const t = copy(locale);
 
   // Group CMS footer items by their top-level label (items with children become columns,

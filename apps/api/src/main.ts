@@ -3,8 +3,8 @@ import * as Sentry from '@sentry/node';
 import { Logger } from '@nestjs/common'; import { NestFactory } from '@nestjs/core'; import { AppModule } from './app.module'; import { configureApplication, setupOpenApi } from './bootstrap';
 
 Sentry.init({
-  dsn: process.env.SENTRY_DSN,
-  environment: process.env.NODE_ENV,
+  ...(process.env.SENTRY_DSN ? { dsn: process.env.SENTRY_DSN } : {}),
+  ...(process.env.NODE_ENV ? { environment: process.env.NODE_ENV } : {}),
   tracesSampleRate: 1.0,
 });
 

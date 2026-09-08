@@ -34,11 +34,13 @@ export async function generateMetadata({
   });
 }
 
-export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
+export default async function Home({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<{ preview?: string }> }) {
   const { locale } = await params;
-  const [page, settings] = await Promise.all([safe(getPage(locale, 'home'), {}), safe(getSettings(locale), { values: {}, media: {} })]);
+  const { preview } = await searchParams;
+  const [page, settings] = await Promise.all([safe(getPage(locale, 'home', preview), {}), safe(getSettings(locale), { values: {}, media: {} })]);
   const tr = translation(page);
   const siteName = localizedSetting(settings.values, 'company.name', locale, 'GATEVIA');
+  const hasSectionHero = Array.isArray(page.sections) && page.sections.some((section) => (section as Record<string, unknown>).sectionType === 'hero');
 
   if (!page.id)
     return (
@@ -56,7 +58,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   return (
     <>
       <JsonLd schema={websiteSchema(siteName)} />
-      <PageHero translation={tr} locale={locale} home />
+      {!hasSectionHero && <PageHero translation={tr} locale={locale} home />}
       <SectionRenderer sections={page.sections} locale={locale} />
     </>
   );

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Badge, Button, EmptyState, ErrorState, Field, Input, Textarea } from '@gatevia/ui';
 import { api } from '@/lib/api';
+import { useAdminAuth } from './auth-context';
 
 interface User { id: string; displayName: string; email: string }
 
@@ -67,6 +68,7 @@ function Attribution({ lead }: { lead: Record<string, unknown> }) {
 // ─── Main component ─────────────────────────────────────────────────────────
 
 export function LeadDetail({ id }: { id: string }) {
+  const { can } = useAdminAuth(); const canStatus=can('leads.update_status'); const canAssign=can('leads.assign'); const canNote=can('leads.note');
   const [lead, setLead] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
@@ -132,8 +134,8 @@ export function LeadDetail({ id }: { id: string }) {
   }
 
   const STATUSES = ['new', 'contacted', 'qualified', 'proposal', 'won', 'lost'];
-  const STATUS_TONES: Record<string, 'success' | 'danger' | 'neutral' | 'info'> = {
-    new: 'info', contacted: 'neutral', qualified: 'success', proposal: 'info', won: 'success', lost: 'danger',
+  const STATUS_TONES: Record<string, 'success' | 'danger' | 'neutral' | 'warning'> = {
+    new: 'warning', contacted: 'neutral', qualified: 'success', proposal: 'warning', won: 'success', lost: 'danger',
   };
 
   return (
@@ -144,13 +146,13 @@ export function LeadDetail({ id }: { id: string }) {
           <h1>{String(lead.fullName)}</h1>
           <p>
             {String(lead.companyName ?? 'No company')} · {String(lead.email)}
-            {lead.phone && ` · ${String(lead.phone)}`}
+            {Boolean(lead.phone) && ` · ${String(lead.phone)}`}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
           <Badge tone={STATUS_TONES[String(lead.status)] ?? 'neutral'}>{String(lead.status)}</Badge>
           <Badge>{String(lead.sourceType)}</Badge>
-          {lead.duplicateOfId && <Badge tone="danger">Possible duplicate</Badge>}
+          {Boolean(lead.duplicateOfId) && <Badge tone="danger">Possible duplicate</Badge>}
         </div>
       </div>
 
@@ -171,7 +173,7 @@ export function LeadDetail({ id }: { id: string }) {
                   <> <Badge tone="neutral">{notes.length}</Badge></>
                 )}
                 {tab === 'assessment' && assessments.length > 0 && (
-                  <> <Badge tone="info">{assessments.length}</Badge></>
+                  <> <Badge tone="warning">{assessments.length}</Badge></>
                 )}
               </button>
             ))}
@@ -233,7 +235,7 @@ export function LeadDetail({ id }: { id: string }) {
           {/* Tab: Notes */}
           {activeTab === 'notes' && (
             <>
-              <form className="panel field-stack" onSubmit={addNote}>
+              {canNote&&<form className="panel field-stack" onSubmit={addNote}>
                 <h2>Add internal note</h2>
                 <Field label="Note (visible only to your team)">
                   <Textarea name="body" required maxLength={5000} placeholder="Add context, next steps or outcome…" />
@@ -242,7 +244,7 @@ export function LeadDetail({ id }: { id: string }) {
                 {noteError && (
                   <div className="form-status form-status--error" role="alert">{noteError}</div>
                 )}
-              </form>
+              </form>}
               {notes.length === 0 ? (
                 <EmptyState title="No notes yet" description="Internal notes will appear here." />
               ) : (
@@ -276,9 +278,9 @@ export function LeadDetail({ id }: { id: string }) {
                       <strong>{String(item.type).replaceAll('_', ' ')}</strong>
                       <div className="cell-meta">
                         {new Date(String(item.createdAt)).toLocaleString()}
-                        {(item.actorUserId) && ` · by user`}
+                        {Boolean(item.actorUserId) && ` · by user`}
                       </div>
-                      {item.payload && typeof item.payload === 'object' && Object.keys(item.payload as object).length > 0 && (
+                      {Boolean(item.payload) && typeof item.payload === 'object' && Object.keys(item.payload as object).length > 0 && (
                         <div style={{ fontSize: '.8rem', color: 'var(--color-text-muted)', marginBlockStart: '.2rem' }}>
                           <Readable value={item.payload} />
                         </div>
@@ -300,6 +302,7 @@ export function LeadDetail({ id }: { id: string }) {
               <select
                 className="gv-input"
                 value={String(lead.status)}
+                disabled={!canStatus}
                 onChange={(e) => void changeStatus(e.target.value)}
               >
                 {STATUSES.map((s) => (
@@ -321,7 +324,7 @@ export function LeadDetail({ id }: { id: string }) {
               <select
                 className="gv-input"
                 value={assigned?.id ?? ''}
-                disabled={assignBusy}
+                disabled={assignBusy||!canAssign}
                 onChange={(e) => void assign(e.target.value || null)}
               >
                 <option value="">— Unassigned —</option>
@@ -332,7 +335,7 @@ export function LeadDetail({ id }: { id: string }) {
                 ))}
               </select>
             </Field>
-            {assigned && (
+            {canAssign&&assigned && (
               <button
                 className="text-link"
                 style={{ marginBlockStart: '.4rem', padding: '.2rem 0', minHeight: 'unset', fontSize: '.85rem' }}

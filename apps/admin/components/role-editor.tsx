@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, Field, Input } from '@gatevia/ui';
 import { api } from '@/lib/api';
+import { useAdminAuth } from './auth-context';
 
 interface Permission {
   id: string;
@@ -19,6 +20,7 @@ interface RoleData {
 
 export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string }) {
   const router = useRouter();
+  const { can } = useAdminAuth(); const canManage = can('roles.manage');
   const [role, setRole] = useState<Partial<RoleData>>({});
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [grants, setGrants] = useState<Set<string>>(new Set());
@@ -94,12 +96,12 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
           <h1>{id ? 'Edit Role' : 'Create Role'}</h1>
           <p>Name this role and assign its permission set.</p>
         </div>
-        <div className="toolbar">
+        {canManage && <div className="toolbar">
           <Button disabled={busy} onClick={save}>Save role</Button>
-        </div>
+        </div>}
       </div>
 
-      <div className="editor">
+      <fieldset disabled={!canManage} style={{border:0,padding:0,margin:0,minWidth:0}}><div className="editor">
         <div className="editor-main">
           <section className="panel">
             <h2>Role details</h2>
@@ -171,7 +173,7 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
           </section>
           {message && <div className="form-status" role="status">{message}</div>}
         </aside>
-      </div>
+      </div></fieldset>
     </>
   );
 }

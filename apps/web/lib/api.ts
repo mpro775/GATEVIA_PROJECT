@@ -18,12 +18,12 @@ async function request<T>(path: string, revalidate = 60): Promise<T> {
 
 export const getLanguages = () => request<Language[]>('/public/languages', 300);
 export const getSettings = (locale?: string) => request<PublicSettings>(`/public/settings${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`, 300);
-export const getPage = (locale: string, slug: string) =>
-  request<Record<string, unknown>>(`/public/pages/${encodeURIComponent(slug)}?locale=${encodeURIComponent(locale)}`);
+export const getPage = (locale: string, slug: string, preview?: string) =>
+  request<Record<string, unknown>>(`/public/pages/${encodeURIComponent(slug)}?locale=${encodeURIComponent(locale)}${preview ? `&preview=${encodeURIComponent(preview)}` : ''}`, preview ? 0 : 60);
 export const getList = (resource: string, locale: string, params = '') =>
   request<Record<string, unknown>[]>(`/public/${resource}?locale=${encodeURIComponent(locale)}${params}`);
-export const getDetail = (resource: string, locale: string, slug: string) =>
-  request<Record<string, unknown>>(`/public/${resource}/${encodeURIComponent(slug)}?locale=${encodeURIComponent(locale)}`);
+export const getDetail = (resource: string, locale: string, slug: string, preview?: string) =>
+  request<Record<string, unknown>>(`/public/${resource}/${encodeURIComponent(slug)}?locale=${encodeURIComponent(locale)}${preview ? `&preview=${encodeURIComponent(preview)}` : ''}`, preview ? 0 : 60);
 
 /** Fetch a CMS navigation menu by its key. Falls back to an empty items array. */
 export const getNavigation = async (key: string, locale: string): Promise<NavItem[]> => {

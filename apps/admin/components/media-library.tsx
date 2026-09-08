@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Badge, Button, EmptyState, ErrorState, Field, Input, Skeleton, Textarea } from '@gatevia/ui';
 import { api, apiEnvelope } from '@/lib/api';
+import { useAdminAuth } from './auth-context';
 
 interface MediaRow {
   id: string;
@@ -18,6 +19,7 @@ interface MediaRow {
 }
 
 interface Folder { id: string; name: string; parentId?: string | null }
+interface Language { code: string; nativeName: string; isActive: boolean; isDefault: boolean }
 
 type DrawerTab = 'meta' | 'translations' | 'variants' | 'usages';
 
@@ -34,9 +36,9 @@ function formatBytes(bytes: string | number): string {
 
 function isImage(mime: string) { return mime.startsWith('image/'); }
 
-function statusTone(status: string): 'success' | 'danger' | 'neutral' | 'info' {
+function statusTone(status: string): 'success' | 'danger' | 'neutral' | 'warning' {
   if (status === 'ready') return 'success';
-  if (status === 'processing') return 'info';
+  if (status === 'processing') return 'warning';
   if (status === 'archived' || status === 'failed') return 'danger';
   return 'neutral';
 }
@@ -102,11 +104,15 @@ function MediaDrawer({
   onClose,
   onRefresh,
   onArchive,
+  canUpdate,
+  canArchive,
 }: {
   row: MediaRow;
   onClose: () => void;
   onRefresh: () => void;
   onArchive: () => void;
+  canUpdate: boolean;
+  canArchive: boolean;
 }) {
   const [tab, setTab] = useState<DrawerTab>('meta');
   const [usages, setUsages] = useState<Usage[] | null>(null);
@@ -120,6 +126,7 @@ function MediaDrawer({
     ),
   );
   const [transLocale, setTransLocale] = useState('en');
+  const [languages, setLanguages] = useState<Language[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const replaceRef = useRef<HTMLInputElement>(null);
@@ -134,6 +141,14 @@ function MediaDrawer({
         .finally(() => setUsagesLoading(false));
     }
   }, [tab, row.id, usages]);
+
+  useEffect(() => {
+    void api<Language[]>('/admin/languages').then((items) => {
+      const active = items.filter((item) => item.isActive);
+      setLanguages(active);
+      setTransLocale((current) => active.some((item) => item.code === current) ? current : active.find((item) => item.isDefault)?.code ?? active[0]?.code ?? current);
+    }).catch(() => setLanguages((row.translations ?? []).map((item) => ({ code: item.locale, nativeName: item.locale, isActive: true, isDefault: false }))));
+  }, [row.translations]);
 
   const currentTrans = translations[transLocale] ?? { title: '', altText: '', caption: '', decorative: false };
 
@@ -202,7 +217,6 @@ function MediaDrawer({
   }
 
   const thumb = row.variants?.find((v) => v.variantKey === 'thumbnail' || v.variantKey === 'webp_thumb');
-  const LOCALES = ['en', 'ar-SA'];
 
   return (
     <div
@@ -254,12 +268,12 @@ function MediaDrawer({
       {/* Status badge + actions */}
       <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginBlockEnd: '1rem' }}>
         <Badge tone={statusTone(row.status)}>{row.status}</Badge>
-        {row.status === 'failed' && (
+        {canUpdate && row.status === 'failed' && (
           <button className="text-link" style={{ padding: '.2rem .5rem', minHeight: 'unset', fontSize: '.85rem' }} onClick={retryProcessing} disabled={busy}>
             Retry processing
           </button>
         )}
-        {row.status !== 'archived' && (
+        {canArchive && row.status !== 'archived' && (
           <button
             className="text-link"
             style={{ padding: '.2rem .5rem', minHeight: 'unset', fontSize: '.85rem', color: 'var(--color-danger)' }}
@@ -270,13 +284,13 @@ function MediaDrawer({
             Archive
           </button>
         )}
-        <label
+        {canUpdate && <label
           className="text-link"
           style={{ padding: '.2rem .5rem', minHeight: 'unset', fontSize: '.85rem', cursor: 'pointer' }}
         >
           Replace file
           <input ref={replaceRef} type="file" hidden onChange={triggerReplace} accept="image/*,application/pdf,video/mp4,video/webm" />
-        </label>
+        </label>}
       </div>
 
       {/* Tabs */}
@@ -310,13 +324,13 @@ function MediaDrawer({
       {tab === 'translations' && (
         <div className="field-stack">
           <div className="tabs" role="tablist">
-            {LOCALES.map((lc) => (
-              <button key={lc} role="tab" className="tab" aria-selected={transLocale === lc} onClick={() => setTransLocale(lc)}>
-                {lc}
+            {languages.map((language) => (
+              <button key={language.code} role="tab" className="tab" aria-selected={transLocale === language.code} onClick={() => setTransLocale(language.code)}>
+                {language.nativeName}
               </button>
             ))}
           </div>
-          <Field label="Title (display name)">
+          <fieldset disabled={!canUpdate} style={{border:0,padding:0,margin:0}}><Field label="Title (display name)">
             <Input value={currentTrans.title} onChange={(e) => updateTrans('title', e.target.value)} />
           </Field>
           <Field label="Alt text (accessibility)">
@@ -329,7 +343,8 @@ function MediaDrawer({
             <input type="checkbox" checked={currentTrans.decorative} onChange={(e) => updateTrans('decorative', e.target.checked)} />{' '}
             Decorative (no alt text needed for screen readers)
           </label>
-          <Button disabled={busy} onClick={saveTranslations}>Save translations</Button>
+          {canUpdate&&<Button disabled={busy} onClick={saveTranslations}>Save translations</Button>}
+          </fieldset>
           {message && <div className="form-status" role="status">{message}</div>}
         </div>
       )}
@@ -386,6 +401,7 @@ function MediaDrawer({
 // ─── Main MediaLibrary ────────────────────────────────────────────────────────
 
 export function MediaLibrary({ selectMode = false, onSelect }: { selectMode?: boolean; onSelect?: (id: string) => void }) {
+  const { can } = useAdminAuth(); const canUpload=can('media.upload'); const canUpdate=can('media.update'); const canArchive=can('media.archive');
   const [rows, setRows] = useState<MediaRow[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -493,7 +509,7 @@ export function MediaLibrary({ selectMode = false, onSelect }: { selectMode?: bo
           <h1>Media Library</h1>
           <p>Upload, organise and manage all approved media assets.</p>
         </div>
-        <div className="toolbar">
+        {canUpload && <div className="toolbar">
           <label className="gv-button">
             {busy ? 'Uploading…' : 'Upload files'}
             <input
@@ -505,7 +521,7 @@ export function MediaLibrary({ selectMode = false, onSelect }: { selectMode?: bo
               onChange={(e) => void upload(e)}
             />
           </label>
-        </div>
+        </div>}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '1rem', alignItems: 'start' }}>
@@ -529,7 +545,7 @@ export function MediaLibrary({ selectMode = false, onSelect }: { selectMode?: bo
               📁 {folder.name}
             </button>
           ))}
-          <div style={{ display: 'flex', gap: '.3rem', marginBlockStart: '1rem' }}>
+          {canUpdate && <div style={{ display: 'flex', gap: '.3rem', marginBlockStart: '1rem' }}>
             <input
               className="gv-input"
               style={{ flex: 1, fontSize: '.8rem', padding: '.3rem .5rem' }}
@@ -539,7 +555,7 @@ export function MediaLibrary({ selectMode = false, onSelect }: { selectMode?: bo
               onKeyDown={(e) => { if (e.key === 'Enter') void createFolder(); }}
             />
             <button className="text-link" style={{ padding: '.3rem .5rem', minHeight: 'unset' }} onClick={createFolder}>+</button>
-          </div>
+          </div>}
         </aside>
 
         {/* Main content */}
@@ -635,6 +651,8 @@ export function MediaLibrary({ selectMode = false, onSelect }: { selectMode?: bo
             onClose={() => setSelected(null)}
             onRefresh={() => void load()}
             onArchive={() => void archive(selected.id)}
+            canUpdate={canUpdate}
+            canArchive={canArchive}
           />
         </>
       )}

@@ -7,7 +7,7 @@ export function track(event: string, properties: Record<string, string | number 
   (window as unknown as { dataLayer?: unknown[] }).dataLayer?.push({ event, ...properties });
 }
 
-export function Analytics({ gtmId, ga4Id }: { gtmId?: string; ga4Id?: string }) {
+export function Analytics({ gtmId, ga4Id }: { gtmId?: string | undefined; ga4Id?: string | undefined }) {
   const gtm = gtmId || process.env.NEXT_PUBLIC_GTM_ID;
   const ga4 = ga4Id || process.env.NEXT_PUBLIC_GA4_ID;
   

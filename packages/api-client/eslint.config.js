@@ -1,2 +1,2 @@
 import config from '@gatevia/eslint-config';
-export default config;
+export default [...config, { ignores: ['src/generated.ts'] }];

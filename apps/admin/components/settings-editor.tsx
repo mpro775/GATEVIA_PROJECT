@@ -2,15 +2,18 @@
 import { useEffect, useState } from 'react';
 import { Button, Field, Input, Textarea } from '@gatevia/ui';
 import { api } from '@/lib/api';
+import { useAdminAuth } from './auth-context';
 
 interface Setting { id: string; key: string; value: any; category: string; isPublic: boolean; description?: string }
 
 const SETTING_GROUPS = ['company', 'contact', 'seo', 'social', 'appearance', 'general'];
 
 export function SettingsEditor() {
+  const { can }=useAdminAuth();
+  const canManage=can('settings.manage');
   const [settings, setSettings] = useState<Setting[]>([]);
   const [changes, setChanges] = useState<Record<string, any>>({});
-  const [activeGroup, setActiveGroup] = useState(SETTING_GROUPS[0]);
+  const [activeGroup, setActiveGroup] = useState(SETTING_GROUPS[0] ?? 'company');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -73,11 +76,11 @@ export function SettingsEditor() {
           <h1>Global Settings</h1>
           <p>Manage site-wide configuration: company info, SEO defaults, social links and appearance.</p>
         </div>
-        <div className="toolbar">
+        {canManage&&<div className="toolbar">
           <Button disabled={busy} onClick={save}>
             Save {Object.keys(changes).length > 0 ? `(${Object.keys(changes).length} changes)` : ''}
           </Button>
-        </div>
+        </div>}
       </div>
 
       <div className="editor">
@@ -98,7 +101,7 @@ export function SettingsEditor() {
               ))}
             </div>
 
-            <div className="field-stack" style={{ marginBlockStart: '1rem' }}>
+            <fieldset disabled={!canManage} style={{border:0,padding:0,margin:0}}><div className="field-stack" style={{ marginBlockStart: '1rem' }}>
               {visibleSettings.length === 0 && (
                 <p className="cell-meta">No settings in this group.</p>
               )}
@@ -120,7 +123,7 @@ export function SettingsEditor() {
                   )}
                 </Field>
               ))}
-            </div>
+            </div></fieldset>
           </section>
         </div>
 

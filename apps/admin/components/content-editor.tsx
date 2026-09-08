@@ -6,6 +6,7 @@ import { cmsDefinitions, fieldSchema, sectionSchemas, type CmsField, type Sectio
 import { Badge, Button, Field, Input, Textarea } from '@gatevia/ui';
 import { api } from '@/lib/api';
 import { MediaPicker } from './media-picker';
+import { useAdminAuth } from './auth-context';
 
 interface Language { code: string; nativeName: string; isActive: boolean; isDefault: boolean }
 type RelOption = { id: string; label: string };
@@ -61,7 +62,7 @@ function normalizeSections(value: unknown): PageSection[] {
     const row = raw as Record<string, unknown>;
     const translations = normalizeTranslations(row.translations);
     return {
-      id: typeof row.id === 'string' ? row.id : undefined,
+      ...(typeof row.id === 'string' ? { id: row.id } : {}),
       sectionType: (SECTION_TYPES.includes(row.sectionType as SectionType) ? row.sectionType : 'rich_text') as SectionType,
       isVisible: row.isVisible !== false,
       settings: row.settings as PageSection['settings'] ?? {},
@@ -151,6 +152,7 @@ function SectionsEditor({ sections, locale, options, onChange }: { sections: Pag
 
 export function ContentEditor({ resource, id, returnPath }: { resource: string; id?: string; returnPath: string }) {
   const router = useRouter();
+  const { can } = useAdminAuth();
   const definition = cmsDefinitions[resource];
   const [languages, setLanguages] = useState<Language[]>([]);
   const [locale, setLocale] = useState('');
@@ -175,41 +177,61 @@ export function ContentEditor({ resource, id, returnPath }: { resource: string; 
   const sections = record.sections as PageSection[] | undefined ?? [];
   const setSections = useCallback((next: PageSection[]) => setRecord((previous) => ({ ...previous, sections: next })), []);
   if (!definition) return <div className="form-status form-status--error">Unknown CMS resource: {resource}</div>;
+  const activeDefinition = definition;
+  const permissionDomain = ({ 'case-studies': 'case_studies', 'team-members': 'team', 'trust-metrics': 'trust_metrics', 'service-categories': 'services' } as Record<string, string>)[resource] ?? resource;
+  const canEdit = can(`${permissionDomain}.${id ? 'update' : 'create'}`);
+  const canPublish = can(`${permissionDomain}.publish`);
+  const canArchive = can(`${permissionDomain}.archive`);
 
   function updateTranslation(field: string, value: unknown) { setRecord((previous) => { const previousTranslations = normalizeTranslations(previous.translations); return { ...previous, translations: { ...previousTranslations, [locale]: { ...previousTranslations[locale] ?? {}, [field]: value } } }; }); }
   function updateRoot(field: string, value: unknown) { setRecord((previous) => ({ ...previous, [field]: value })); }
   function relationIds(key: string, foreignKey: string) { const value = record[key]; if (!Array.isArray(value)) return []; return value.map((item) => typeof item === 'string' ? item : String((item as Record<string, unknown>)[foreignKey] ?? '')).filter(Boolean); }
   function makePayload() {
     const body: Record<string, unknown> = {};
-    for (const key of Object.keys(definition.fields)) if (record[key] !== undefined) body[key] = record[key];
-    for (const [key, relation] of Object.entries(definition.relations)) if (record[key] !== undefined) body[key] = relation.many ? relationIds(key, relation.foreignKey) : record[key];
-    body.translations = Object.fromEntries(Object.entries(translations).map(([translationLocale, values]) => [translationLocale, Object.fromEntries(Object.keys(definition.translations).filter((key) => values[key] !== undefined).map((key) => [key, values[key]]))]));
+    for (const key of Object.keys(activeDefinition.fields)) if (record[key] !== undefined) body[key] = record[key];
+    for (const [key, relation] of Object.entries(activeDefinition.relations)) if (record[key] !== undefined) body[key] = relation.many ? relationIds(key, relation.foreignKey) : record[key];
+    body.translations = Object.fromEntries(Object.entries(translations).map(([translationLocale, values]) => [translationLocale, Object.fromEntries(Object.keys(activeDefinition.translations).filter((key) => values[key] !== undefined).map((key) => [key, values[key]]))]));
     if (record.status === 'draft' || record.status === 'review') body.status = record.status;
     if (resource === 'pages') body.sections = sections.map((section) => ({ sectionType: section.sectionType, isVisible: section.isVisible, settings: section.settings, translations: section.translations }));
     return body;
   }
   function validate(body: Record<string, unknown>) {
     const localized = body.translations as TranslationMap;
-    for (const [translationLocale, values] of Object.entries(localized)) { for (const [key, value] of Object.entries(values)) fieldSchema(definition.translations[key]!).parse(value); if (!translationLocale) throw new Error('Choose a locale before editing translations.'); }
+    for (const [translationLocale, values] of Object.entries(localized)) { for (const [key, value] of Object.entries(values)) fieldSchema(activeDefinition.translations[key]!).parse(value); if (!translationLocale) throw new Error('Choose a locale before editing translations.'); }
     for (const section of body.sections as PageSection[] | undefined ?? []) for (const tr of Object.values(section.translations)) sectionSchemas[section.sectionType].parse(tr.content);
   }
-  async function save(publish = false) {
+  async function save(publish = false): Promise<Record<string, unknown> | undefined> {
     setBusy(true); setMessage('');
     try {
       const body = makePayload(); validate(body);
       const saved = id ? await api<Record<string, unknown>>(`/admin/${resource}/${id}`, { method: 'PATCH', body: JSON.stringify(body) }) : await api<Record<string, unknown>>(`/admin/${resource}`, { method: 'POST', body: JSON.stringify(body) });
-      if (publish) await api(`/admin/${resource}/${String(saved.id)}/publish`, { method: 'POST' });
-      setMessage(publish ? 'Published successfully.' : 'Draft saved.'); if (!id) router.replace(`${returnPath}/${String(saved.id)}`);
+      const result = publish ? await api<Record<string, unknown>>(`/admin/${resource}/${String(saved.id)}/publish`, { method: 'POST' }) : saved;
+      setRecord({ ...result, translations: normalizeTranslations(result.translations), sections: normalizeSections(result.sections) });
+      setMessage(publish ? 'Published successfully.' : 'Saved successfully.'); if (!id) router.replace(`${returnPath}/${String(saved.id)}`);
+      return result;
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Save failed.'); } finally { setBusy(false); }
+  }
+  async function transition(action: 'unpublish' | 'archive') {
+    if (!id) return;
+    setBusy(true); setMessage('');
+    try { const result=await api<Record<string,unknown>>(`/admin/${resource}/${id}/${action}`,{method:'POST'});setRecord({...result,translations:normalizeTranslations(result.translations),sections:normalizeSections(result.sections)});setMessage(action==='archive'?'Archived successfully.':'Moved to draft.'); }
+    catch(error){setMessage(error instanceof Error?error.message:`Unable to ${action}.`);} finally{setBusy(false);}
+  }
+  async function preview() {
+    const saved = canEdit ? await save(false) : record;
+    const previewId = String(saved?.id ?? id ?? '');
+    if (!previewId) return;
+    try { const result=await api<{path:string}>(`/admin/${resource}/${previewId}/preview`,{method:'POST',body:JSON.stringify({locale})});const site=process.env.NEXT_PUBLIC_SITE_URL??'http://localhost:3000';window.open(`${site.replace(/\/$/,'')}${result.path}`,'_blank','noopener,noreferrer'); }
+    catch(error){setMessage(error instanceof Error?error.message:'Preview could not be opened.');}
   }
   const contentFields = Object.entries(definition.translations).filter(([key]) => !SEO_FIELDS.has(key));
   const seoFields = Object.entries(definition.translations).filter(([key]) => SEO_FIELDS.has(key));
 
-  return <><div className="page-title"><div><h1>{id ? 'Edit' : 'Create'} {humanize(resource)}</h1><p>Fields are generated from the authoritative CMS contract.</p></div><div className="toolbar"><Button disabled={busy} onClick={() => void save(false)}>Save draft</Button><Button disabled={busy} onClick={() => void save(true)}>Publish</Button></div></div>
-    <div className="editor"><div className="editor-main">
+  return <><div className="page-title"><div><h1>{id ? 'Edit' : 'Create'} {humanize(resource)}</h1><p>Fields are generated from the authoritative CMS contract.</p></div><div className="toolbar">{canEdit&&<Button disabled={busy} onClick={() => void save(false)}>Save</Button>}{canPublish&&record.status!=='published'&&<Button disabled={busy} onClick={() => void save(true)}>Publish</Button>}{canPublish&&record.status==='published'&&id&&<Button disabled={busy} onClick={() => void transition('unpublish')}>Unpublish</Button>}{canArchive&&record.status!=='archived'&&id&&<Button disabled={busy} onClick={() => void transition('archive')}>Archive</Button>}{(id||canEdit)&&<Button disabled={busy} onClick={() => void preview()}>Preview</Button>}</div></div>
+    <fieldset disabled={!canEdit} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}><div className="editor"><div className="editor-main">
       <section className="panel"><div className="tabs" role="tablist">{languages.map((language) => <button type="button" role="tab" className="tab" aria-selected={locale === language.code} onClick={() => setLocale(language.code)} key={language.code}>{language.nativeName} {translations[language.code] ? <Badge tone="success">Authored</Badge> : <Badge tone="warning">Missing</Badge>}</button>)}</div><div className="field-stack">{contentFields.map(([key, field]) => <ContractField key={key} name={key} field={field} value={current[key]} onChange={(value) => updateTranslation(key, value)} />)}</div></section>
       {Object.keys(definition.relations).length > 0 && <section className="panel"><h2>Relations</h2><div className="field-stack">{Object.entries(definition.relations).map(([key, relation]) => relation.many ? <RelationSelect key={key} label={humanize(key)} options={options[relation.resource] ?? []} selectedIds={relationIds(key, relation.foreignKey)} onChange={(ids) => updateRoot(key, ids)} /> : <Field key={key} label={`${humanize(key)}${relation.required ? ' *' : ''}`}><select className="gv-input" value={String(record[key] ?? '')} onChange={(event) => updateRoot(key, event.target.value || null)}><option value="">— None —</option>{(options[relation.resource] ?? []).map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select></Field>)}</div></section>}
       <section className="panel"><h2>Content settings</h2><div className="field-stack">{Object.entries(definition.fields).map(([key, field]) => <ContractField key={key} name={key} field={field} value={record[key]} onChange={(value) => updateRoot(key, value)} />)}</div></section>
       {resource === 'pages' && <section className="panel"><h2>Page sections — {locale}</h2><p className="cell-meta">Each section is validated against the central section contract for the selected locale.</p><SectionsEditor sections={sections} locale={locale} options={options} onChange={setSections} /></section>}
-    </div><aside className="editor-side"><section className="panel"><h2>Publishing</h2><Field label="Workflow status"><select className="gv-input" value={record.status === 'review' ? 'review' : 'draft'} onChange={(event) => updateRoot('status', event.target.value)}><option value="draft">Draft</option><option value="review">Review</option></select></Field></section>{seoFields.length > 0 && <section className="panel"><h2>SEO — {locale}</h2><div className="field-stack">{seoFields.map(([key, field]) => <ContractField key={key} name={key} field={field} value={current[key]} onChange={(value) => updateTranslation(key, value)} />)}</div></section>}{message && <div className="form-status" role="status">{message}</div>}</aside></div></>;
+    </div><aside className="editor-side"><section className="panel"><h2>Publishing</h2><Badge tone={record.status==='published'?'success':record.status==='archived'?'danger':'neutral'}>{String(record.status??'draft')}</Badge>{canEdit&&record.status!=='published'&&record.status!=='archived'&&<Field label="Workflow status"><select className="gv-input" value={record.status === 'review' ? 'review' : 'draft'} onChange={(event) => updateRoot('status', event.target.value)}><option value="draft">Draft</option><option value="review">Review</option></select></Field>}</section>{seoFields.length > 0 && <section className="panel"><h2>SEO — {locale}</h2><div className="field-stack">{seoFields.map(([key, field]) => <ContractField key={key} name={key} field={field} value={current[key]} onChange={(value) => updateTranslation(key, value)} />)}</div></section>}{message && <div className="form-status" role="status">{message}</div>}</aside></div></fieldset></>;
 }

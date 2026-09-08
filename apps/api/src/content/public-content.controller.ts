@@ -11,5 +11,5 @@ export class PublicContentController {
  @Get(':resource') @ApiOperation({summary:'Published localized content with filters and pagination'}) @ApiQuery({name:'locale',required:true})
  async list(@Param('resource')resource:string,@Query()query:Record<string,string|undefined>){return this.content.list(resource,query);}
  @Get(':resource/:slug') @ApiQuery({name:'locale',required:true})
- async detail(@Param('resource')resource:string,@Param('slug')slug:string,@Query('locale')locale:string){return{data:await this.content.detail(resource,locale,slug)};}
+ async detail(@Param('resource')resource:string,@Param('slug')slug:string,@Query('locale')locale:string,@Query('preview')preview?:string){return{data:await this.content.detail(resource,locale,slug,preview)};}
 }

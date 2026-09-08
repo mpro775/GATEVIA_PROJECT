@@ -40,31 +40,35 @@ export class LeadsService {
 
     const contact = 'contact' in input ? input.contact : input;
     const company = kind === 'assessment' && 'company' in input ? input.company : undefined;
+    const companyName = company?.name ?? ('companyName' in input ? input.companyName : undefined);
+    const countryCode = company?.countryCode ?? ('countryCode' in input ? input.countryCode : undefined);
+    const message = kind === 'assessment' && 'business' in input ? input.business.notes : ('message' in input ? input.message : undefined);
     const potentialDuplicate = await this.prisma.lead.findFirst({ where: { OR: [{ email: contact.email }, ...(('phone' in contact && contact.phone) ? [{ phone: contact.phone }] : [])] }, orderBy: { createdAt: 'desc' }, select: { id: true } });
     const result = await this.prisma.$transaction(async (tx) => {
-      const lead = await tx.lead.create({ data: {
+      const data: Prisma.LeadUncheckedCreateInput = {
         fullName: contact.fullName,
-        companyName: company?.name ?? ('companyName' in input ? input.companyName : undefined),
         email: contact.email,
-        phone: 'phone' in contact ? contact.phone : undefined,
-        countryCode: company?.countryCode ?? ('countryCode' in input ? input.countryCode : undefined),
-        preferredLocale: input.preferredLocale,
         submissionLocale: input.submissionLocale,
-        industryId: kind === 'assessment' && 'business' in input ? input.business.industryId : undefined,
-        serviceId: kind === 'consultation' && 'serviceId' in input ? input.serviceId : undefined,
-        message: kind === 'assessment' && 'business' in input ? input.business.notes : ('message' in input ? input.message : undefined),
         sourceType: kind,
-        sourcePage: input.sourcePage,
-        sourceUrl: input.sourceUrl,
-        utmSource: input.utmSource,
-        utmMedium: input.utmMedium,
-        utmCampaign: input.utmCampaign,
-        utmTerm: input.utmTerm,
-        utmContent: input.utmContent,
-        referrer: input.referrer,
-        landingPage: input.landingPage,
-        duplicateOfId: potentialDuplicate?.id,
-      } });
+        ...(companyName ? { companyName } : {}),
+        ...(('phone' in contact && contact.phone) ? { phone: contact.phone } : {}),
+        ...(countryCode ? { countryCode } : {}),
+        ...(input.preferredLocale ? { preferredLocale: input.preferredLocale } : {}),
+        ...(kind === 'assessment' && 'business' in input && input.business.industryId ? { industryId: input.business.industryId } : {}),
+        ...(kind === 'consultation' && 'serviceId' in input && input.serviceId ? { serviceId: input.serviceId } : {}),
+        ...(message ? { message } : {}),
+        ...(input.sourcePage ? { sourcePage: input.sourcePage } : {}),
+        ...(input.sourceUrl ? { sourceUrl: input.sourceUrl } : {}),
+        ...(input.utmSource ? { utmSource: input.utmSource } : {}),
+        ...(input.utmMedium ? { utmMedium: input.utmMedium } : {}),
+        ...(input.utmCampaign ? { utmCampaign: input.utmCampaign } : {}),
+        ...(input.utmTerm ? { utmTerm: input.utmTerm } : {}),
+        ...(input.utmContent ? { utmContent: input.utmContent } : {}),
+        ...(input.referrer ? { referrer: input.referrer } : {}),
+        ...(input.landingPage ? { landingPage: input.landingPage } : {}),
+        ...(potentialDuplicate ? { duplicateOfId: potentialDuplicate.id } : {}),
+      };
+      const lead = await tx.lead.create({ data });
       if (kind === 'assessment') await tx.assessment.create({ data: { leadId: lead.id, formVersion: 'v1', answers: input as unknown as Prisma.InputJsonValue, submittedAt: new Date() } });
       await tx.leadActivity.create({ data: { leadId: lead.id, type: kind === 'assessment' ? 'assessment_submitted' : 'created', payload: { source: kind, duplicateSignaled: Boolean(potentialDuplicate) } } });
       const response = { submissionId: lead.id, received: true };
@@ -76,14 +80,15 @@ export class LeadsService {
     return result;
   }
 
-  async list(query: { page?: string; pageSize?: string; status?: string; source?: string; q?: string }) {
+  async list(query: { page?: string; pageSize?: string; status?: string; source?: string; q?: string; sort?: string }) {
     const page = Math.max(1, Number(query.page) || 1); const pageSize = Math.min(100, Math.max(1, Number(query.pageSize) || 20));
     const where: Prisma.LeadWhereInput = {
       ...(query.status ? { status: query.status as LeadStatus } : {}),
       ...(query.source ? { sourceType: query.source as LeadSource } : {}),
       ...(query.q ? { OR: [{ fullName: { contains: query.q, mode: 'insensitive' } }, { companyName: { contains: query.q, mode: 'insensitive' } }, { email: { contains: query.q, mode: 'insensitive' } }, { phone: { contains: query.q } }] } : {}),
     };
-    const [data, total] = await this.prisma.$transaction([this.prisma.lead.findMany({ where, skip: (page - 1) * pageSize, take: pageSize, orderBy: { createdAt: 'desc' }, include: { assignedTo: { select: { id: true, displayName: true } }, service: { include: { translations: true } }, industry: { include: { translations: true } } } }), this.prisma.lead.count({ where })]);
+    const sortKey=query.sort?.replace(/^-/,'')==='updatedAt'?'updatedAt':'createdAt';
+    const [data, total] = await this.prisma.$transaction([this.prisma.lead.findMany({ where, skip: (page - 1) * pageSize, take: pageSize, orderBy: { [sortKey]: query.sort?.startsWith('-')?'desc':'asc' }, include: { assignedTo: { select: { id: true, displayName: true } }, service: { include: { translations: true } }, industry: { include: { translations: true } } } }), this.prisma.lead.count({ where })]);
     return { data, meta: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) } };
   }
   async detail(id: string) { return this.prisma.lead.findUniqueOrThrow({ where: { id }, include: { assignedTo: { select: { id: true, displayName: true } }, notes: { include: { author: { select: { id: true, displayName: true } } }, orderBy: { createdAt: 'desc' } }, activities: { orderBy: { createdAt: 'desc' } }, assessments: true, service: { include: { translations: true } }, industry: { include: { translations: true } } } }); }

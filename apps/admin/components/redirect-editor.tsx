@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, Field, Input } from '@gatevia/ui';
 import { api } from '@/lib/api';
+import { useAdminAuth } from './auth-context';
 
 interface Redirect {
   id: string;
@@ -15,6 +16,7 @@ interface Redirect {
 
 export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: string }) {
   const router = useRouter();
+  const { can } = useAdminAuth(); const canManage = can('redirects.manage');
   const [redirect, setRedirect] = useState<Partial<Redirect>>({
     statusCode: 301,
     active: true,
@@ -66,15 +68,15 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
           <h1>{id ? 'Edit Redirect' : 'Create Redirect'}</h1>
           <p>Map a source path to a destination URL. Avoid redirect loops.</p>
         </div>
-        <div className="toolbar">
+        {canManage && <div className="toolbar">
           <Button disabled={busy} onClick={save}>Save redirect</Button>
           {id && redirect.active && (
             <button className="text-link" onClick={archive}>Archive</button>
           )}
-        </div>
+        </div>}
       </div>
 
-      <div className="editor">
+      <fieldset disabled={!canManage} style={{border:0,padding:0,margin:0,minWidth:0}}><div className="editor">
         <div className="editor-main">
           <section className="panel">
             <div className="field-stack">
@@ -112,7 +114,7 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
                 <Input
                   dir="ltr"
                   value={redirect.locale ?? ''}
-                  onChange={(e) => setRedirect((r) => ({ ...r, locale: e.target.value || undefined }))}
+                  onChange={(e) => setRedirect((r) => e.target.value ? ({ ...r, locale: e.target.value }) : (({ locale: _locale, ...rest }) => rest)(r))}
                   placeholder="e.g. en, ar-SA"
                 />
               </Field>
@@ -151,7 +153,7 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
             </div>
           )}
         </aside>
-      </div>
+      </div></fieldset>
     </>
   );
 }

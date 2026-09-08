@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assessmentSubmissionSchema, contactSubmissionSchema, directions, themes } from './index';
+import { assessmentSubmissionSchema, contactSubmissionSchema, directions, themes } from './index.js';
 
 describe('public form contracts', () => {
   it('normalizes contact email and rejects a honeypot value', () => {
