@@ -1,108 +1,44 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
-import sanitizeHtml from 'sanitize-html';
+import { Prisma } from '@prisma/client';
+import { z } from 'zod';
+import { cmsDefinitions, fieldSchema, translationCompleteness, paginationSchema } from '@gatevia/contracts';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
-import { validateSectionContent } from './section-schemas';
-
-interface Delegate {
-  findMany(args: Record<string, unknown>): Promise<unknown[]>;
-  count(args: Record<string, unknown>): Promise<number>;
-  findUnique(args: Record<string, unknown>): Promise<unknown | null>;
-  create(args: Record<string, unknown>): Promise<{ id: string }>;
-  update(args: Record<string, unknown>): Promise<{ id: string }>;
+import { WebsiteContentService } from './website-content.service';
+import { sectionSchemas } from './section-schemas';
+export type Row = Record<string, unknown> & { id: string; translations?: Array<Record<string, unknown>> };
+export interface ContentDelegate {
+ findMany(args: Record<string, unknown>): Promise<Row[]>; findFirst(args: Record<string, unknown>): Promise<Row | null>; findUnique(args: Record<string, unknown>): Promise<Row | null>; count(args: Record<string, unknown>): Promise<number>; create(args: Record<string, unknown>): Promise<Row>; update(args: Record<string, unknown>): Promise<Row>;
 }
-
-const delegateKeys = {
-  pages: 'page', 'service-categories': 'serviceCategory', services: 'service', industries: 'industry', 'case-studies': 'caseStudy', insights: 'insight', 'insight-categories': 'insightCategory', tags: 'tag', faqs: 'faq', 'team-members': 'teamMember', clients: 'client', partners: 'partner', brands: 'brand', products: 'productVenture', testimonials: 'testimonial', certifications: 'certification', 'trust-metrics': 'trustMetric', navigation: 'navigationMenu', redirects: 'redirect', settings: 'globalSetting',
-} as const;
-type Resource = keyof typeof delegateKeys;
-
-const jsonFields = new Set(['content', 'settings', 'whoFor', 'problems', 'deliverables', 'process', 'benefits', 'challenges', 'opportunities', 'objectives', 'results', 'metrics', 'keyFeatures', 'value']);
-function clean(value: unknown, key = ''): unknown {
-  if (typeof value === 'string') return key.toLowerCase().includes('html') || key === 'overview' || key === 'answer' ? sanitizeHtml(value, { allowedTags: ['p', 'h2', 'h3', 'h4', 'ul', 'ol', 'li', 'strong', 'em', 'a', 'blockquote', 'br'], allowedAttributes: { a: ['href', 'target', 'rel'] }, allowedSchemes: ['http', 'https', 'mailto', 'tel'] }) : value.trim();
-  if (Array.isArray(value)) return value.map((item) => clean(item, key));
-  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([childKey, child]) => [childKey, clean(child, childKey)]));
-  return value;
-}
-
+export function contentDelegate(db: unknown, model: string) { return (db as Record<string, ContentDelegate>)[model]!; }
+export function contentInclude(resource: string) { const def = cmsDefinitions[resource]!; return { translations: true, ...Object.fromEntries(Object.entries(def.relations).filter(([, r]) => r.many).map(([key]) => [key, key === 'gallery' ? { orderBy: { sortOrder: 'asc' } } : true])), ...(resource === 'pages' ? { sections: { orderBy: { sortOrder: 'asc' }, include: { translations: true } } } : {}) }; }
+const dated = new Set(['pages','services','industries','case-studies','insights','brands','products']);
 @Injectable()
 export class AdminContentService {
-  constructor(private readonly prisma: PrismaService, private readonly audit: AuditService) {}
-  private delegate(resource: string): Delegate {
-    const key = delegateKeys[resource as Resource];
-    if (!key) throw new NotFoundException('Unknown resource.');
-    return (this.prisma as unknown as Record<string, Delegate>)[key]!;
-  }
-  private include(resource: string): Record<string, unknown> {
-    if (resource === 'redirects' || resource === 'settings') return {};
-    if (resource === 'navigation') return { items: { include: { translations: true, children: { include: { translations: true } } }, orderBy: { sortOrder: 'asc' } } };
-    return { translations: true };
-  }
-  private normalizeData(resource: string, raw: Record<string, unknown>, mode: 'create' | 'update'): Record<string, unknown> {
-    const data = clean(raw) as Record<string, unknown>;
-    const translations = data.translations;
-    delete data.translations;
-    if (translations && typeof translations === 'object' && !Array.isArray(translations)) {
-      const rows = Object.entries(translations as Record<string, unknown>).map(([locale, fields]) => {
-        const row = { ...(fields as Record<string, unknown>), locale };
-        for (const internal of ['id', 'pageId', 'categoryId', 'serviceId', 'industryId', 'caseStudyId', 'insightId', 'tagId', 'faqId', 'memberId', 'clientId', 'partnerId', 'brandId', 'productVentureId', 'testimonialId', 'certificationId', 'trustMetricId']) delete row[internal];
-        if (['service-categories', 'industries', 'clients', 'partners', 'brands', 'products', 'certifications'].includes(resource) && !row.name && row.title) row.name = row.title;
-        if (resource === 'faqs' && !row.question && row.title) row.question = row.title;
-        if (resource === 'team-members' && !row.name && row.title) row.name = row.title;
-        if (!row.shortDescription && row.excerpt && ['services', 'industries', 'brands', 'products'].includes(resource)) row.shortDescription = row.excerpt;
-        if (resource === 'service-categories' && !row.description && row.excerpt) row.description = row.excerpt;
-        if (resource === 'partners' && !row.description && row.excerpt) row.description = row.excerpt;
-        if (resource === 'faqs' && !row.answer && row.overview) row.answer = row.overview;
-        if (resource === 'team-members') { row.position ??= ''; row.bio ??= row.overview ?? ''; }
-        if (resource === 'services') { row.shortDescription ??= ''; row.overview ??= ''; }
-        if (resource === 'industries') { row.shortDescription ??= ''; row.overview ??= ''; }
-        if (resource === 'case-studies') { row.context ??= ''; row.challenge ??= ''; row.solution ??= ''; }
-        if (resource === 'insights') { row.excerpt ??= ''; row.content ??= []; }
-        if (resource === 'brands' || resource === 'products') { row.shortDescription ??= ''; row.fullDescription ??= row.overview ?? ''; }
-        if (resource === 'testimonials') row.quote ??= row.overview ?? '';
-        return row;
-      });
-      data.translations = mode === 'create' ? { create: rows } : { upsert: rows.map((row) => ({ where: { [`${this.translationParentKey(resource)}_locale`]: { [this.translationParentKey(resource)]: raw.id, locale: row.locale } }, create: row, update: row })) };
-    }
-    if (resource === 'pages') { data.pageType ??= 'standard'; data.templateKey ??= 'default'; }
-    if (resource === 'insights') data.type ??= 'article';
-    if (resource === 'partners') data.partnerType ??= 'other';
-    if (resource === 'brands') data.relationshipType ??= 'other';
-    if (resource === 'products') { data.productType ??= 'venture'; data.launchStatus ??= 'concept'; data.relationshipType ??= 'other'; }
-    if (resource === 'testimonials') { data.personName ??= 'Pending approval'; data.consentConfirmed ??= false; }
-    if (resource === 'certifications') data.issuer ??= '';
-    if (resource === 'trust-metrics') data.value ??= '';
-    if (resource === 'pages' && Array.isArray(data.sections)) {
-      for (const section of data.sections as Array<Record<string, unknown>>) {
-        const type = String(section.sectionType); const localized = section.translations as Record<string, { content: unknown }> | undefined;
-        for (const translation of Object.values(localized ?? {})) validateSectionContent(type, translation.content);
-      }
-    }
-    for (const field of jsonFields) if (field in data && data[field] === undefined) delete data[field];
-    return data;
-  }
-  private translationParentKey(resource: string): string {
-    return ({ pages: 'pageId', 'service-categories': 'categoryId', services: 'serviceId', industries: 'industryId', 'case-studies': 'caseStudyId', insights: 'insightId', 'insight-categories': 'categoryId', tags: 'tagId', faqs: 'faqId', 'team-members': 'memberId', clients: 'clientId', partners: 'partnerId', brands: 'brandId', products: 'productVentureId', testimonials: 'testimonialId', certifications: 'certificationId', 'trust-metrics': 'trustMetricId' } as Record<string, string>)[resource] ?? 'id';
-  }
-  async list(resource: string, query: { page?: string; pageSize?: string; status?: string; q?: string }) {
-    const page = Math.max(1, Number(query.page) || 1); const pageSize = Math.min(100, Math.max(1, Number(query.pageSize) || 20));
-    const where: Record<string, unknown> = { ...(query.status ? { status: query.status } : {}) };
-    const orderBy = ['redirects', 'settings'].includes(resource) ? { updatedAt: 'desc' } : ['pages', 'case-studies', 'insights'].includes(resource) ? { createdAt: 'desc' } : resource === 'tags' ? { key: 'asc' } : { sortOrder: 'asc' };
-    const [data, total] = await Promise.all([this.delegate(resource).findMany({ where, skip: (page - 1) * pageSize, take: pageSize, orderBy, include: this.include(resource) }), this.delegate(resource).count({ where })]);
-    return { data, meta: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) } };
-  }
-  async detail(resource: string, id: string) { const data = await this.delegate(resource).findUnique({ where: { id }, include: this.include(resource) }); if (!data) throw new NotFoundException('Resource was not found.'); return data; }
-  async create(resource: string, raw: Record<string, unknown>, actorUserId: string, requestId: string) {
-    try { const record = await this.delegate(resource).create({ data: this.normalizeData(resource, raw, 'create'), include: this.include(resource) }); await this.audit.record({ actorUserId, action: `${resource}.created`, entityType: resource, entityId: record.id, requestId }); return record; } catch (error) { if (String(error).includes('Unique constraint')) throw new ConflictException('A record with the same unique value already exists.'); throw error; }
-  }
-  async update(resource: string, id: string, raw: Record<string, unknown>, actorUserId: string, requestId: string) {
-    if ('id' in raw) throw new BadRequestException('The id field cannot be changed.');
-    const record = await this.delegate(resource).update({ where: { id }, data: this.normalizeData(resource, { ...raw, id }, 'update'), include: this.include(resource) });
-    await this.audit.record({ actorUserId, action: `${resource}.updated`, entityType: resource, entityId: id, requestId }); return record;
-  }
-  async transition(resource: string, id: string, status: 'published' | 'archived', actorUserId: string, requestId: string) {
-    const record = await this.delegate(resource).update({ where: { id }, data: { status, ...(status === 'published' ? { publishedAt: new Date() } : {}) }, include: this.include(resource) });
-    await this.audit.record({ actorUserId, action: `${resource}.${status}`, entityType: resource, entityId: id, requestId }); return record;
-  }
+ constructor(private readonly prisma: PrismaService, private readonly audit: AuditService, private readonly website: WebsiteContentService) {}
+ private definition(resource:string) { const def=cmsDefinitions[resource]; if(!def) throw new NotFoundException('Unknown content resource.'); return def; }
+ async list(resource:string, raw:Record<string,string|undefined>) {
+  if(!cmsDefinitions[resource]) return this.website.list(resource,raw);
+  const def=this.definition(resource);
+  const q=paginationSchema.extend({q:z.string().max(200).optional(),status:z.enum(['draft','review','published','archived']).optional(),locale:z.string().optional(),completeness:z.enum(['missing','partial','complete']).optional(),featured:z.enum(['true','false']).optional(),sort:z.string().optional(),categoryId:z.string().uuid().optional(),industryId:z.string().uuid().optional(),serviceId:z.string().uuid().optional()}).strict().parse(raw);
+  const where:Record<string,unknown>={}; if(resource!=='tags'&&q.status)where.status=q.status; if(q.featured&&def.fields.featured)where.featured=q.featured==='true';
+  if(q.q)where.OR=[{translations:{some:{...(q.locale?{locale:q.locale}:{}),OR:Object.entries(def.translations).filter(([,f])=>['text','long','slug'].includes(f.kind)).map(([key])=>({[key]:{contains:q.q,mode:'insensitive'}}))}}},...Object.entries(def.fields).filter(([,f])=>f.kind==='text').map(([key])=>({[key]:{contains:q.q,mode:'insensitive'}}))];
+  if(q.locale&&q.completeness){const keys=Object.entries(def.translations).filter(([,f])=>f.required&&f.kind!=='blocks').map(([k])=>k);where.translations=q.completeness==='missing'?{none:{locale:q.locale}}:q.completeness==='complete'?{some:{locale:q.locale,AND:keys.map(k=>({[k]:{not:''}}))}}:{some:{locale:q.locale,OR:keys.map(k=>({[k]:''}))}};}
+  for(const key of ['categoryId','industryId','serviceId'] as const)if(q[key]){if(def.relations[key]?.many===false)where[key]=q[key];else{const entry=Object.entries(def.relations).find(([,r])=>r.many&&r.foreignKey===key);if(entry)where[entry[0]]={some:{[key]:q[key]}};}}
+  const sortKey=q.sort?.replace(/^-/,'')??(def.fields.sortOrder?'sortOrder':'createdAt'); if(!['createdAt','updatedAt',...(def.fields.sortOrder?['sortOrder']:[]),...(dated.has(resource)?['publishedAt']:[])].includes(sortKey))throw new BadRequestException('Unsupported sort field.');
+  const delegate=contentDelegate(this.prisma,def.model);const [rows,total,languages]=await Promise.all([delegate.findMany({where,skip:(q.page-1)*q.pageSize,take:q.pageSize,orderBy:[{[sortKey]:q.sort?.startsWith('-')?'desc':'asc'},{id:'asc'}],include:{translations:true}}),delegate.count({where}),this.prisma.language.findMany({where:{isActive:true}})]);
+  return {data:rows.map(row=>({...row,completeness:Object.fromEntries(languages.map(l=>[l.code,translationCompleteness(def,row.translations?.find(t=>t.locale===l.code))]))})),meta:{page:q.page,pageSize:q.pageSize,total,pageCount:Math.ceil(total/q.pageSize)}};
+ }
+ async detail(resource:string,id:string){if(!cmsDefinitions[resource])return this.website.detail(resource,id);z.string().uuid().parse(id);const row=await contentDelegate(this.prisma,this.definition(resource).model).findUnique({where:{id},include:contentInclude(resource)});if(!row)throw new NotFoundException('Resource was not found.');return row;}
+ private async normalize(resource:string,raw:Record<string,unknown>,id?:string){const def=this.definition(resource);const shape:Record<string,z.ZodTypeAny>={};for(const [key,field]of Object.entries(def.fields))shape[key]=id||!field.required?fieldSchema(field).optional():fieldSchema(field);for(const [key,r]of Object.entries(def.relations))shape[key]=r.many?z.array(z.string().uuid()).max(100).refine(ids=>new Set(ids).size===ids.length,'Duplicate relation.').optional():r.required&&!id?z.string().uuid():z.string().uuid().nullable().optional();shape.translations=z.record(z.object(Object.fromEntries(Object.entries(def.translations).map(([key,f])=>[key,fieldSchema(f).optional()]))).strict()).optional();if(resource!=='tags')shape.status=z.enum(['draft','review']).optional();if(resource==='pages')shape.sections=z.array(z.object({id:z.string().uuid().optional(),sectionType:z.string(),isVisible:z.boolean(),settings:z.object({theme:z.enum(['default','inverse']).optional()}).strict().default({}),translations:z.record(z.object({content:z.unknown()}).strict())}).strict()).max(100).optional();const data=z.object(shape).strict().parse(raw) as Record<string,unknown>;
+  const localized=data.translations as Record<string,Record<string,unknown>>|undefined;if(localized){await this.website.assertLocales(Object.keys(localized));const rows=Object.entries(localized).map(([locale,input])=>{const fields={...input};for(const [key,f]of Object.entries(def.translations))if(fields[key]===undefined&&f.required)fields[key]=f.kind==='blocks'||f.kind==='items'?[]:'';return{...fields,locale};});data.translations=id?{upsert:rows.map(row=>({where:{[`${def.parent}_locale`]:{[def.parent!]:id,locale:row.locale}},create:row,update:row}))}:{create:rows};}
+  for(const [key,r]of Object.entries(def.relations))if(r.many&&data[key])data[key]={...(id?{deleteMany:{}}:{}),create:(data[key]as string[]).map((foreignId,i)=>({[r.foreignKey]:foreignId,...(key==='gallery'?{sortOrder:i}:{})}))};for(const [key,f]of Object.entries(def.fields))if(f.kind==='date'&&typeof data[key]==='string')data[key]=new Date(data[key]as string);return data;
+ }
+ async create(resource:string,raw:Record<string,unknown>,actor:string,requestId:string){return this.save(resource,undefined,raw,actor,requestId)}
+ async update(resource:string,id:string,raw:Record<string,unknown>,actor:string,requestId:string){return this.save(resource,id,raw,actor,requestId)}
+ private async save(resource:string,id:string|undefined,raw:Record<string,unknown>,actorUserId:string,requestId:string){if(!cmsDefinitions[resource])return this.website.save(resource,id,raw,actorUserId,requestId);if(id)z.string().uuid().parse(id);const data=await this.normalize(resource,raw,id);const sections=data.sections as Array<{sectionType:string;isVisible:boolean;settings:Prisma.InputJsonValue;translations:Record<string,{content:unknown}>}>|undefined;delete data.sections;if(['pages','services'].includes(resource)){data.updatedById=actorUserId;if(!id)data.createdById=actorUserId;}
+  return this.prisma.$transaction(async tx=>{const delegate=contentDelegate(tx,this.definition(resource).model);const before=id?await delegate.findUnique({where:{id},include:contentInclude(resource)}):null;if(id&&!before)throw new NotFoundException('Resource was not found.');if(before?.status==='published'&&raw.translations)await this.website.slugRedirects(tx,resource,before,raw.translations as Record<string,Record<string,unknown>>);const row=id?await delegate.update({where:{id},data}):await delegate.create({data});if(sections){for(const section of sections){await this.website.assertLocales(Object.keys(section.translations));const schema=sectionSchemas[section.sectionType as keyof typeof sectionSchemas];if(!schema)throw new BadRequestException('Unsupported page section.');for(const t of Object.values(section.translations))t.content=schema.parse(t.content);}await tx.pageSection.deleteMany({where:{pageId:row.id}});for(const [sortOrder,s]of sections.entries())await tx.pageSection.create({data:{pageId:row.id,sectionType:s.sectionType,sortOrder,isVisible:s.isVisible,settings:s.settings,translations:{create:Object.entries(s.translations).map(([locale,t])=>({locale,content:t.content as Prisma.InputJsonValue}))}}});}const saved=await delegate.findUnique({where:{id:row.id},include:contentInclude(resource)});if(saved?.status==='published')await this.assertPublish(resource,saved);await tx.auditLog.create({data:{actorUserId,action:`${resource}.${id?'updated':'created'}`,entityType:resource,entityId:row.id,requestId}});return saved!;});
+ }
+ private async assertPublish(resource:string,row:Row){const def=this.definition(resource);const languages=await this.prisma.language.findMany({where:{isActive:true}});const translations=row.translations?.filter(t=>languages.some(l=>l.code===t.locale))??[];if(!translations.length||translations.some(t=>translationCompleteness(def,t).status!=='complete'))throw new ConflictException('Complete required fields in each authored active translation before publishing.');if(resource==='testimonials'&&!row.consentConfirmed)throw new ConflictException('Confirmed consent is required.');if(resource==='trust-metrics'&&!row.evidenceNoteInternal)throw new ConflictException('Document evidence before publishing.');}
+ async transition(resource:string,id:string,status:'draft'|'published'|'archived',actorUserId:string,requestId:string){if(!cmsDefinitions[resource])return this.website.transition(resource,id,status,actorUserId,requestId);const row=await this.detail(resource,id)as Row;if(resource==='tags')throw new BadRequestException('Tags have no publishing lifecycle.');if(status==='published')await this.assertPublish(resource,row);const result=await contentDelegate(this.prisma,this.definition(resource).model).update({where:{id},data:{status,...(status==='published'&&dated.has(resource)?{publishedAt:row.publishedAt??new Date()}: {})},include:contentInclude(resource)});await this.audit.record({actorUserId,action:`${resource}.${status}`,entityType:resource,entityId:id,requestId});return result;}
 }

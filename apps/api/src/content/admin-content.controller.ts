@@ -10,5 +10,7 @@ export class AdminContentController {
   @Get(':id') async detail(@Param('resource') resource: string, @Param('id') id: string, @Req() request: GateviaRequest) { this.policy.assert(request, resource, 'read'); return { data: await this.content.detail(resource, id) }; }
   @Patch(':id') async update(@Param('resource') resource: string, @Param('id') id: string, @Body() body: Record<string, unknown>, @Req() request: GateviaRequest) { this.policy.assert(request, resource, ['navigation', 'redirects', 'settings'].includes(resource) ? 'manage' : 'update'); return { data: await this.content.update(resource, id, body, request.user!.id, request.requestId) }; }
   @Post(':id/publish') async publish(@Param('resource') resource: string, @Param('id') id: string, @Req() request: GateviaRequest) { this.policy.assert(request, resource, 'publish'); return { data: await this.content.transition(resource, id, 'published', request.user!.id, request.requestId) }; }
+  @Post(':id/unpublish') async unpublish(@Param('resource') resource: string, @Param('id') id: string, @Req() request: GateviaRequest) { this.policy.assert(request, resource, 'publish'); return { data: await this.content.transition(resource, id, 'draft', request.user!.id, request.requestId) }; }
   @Post(':id/archive') async archive(@Param('resource') resource: string, @Param('id') id: string, @Req() request: GateviaRequest) { this.policy.assert(request, resource, 'archive'); return { data: await this.content.transition(resource, id, 'archived', request.user!.id, request.requestId) }; }
 }
+

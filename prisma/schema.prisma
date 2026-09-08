@@ -42,6 +42,9 @@ model User {
   insights            Insight[]
 
   @@map("users")
+  createdServices Service[] @relation("ServiceCreator")
+  updatedServices Service[] @relation("ServiceUpdater")
+  updatedSettings GlobalSetting[]
 }
 
 model Role {
@@ -186,6 +189,29 @@ model Media {
   @@index([status, createdAt])
   @@index([folderId, createdAt])
   @@map("media")
+  productGallery ProductVentureMedia[]
+  refsPageTranslation_ogMedia PageTranslation[] @relation("PageTranslation_ogMedia")
+  refsServiceCategory_iconMedia ServiceCategory[] @relation("ServiceCategory_iconMedia")
+  refsService_heroMedia Service[] @relation("Service_heroMedia")
+  refsService_iconMedia Service[] @relation("Service_iconMedia")
+  refsServiceTranslation_ogMedia ServiceTranslation[] @relation("ServiceTranslation_ogMedia")
+  refsIndustry_heroMedia Industry[] @relation("Industry_heroMedia")
+  refsIndustryTranslation_ogMedia IndustryTranslation[] @relation("IndustryTranslation_ogMedia")
+  refsClient_logoMedia Client[] @relation("Client_logoMedia")
+  refsCaseStudy_heroMedia CaseStudy[] @relation("CaseStudy_heroMedia")
+  refsCaseStudyTranslation_ogMedia CaseStudyTranslation[] @relation("CaseStudyTranslation_ogMedia")
+  refsInsight_coverMedia Insight[] @relation("Insight_coverMedia")
+  refsInsight_downloadableMedia Insight[] @relation("Insight_downloadableMedia")
+  refsInsightTranslation_ogMedia InsightTranslation[] @relation("InsightTranslation_ogMedia")
+  refsTeamMember_photoMedia TeamMember[] @relation("TeamMember_photoMedia")
+  refsPartner_logoMedia Partner[] @relation("Partner_logoMedia")
+  refsBrand_logoMedia Brand[] @relation("Brand_logoMedia")
+  refsBrand_coverMedia Brand[] @relation("Brand_coverMedia")
+  refsBrandTranslation_ogMedia BrandTranslation[] @relation("BrandTranslation_ogMedia")
+  refsProductVenture_logoMedia ProductVenture[] @relation("ProductVenture_logoMedia")
+  refsProductVentureTranslation_ogMedia ProductVentureTranslation[] @relation("ProductVentureTranslation_ogMedia")
+  refsTestimonial_logoMedia Testimonial[] @relation("Testimonial_logoMedia")
+  refsCertification_logoMedia Certification[] @relation("Certification_logoMedia")
 }
 
 model MediaTranslation {
@@ -256,6 +282,8 @@ model PageTranslation {
   @@unique([pageId, locale])
   @@unique([locale, slug])
   @@map("page_translations")
+  ogMedia Media? @relation("PageTranslation_ogMedia", fields: [ogMediaId], references: [id], onDelete: Restrict)
+  @@index([ogMediaId])
 }
 
 model PageSection {
@@ -295,6 +323,8 @@ model ServiceCategory {
   services Service[]
   @@index([status, sortOrder])
   @@map("service_categories")
+  iconMedia Media? @relation("ServiceCategory_iconMedia", fields: [iconMediaId], references: [id], onDelete: Restrict)
+  @@index([iconMediaId])
 }
 
 model ServiceCategoryTranslation {
@@ -331,6 +361,14 @@ model Service {
   leads Lead[]
   @@index([status, featured, sortOrder])
   @@map("services")
+  createdById String? @map("created_by") @db.Uuid
+  updatedById String? @map("updated_by") @db.Uuid
+  createdBy User? @relation("ServiceCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy User? @relation("ServiceUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+  heroMedia Media? @relation("Service_heroMedia", fields: [heroMediaId], references: [id], onDelete: Restrict)
+  @@index([heroMediaId])
+  iconMedia Media? @relation("Service_iconMedia", fields: [iconMediaId], references: [id], onDelete: Restrict)
+  @@index([iconMediaId])
 }
 
 model ServiceTranslation {
@@ -356,6 +394,12 @@ model ServiceTranslation {
   @@unique([serviceId, locale])
   @@unique([locale, slug])
   @@map("service_translations")
+  ogTitle String? @map("og_title")
+  ogDescription String? @map("og_description")
+  canonicalUrl String? @map("canonical_url")
+  robotsIndex Boolean @default(true) @map("robots_index")
+  ogMedia Media? @relation("ServiceTranslation_ogMedia", fields: [ogMediaId], references: [id], onDelete: Restrict)
+  @@index([ogMediaId])
 }
 
 model Industry {
@@ -377,6 +421,8 @@ model Industry {
   leads Lead[]
   @@index([status, featured, sortOrder])
   @@map("industries")
+  heroMedia Media? @relation("Industry_heroMedia", fields: [heroMediaId], references: [id], onDelete: Restrict)
+  @@index([heroMediaId])
 }
 
 model IndustryTranslation {
@@ -398,6 +444,12 @@ model IndustryTranslation {
   @@unique([industryId, locale])
   @@unique([locale, slug])
   @@map("industry_translations")
+  ogTitle String? @map("og_title")
+  ogDescription String? @map("og_description")
+  canonicalUrl String? @map("canonical_url")
+  robotsIndex Boolean @default(true) @map("robots_index")
+  ogMedia Media? @relation("IndustryTranslation_ogMedia", fields: [ogMediaId], references: [id], onDelete: Restrict)
+  @@index([ogMediaId])
 }
 
 model ServiceIndustry {
@@ -427,6 +479,8 @@ model Client {
   testimonials Testimonial[]
   @@index([status, publicVisibility, sortOrder])
   @@map("clients")
+  logoMedia Media? @relation("Client_logoMedia", fields: [logoMediaId], references: [id], onDelete: Restrict)
+  @@index([logoMediaId])
 }
 
 model ClientTranslation {
@@ -459,6 +513,10 @@ model CaseStudy {
   gallery CaseStudyMedia[]
   @@index([status, featured, publishedAt])
   @@map("case_studies")
+  sortOrder Int @default(0) @map("sort_order")
+  testimonials Testimonial[]
+  heroMedia Media? @relation("CaseStudy_heroMedia", fields: [heroMediaId], references: [id], onDelete: Restrict)
+  @@index([heroMediaId])
 }
 
 model CaseStudyTranslation {
@@ -484,6 +542,12 @@ model CaseStudyTranslation {
   @@unique([caseStudyId, locale])
   @@unique([locale, slug])
   @@map("case_study_translations")
+  ogTitle String? @map("og_title")
+  ogDescription String? @map("og_description")
+  canonicalUrl String? @map("canonical_url")
+  robotsIndex Boolean @default(true) @map("robots_index")
+  ogMedia Media? @relation("CaseStudyTranslation_ogMedia", fields: [ogMediaId], references: [id], onDelete: Restrict)
+  @@index([ogMediaId])
 }
 
 model CaseStudyService {
@@ -519,6 +583,8 @@ model InsightCategory {
   translations InsightCategoryTranslation[]
   insights Insight[]
   @@map("insight_categories")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 }
 model InsightCategoryTranslation {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -552,6 +618,10 @@ model Insight {
   industries InsightIndustry[]
   @@index([status, type, publishedAt])
   @@map("insights")
+  coverMedia Media? @relation("Insight_coverMedia", fields: [coverMediaId], references: [id], onDelete: Restrict)
+  @@index([coverMediaId])
+  downloadableMedia Media? @relation("Insight_downloadableMedia", fields: [downloadableMediaId], references: [id], onDelete: Restrict)
+  @@index([downloadableMediaId])
 }
 model InsightTranslation {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -569,6 +639,12 @@ model InsightTranslation {
   @@unique([insightId, locale])
   @@unique([locale, slug])
   @@map("insight_translations")
+  ogTitle String? @map("og_title")
+  ogDescription String? @map("og_description")
+  canonicalUrl String? @map("canonical_url")
+  robotsIndex Boolean @default(true) @map("robots_index")
+  ogMedia Media? @relation("InsightTranslation_ogMedia", fields: [ogMediaId], references: [id], onDelete: Restrict)
+  @@index([ogMediaId])
 }
 model Tag {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -576,6 +652,8 @@ model Tag {
   translations TagTranslation[]
   insights InsightTag[]
   @@map("tags")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 }
 model TagTranslation {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -664,6 +742,8 @@ model TeamMember {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
   translations TeamMemberTranslation[]
   @@map("team_members")
+  photoMedia Media? @relation("TeamMember_photoMedia", fields: [photoMediaId], references: [id], onDelete: Restrict)
+  @@index([photoMediaId])
 }
 model TeamMemberTranslation {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -690,6 +770,11 @@ model Partner {
   status ContentStatus @default(draft)
   translations PartnerTranslation[]
   @@map("partners")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  startDate DateTime? @map("start_date") @db.Date
+  logoMedia Media? @relation("Partner_logoMedia", fields: [logoMediaId], references: [id], onDelete: Restrict)
+  @@index([logoMediaId])
 }
 model PartnerTranslation {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -717,6 +802,13 @@ model Brand {
   industry Industry? @relation(fields: [industryId], references: [id], onDelete: SetNull)
   translations BrandTranslation[]
   @@map("brands")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  countryCode String? @map("country_code")
+  logoMedia Media? @relation("Brand_logoMedia", fields: [logoMediaId], references: [id], onDelete: Restrict)
+  @@index([logoMediaId])
+  coverMedia Media? @relation("Brand_coverMedia", fields: [coverMediaId], references: [id], onDelete: Restrict)
+  @@index([coverMediaId])
 }
 model BrandTranslation {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -733,6 +825,13 @@ model BrandTranslation {
   @@unique([brandId, locale])
   @@unique([locale, slug])
   @@map("brand_translations")
+  ogTitle String? @map("og_title")
+  ogDescription String? @map("og_description")
+  canonicalUrl String? @map("canonical_url")
+  robotsIndex Boolean @default(true) @map("robots_index")
+  ogMediaId String? @map("og_media_id") @db.Uuid
+  ogMedia Media? @relation("BrandTranslation_ogMedia", fields: [ogMediaId], references: [id], onDelete: Restrict)
+  @@index([ogMediaId])
 }
 
 model ProductVenture {
@@ -750,6 +849,11 @@ model ProductVenture {
   industry Industry? @relation(fields: [industryId], references: [id], onDelete: SetNull)
   translations ProductVentureTranslation[]
   @@map("product_ventures")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  gallery ProductVentureMedia[]
+  logoMedia Media? @relation("ProductVenture_logoMedia", fields: [logoMediaId], references: [id], onDelete: Restrict)
+  @@index([logoMediaId])
 }
 model ProductVentureTranslation {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -767,6 +871,13 @@ model ProductVentureTranslation {
   @@unique([productVentureId, locale])
   @@unique([locale, slug])
   @@map("product_venture_translations")
+  ogTitle String? @map("og_title")
+  ogDescription String? @map("og_description")
+  canonicalUrl String? @map("canonical_url")
+  robotsIndex Boolean @default(true) @map("robots_index")
+  ogMediaId String? @map("og_media_id") @db.Uuid
+  ogMedia Media? @relation("ProductVentureTranslation_ogMedia", fields: [ogMediaId], references: [id], onDelete: Restrict)
+  @@index([ogMediaId])
 }
 
 model Testimonial {
@@ -784,6 +895,12 @@ model Testimonial {
   client Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
   translations TestimonialTranslation[]
   @@map("testimonials")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  caseStudyId String? @map("case_study_id") @db.Uuid
+  caseStudy CaseStudy? @relation(fields: [caseStudyId], references: [id], onDelete: SetNull)
+  logoMedia Media? @relation("Testimonial_logoMedia", fields: [logoMediaId], references: [id], onDelete: Restrict)
+  @@index([logoMediaId])
 }
 model TestimonialTranslation {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -809,6 +926,10 @@ model Certification {
   sortOrder Int @default(0) @map("sort_order")
   translations CertificationTranslation[]
   @@map("certifications")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  logoMedia Media? @relation("Certification_logoMedia", fields: [logoMediaId], references: [id], onDelete: Restrict)
+  @@index([logoMediaId])
 }
 model CertificationTranslation {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -832,6 +953,8 @@ model TrustMetric {
   status ContentStatus @default(draft)
   translations TrustMetricTranslation[]
   @@map("trust_metrics")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 }
 model TrustMetricTranslation {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -851,6 +974,8 @@ model NavigationMenu {
   status ContentStatus @default(draft)
   items NavigationItem[]
   @@map("navigation_menus")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 }
 model NavigationItem {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -868,6 +993,8 @@ model NavigationItem {
   translations NavigationItemTranslation[]
   @@index([menuId, parentId, sortOrder])
   @@map("navigation_items")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 }
 model NavigationItemTranslation {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -889,6 +1016,7 @@ model GlobalSetting {
   updatedById String? @map("updated_by") @db.Uuid
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
   @@map("global_settings")
+  updatedBy User? @relation(fields: [updatedById], references: [id], onDelete: SetNull)
 }
 model Redirect {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -945,6 +1073,9 @@ model Lead {
   @@index([sourceType, createdAt(sort: Desc)])
   @@index([serviceId, createdAt(sort: Desc)])
   @@map("leads")
+  consentConfirmed Boolean @default(false) @map("consent_confirmed")
+  consentAt DateTime? @map("consent_at") @db.Timestamptz(6)
+  formDetails Json @default("{}") @map("form_details")
 }
 
 model LeadNote {
@@ -1025,4 +1156,15 @@ model NotificationDelivery {
   @@index([status, createdAt])
   @@index([relatedEntityType, relatedEntityId])
   @@map("notification_deliveries")
+}
+
+model ProductVentureMedia {
+  productVentureId String @map("product_venture_id") @db.Uuid
+  mediaId String @map("media_id") @db.Uuid
+  sortOrder Int @default(0) @map("sort_order")
+  productVenture ProductVenture @relation(fields: [productVentureId], references: [id], onDelete: Cascade)
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+  @@id([productVentureId, mediaId])
+  @@index([mediaId])
+  @@map("product_venture_media")
 }
