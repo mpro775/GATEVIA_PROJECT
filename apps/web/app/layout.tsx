@@ -56,10 +56,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {children}
         <Analytics
           gtmId={
-            typeof values['analytics.gtm_id'] === 'string' ? values['analytics.gtm_id'] : undefined
+            typeof values['analytics.gtm_id'] === 'string' && values['analytics.gtm_id'].trim()
+              ? values['analytics.gtm_id'].trim()
+              : undefined
           }
           ga4Id={
-            typeof values['analytics.ga4_id'] === 'string' ? values['analytics.ga4_id'] : undefined
+            typeof values['analytics.ga4_id'] === 'string' && values['analytics.ga4_id'].trim()
+              ? values['analytics.ga4_id'].trim()
+              : undefined
           }
         />
         <Script id="gatevia-theme" strategy="beforeInteractive">

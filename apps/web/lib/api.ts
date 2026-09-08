@@ -1,19 +1,33 @@
-import type {
-  ContentRecord,
-  Language,
-  NavigationItem,
-  NavigationMenu,
-  PublicSettings,
+import {
+  createApiClient,
+  resolveApiOrigin,
+  resolveApiPath,
+  resolveApiUrl,
+  type ContentRecord,
+  type Language,
+  type NavigationItem,
+  type NavigationMenu,
+  type PublicSettings,
 } from '@gatevia/api-client';
 
 export type { Language } from '@gatevia/api-client';
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3002/api/v1';
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3002/api/v1';
+
+/** Base origin (e.g. https://api.gatevia.sa or http://localhost:3002) */
+export const apiOrigin = resolveApiOrigin(rawApiUrl);
+
+/** Canonical public API base URL with /api/v1 prefix */
+export const publicApiUrl = resolveApiUrl(rawApiUrl);
+
+/** Typed OpenAPI client instance */
+export const apiClient = createApiClient({ baseUrl: apiOrigin });
 
 export type NavItem = NavigationItem;
 
 async function request<T>(path: string, revalidate = 60): Promise<T> {
-  const response = await fetch(`${API}${path}`, {
+  const fullUrl = `${apiOrigin}${resolveApiPath(path)}`;
+  const response = await fetch(fullUrl, {
     headers: { Accept: 'application/json' },
     next: { revalidate, tags: ['gatevia-content'] },
   });
@@ -61,5 +75,3 @@ export async function safe<T>(promise: Promise<T>, fallback: T): Promise<T> {
     return fallback;
   }
 }
-
-export const publicApiUrl = API;

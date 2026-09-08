@@ -64,6 +64,28 @@ export async function sendIdentityEmail(
     text: `Hello ${user.displayName},\n\nUse this one-time link to ${job === 'admin-invitation' ? 'activate your account' : 'reset your password'}:\n${actionUrl}\n\nIf you did not request this, ignore this message.`,
   });
 }
+export async function resolveLeadNotificationRecipients(prisma: PrismaClient): Promise<string[]> {
+  try {
+    const setting = await prisma.globalSetting.findUnique({
+      where: { key: 'forms.notification_recipients' },
+      select: { value: true },
+    });
+    if (setting && Array.isArray(setting.value)) {
+      const dbRecipients = (setting.value as unknown[])
+        .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+        .map((s) => s.trim());
+      if (dbRecipients.length > 0) {
+        return dbRecipients;
+      }
+    }
+  } catch (error) {
+    process.stderr.write(
+      `Failed to load notification recipients from database: ${error instanceof Error ? error.message : String(error)}\n`,
+    );
+  }
+  return config.email.recipients;
+}
+
 export async function sendLeadNotification(prisma: PrismaClient, leadId: string) {
   const lead = await prisma.lead.findUniqueOrThrow({
     where: { id: leadId },
@@ -82,9 +104,27 @@ export async function sendLeadNotification(prisma: PrismaClient, leadId: string)
       where: { id: delivery.id },
       data: { status: 'queued' },
     });
+
+  const recipients = await resolveLeadNotificationRecipients(prisma);
+  if (recipients.length === 0) {
+    if (delivery)
+      await prisma.notificationDelivery.update({
+        where: { id: delivery.id },
+        data: { status: 'failed', errorCode: 'no_recipients' },
+      });
+    await prisma.leadActivity.create({
+      data: {
+        leadId,
+        type: 'notification_failed',
+        payload: { reason: 'No lead notification recipients configured in database or environment.' },
+      },
+    });
+    return;
+  }
+
   try {
     const result = await provider.send({
-      to: config.email.recipients,
+      to: recipients,
       subject: `New ${lead.sourceType} request`,
       text: `A new request was saved.\nLead: ${lead.id}\nName: ${lead.fullName}\nCompany: ${lead.companyName ?? '—'}\nOpen: ${config.adminUrl}/sales/leads/${lead.id}`,
     });

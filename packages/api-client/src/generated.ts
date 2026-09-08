@@ -3,173 +3,170 @@
  * Do not make direct changes to the file.
  */
 
+
 /** OneOf type helpers */
 type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never };
-type XOR<T, U> = T | U extends object ? (Without<T, U> & U) | (Without<U, T> & T) : T | U;
-type OneOf<T extends any[]> = T extends [infer Only]
-  ? Only
-  : T extends [infer A, infer B, ...infer Rest]
-    ? OneOf<[XOR<A, B>, ...Rest]>
-    : never;
+type XOR<T, U> = (T | U) extends object ? (Without<T, U> & U) | (Without<U, T> & T) : T | U;
+type OneOf<T extends any[]> = T extends [infer Only] ? Only : T extends [infer A, infer B, ...infer Rest] ? OneOf<[XOR<A, B>, ...Rest]> : never;
 
 export interface paths {
-  '/api/v1/admin/audit-logs': {
-    get: operations['AuditController_list'];
+  "/api/v1/admin/audit-logs": {
+    get: operations["AuditController_list"];
   };
-  '/api/v1/auth/login': {
-    post: operations['AuthController_login'];
+  "/api/v1/auth/login": {
+    post: operations["AuthController_login"];
   };
-  '/api/v1/auth/forgot-password': {
-    post: operations['AuthController_forgot'];
+  "/api/v1/auth/forgot-password": {
+    post: operations["AuthController_forgot"];
   };
-  '/api/v1/auth/reset-password': {
-    post: operations['AuthController_reset'];
+  "/api/v1/auth/reset-password": {
+    post: operations["AuthController_reset"];
   };
-  '/api/v1/auth/refresh': {
-    post: operations['AuthController_refresh'];
+  "/api/v1/auth/refresh": {
+    post: operations["AuthController_refresh"];
   };
-  '/api/v1/auth/logout': {
-    post: operations['AuthController_logout'];
+  "/api/v1/auth/logout": {
+    post: operations["AuthController_logout"];
   };
-  '/api/v1/auth/me': {
-    get: operations['AuthController_me'];
+  "/api/v1/auth/me": {
+    get: operations["AuthController_me"];
   };
-  '/api/v1/health/live': {
-    get: operations['HealthController_live'];
+  "/api/v1/health/live": {
+    get: operations["HealthController_live"];
   };
-  '/api/v1/health/ready': {
-    get: operations['HealthController_ready'];
+  "/api/v1/health/ready": {
+    get: operations["HealthController_ready"];
   };
-  '/api/v1/public/forms/contact': {
-    post: operations['PublicFormsController_contact'];
+  "/api/v1/public/forms/contact": {
+    post: operations["PublicFormsController_contact"];
   };
-  '/api/v1/public/forms/consultation': {
-    post: operations['PublicFormsController_consultation'];
+  "/api/v1/public/forms/consultation": {
+    post: operations["PublicFormsController_consultation"];
   };
-  '/api/v1/public/forms/market-entry-assessment': {
-    post: operations['PublicFormsController_assessment'];
+  "/api/v1/public/forms/market-entry-assessment": {
+    post: operations["PublicFormsController_assessment"];
   };
-  '/api/v1/admin/leads': {
-    get: operations['AdminLeadsController_list'];
+  "/api/v1/admin/leads": {
+    get: operations["AdminLeadsController_list"];
   };
-  '/api/v1/admin/leads/{id}': {
-    get: operations['AdminLeadsController_detail'];
+  "/api/v1/admin/leads/{id}": {
+    get: operations["AdminLeadsController_detail"];
   };
-  '/api/v1/admin/leads/{id}/status': {
-    patch: operations['AdminLeadsController_status'];
+  "/api/v1/admin/leads/{id}/status": {
+    patch: operations["AdminLeadsController_status"];
   };
-  '/api/v1/admin/leads/{id}/assignee': {
-    patch: operations['AdminLeadsController_assign'];
+  "/api/v1/admin/leads/{id}/assignee": {
+    patch: operations["AdminLeadsController_assign"];
   };
-  '/api/v1/admin/leads/{id}/notes': {
-    post: operations['AdminLeadsController_note'];
+  "/api/v1/admin/leads/{id}/notes": {
+    post: operations["AdminLeadsController_note"];
   };
-  '/api/v1/admin/leads/{id}/activities': {
-    get: operations['AdminLeadsController_activities'];
+  "/api/v1/admin/leads/{id}/activities": {
+    get: operations["AdminLeadsController_activities"];
   };
-  '/api/v1/admin/languages': {
-    get: operations['LanguagesController_list'];
-    post: operations['LanguagesController_create'];
+  "/api/v1/admin/languages": {
+    get: operations["LanguagesController_list"];
+    post: operations["LanguagesController_create"];
   };
-  '/api/v1/admin/languages/{id}': {
-    patch: operations['LanguagesController_update'];
+  "/api/v1/admin/languages/{id}": {
+    patch: operations["LanguagesController_update"];
   };
-  '/api/v1/admin/languages/{id}/activate': {
-    post: operations['LanguagesController_activate'];
+  "/api/v1/admin/languages/{id}/activate": {
+    post: operations["LanguagesController_activate"];
   };
-  '/api/v1/admin/languages/{id}/deactivate': {
-    post: operations['LanguagesController_deactivate'];
+  "/api/v1/admin/languages/{id}/deactivate": {
+    post: operations["LanguagesController_deactivate"];
   };
-  '/api/v1/admin/languages/{id}/set-default': {
-    post: operations['LanguagesController_setDefault'];
+  "/api/v1/admin/languages/{id}/set-default": {
+    post: operations["LanguagesController_setDefault"];
   };
-  '/api/v1/admin/media': {
-    get: operations['MediaController_list'];
+  "/api/v1/admin/media": {
+    get: operations["MediaController_list"];
   };
-  '/api/v1/admin/media/upload-session': {
-    post: operations['MediaController_session'];
+  "/api/v1/admin/media/upload-session": {
+    post: operations["MediaController_session"];
   };
-  '/api/v1/admin/media/{id}/replace-session': {
-    post: operations['MediaController_replaceSession'];
+  "/api/v1/admin/media/{id}/replace-session": {
+    post: operations["MediaController_replaceSession"];
   };
-  '/api/v1/admin/media/finalize': {
-    post: operations['MediaController_finalize'];
+  "/api/v1/admin/media/finalize": {
+    post: operations["MediaController_finalize"];
   };
-  '/api/v1/admin/media/{id}': {
-    patch: operations['MediaController_update'];
+  "/api/v1/admin/media/{id}": {
+    patch: operations["MediaController_update"];
   };
-  '/api/v1/admin/media/{id}/usages': {
-    get: operations['MediaController_usages'];
+  "/api/v1/admin/media/{id}/usages": {
+    get: operations["MediaController_usages"];
   };
-  '/api/v1/admin/media/{id}/archive': {
-    post: operations['MediaController_archive'];
+  "/api/v1/admin/media/{id}/archive": {
+    post: operations["MediaController_archive"];
   };
-  '/api/v1/admin/media/{id}/retry': {
-    post: operations['MediaController_retry'];
+  "/api/v1/admin/media/{id}/retry": {
+    post: operations["MediaController_retry"];
   };
-  '/api/v1/admin/media-folders': {
-    get: operations['MediaController_folders'];
-    post: operations['MediaController_createFolder'];
+  "/api/v1/admin/media-folders": {
+    get: operations["MediaController_folders"];
+    post: operations["MediaController_createFolder"];
   };
-  '/api/v1/admin/media-folders/{id}': {
-    patch: operations['MediaController_updateFolder'];
+  "/api/v1/admin/media-folders/{id}": {
+    patch: operations["MediaController_updateFolder"];
   };
-  '/api/v1/admin/users': {
-    get: operations['IdentityController_users'];
-    post: operations['IdentityController_createUser'];
+  "/api/v1/admin/users": {
+    get: operations["IdentityController_users"];
+    post: operations["IdentityController_createUser"];
   };
-  '/api/v1/admin/users/{id}': {
-    get: operations['IdentityController_getUser'];
-    patch: operations['IdentityController_updateUser'];
+  "/api/v1/admin/users/{id}": {
+    get: operations["IdentityController_getUser"];
+    patch: operations["IdentityController_updateUser"];
   };
-  '/api/v1/admin/roles': {
-    get: operations['IdentityController_roles'];
-    post: operations['IdentityController_createRole'];
+  "/api/v1/admin/roles": {
+    get: operations["IdentityController_roles"];
+    post: operations["IdentityController_createRole"];
   };
-  '/api/v1/admin/roles/{id}': {
-    patch: operations['IdentityController_updateRole'];
+  "/api/v1/admin/roles/{id}": {
+    patch: operations["IdentityController_updateRole"];
   };
-  '/api/v1/admin/permissions': {
-    get: operations['IdentityController_permissions'];
+  "/api/v1/admin/permissions": {
+    get: operations["IdentityController_permissions"];
   };
-  '/api/v1/admin/{resource}': {
-    get: operations['AdminContentController_list'];
-    post: operations['AdminContentController_create'];
+  "/api/v1/admin/{resource}": {
+    get: operations["AdminContentController_list"];
+    post: operations["AdminContentController_create"];
   };
-  '/api/v1/admin/{resource}/{id}': {
-    get: operations['AdminContentController_detail'];
-    patch: operations['AdminContentController_update'];
+  "/api/v1/admin/{resource}/{id}": {
+    get: operations["AdminContentController_detail"];
+    patch: operations["AdminContentController_update"];
   };
-  '/api/v1/admin/{resource}/{id}/publish': {
-    post: operations['AdminContentController_publish'];
+  "/api/v1/admin/{resource}/{id}/publish": {
+    post: operations["AdminContentController_publish"];
   };
-  '/api/v1/admin/{resource}/{id}/unpublish': {
-    post: operations['AdminContentController_unpublish'];
+  "/api/v1/admin/{resource}/{id}/unpublish": {
+    post: operations["AdminContentController_unpublish"];
   };
-  '/api/v1/admin/{resource}/{id}/archive': {
-    post: operations['AdminContentController_archive'];
+  "/api/v1/admin/{resource}/{id}/archive": {
+    post: operations["AdminContentController_archive"];
   };
-  '/api/v1/admin/{resource}/{id}/preview': {
-    post: operations['AdminContentController_preview'];
+  "/api/v1/admin/{resource}/{id}/preview": {
+    post: operations["AdminContentController_preview"];
   };
-  '/api/v1/public/languages': {
-    get: operations['PublicContentController_languages'];
+  "/api/v1/public/languages": {
+    get: operations["PublicContentController_languages"];
   };
-  '/api/v1/public/settings': {
-    get: operations['PublicContentController_settings'];
+  "/api/v1/public/settings": {
+    get: operations["PublicContentController_settings"];
   };
-  '/api/v1/public/navigation/{key}': {
-    get: operations['PublicContentController_navigation'];
+  "/api/v1/public/navigation/{key}": {
+    get: operations["PublicContentController_navigation"];
   };
-  '/api/v1/public/redirect': {
-    get: operations['PublicContentController_redirect'];
+  "/api/v1/public/redirect": {
+    get: operations["PublicContentController_redirect"];
   };
-  '/api/v1/public/{resource}': {
+  "/api/v1/public/{resource}": {
     /** Published localized content with filters and pagination */
-    get: operations['PublicContentController_list'];
+    get: operations["PublicContentController_list"];
   };
-  '/api/v1/public/{resource}/{slug}': {
-    get: operations['PublicContentController_detail'];
+  "/api/v1/public/{resource}/{slug}": {
+    get: operations["PublicContentController_detail"];
   };
 }
 
@@ -204,7 +201,7 @@ export interface components {
       name: string;
       nativeName: string;
       /** @enum {string} */
-      direction: 'ltr' | 'rtl';
+      direction: "ltr" | "rtl";
       isActive: boolean;
       isDefault: boolean;
       sortOrder: number;
@@ -230,8 +227,8 @@ export interface components {
       name: string;
       isSystem: boolean;
       permissions?: {
-        permission?: components['schemas']['Permission'];
-      }[];
+          permission?: components["schemas"]["Permission"];
+        }[];
       _count?: {
         users?: number;
       };
@@ -243,21 +240,16 @@ export interface components {
       email: string;
       displayName: string;
       /** @enum {string} */
-      status: 'active' | 'suspended' | 'invited';
+      status: "active" | "suspended" | "invited";
       /** Format: date-time */
       lastLoginAt?: string | null;
       /** Format: date-time */
       createdAt?: string;
       /** Format: date-time */
       updatedAt?: string;
-      roles?: OneOf<
-        [
-          components['schemas']['Role'],
-          {
-            role?: components['schemas']['Role'];
-          },
-        ]
-      >[];
+      roles?: OneOf<[components["schemas"]["Role"], {
+          role?: components["schemas"]["Role"];
+        }]>[];
     };
     MediaTranslation: {
       locale: string;
@@ -286,14 +278,14 @@ export interface components {
       originalFilename: string;
       mimeType: string;
       /** @enum {string} */
-      status: 'pending' | 'processing' | 'ready' | 'failed' | 'archived';
+      status: "pending" | "processing" | "ready" | "failed" | "archived";
       sizeBytes: number | string;
       /** Format: uri */
       url?: string;
       folderId?: string | null;
-      folder?: components['schemas']['MediaFolder'] | null;
-      translations?: components['schemas']['MediaTranslation'][];
-      variants?: components['schemas']['MediaVariant'][];
+      folder?: components["schemas"]["MediaFolder"] | null;
+      translations?: components["schemas"]["MediaTranslation"][];
+      variants?: components["schemas"]["MediaVariant"][];
       /** Format: date-time */
       createdAt?: string;
       /** Format: uuid */
@@ -318,7 +310,7 @@ export interface components {
       label: string;
       href?: string | null;
       external: boolean;
-      children?: components['schemas']['NavigationItem'][];
+      children?: components["schemas"]["NavigationItem"][];
     };
     NavigationMenu: {
       /** Format: uuid */
@@ -326,15 +318,15 @@ export interface components {
       key: string;
       location?: string;
       /** @enum {string} */
-      status?: 'draft' | 'review' | 'published' | 'archived';
-      items: components['schemas']['NavigationItem'][];
+      status?: "draft" | "review" | "published" | "archived";
+      items: components["schemas"]["NavigationItem"][];
     };
     PublicSettings: {
       values: {
         [key: string]: unknown;
       };
       media: {
-        [key: string]: components['schemas']['Media'];
+        [key: string]: components["schemas"]["Media"];
       };
     };
     Setting: {
@@ -370,20 +362,20 @@ export interface components {
       /** Format: uuid */
       id?: string;
       status?: string;
-      translations?: components['schemas']['JsonObject'][];
+      translations?: components["schemas"]["JsonObject"][];
       [key: string]: unknown;
     };
     Lead: {
       /** Format: uuid */
       id: string;
       /** @enum {string} */
-      status: 'new' | 'contacted' | 'qualified' | 'proposal' | 'won' | 'lost';
+      status: "new" | "contacted" | "qualified" | "proposal" | "won" | "lost";
       /** @enum {string} */
-      source: 'contact' | 'consultation' | 'assessment' | 'landing_page' | 'manual';
-      assignedTo?: components['schemas']['User'] | null;
-      activities?: components['schemas']['JsonObject'][];
-      notes?: components['schemas']['JsonObject'][];
-      assessments?: components['schemas']['JsonObject'][];
+      source: "contact" | "consultation" | "assessment" | "landing_page" | "manual";
+      assignedTo?: components["schemas"]["User"] | null;
+      activities?: components["schemas"]["JsonObject"][];
+      notes?: components["schemas"]["JsonObject"][];
+      assessments?: components["schemas"]["JsonObject"][];
       [key: string]: unknown;
     };
   };
@@ -399,6 +391,7 @@ export type $defs = Record<string, never>;
 export type external = Record<string, never>;
 
 export interface operations {
+
   AuditController_list: {
     responses: {
       200: {
@@ -446,15 +439,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['AuthUser'];
+          "application/json": {
+            data: components["schemas"]["AuthUser"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -476,22 +469,22 @@ export interface operations {
   PublicFormsController_contact: {
     parameters: {
       header: {
-        'Idempotency-Key': string;
+        "Idempotency-Key": string;
       };
     };
     responses: {
       /** @description Successful response */
       201: {
         content: {
-          'application/json': {
-            data: components['schemas']['SubmissionReceipt'];
+          "application/json": {
+            data: components["schemas"]["SubmissionReceipt"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -499,22 +492,22 @@ export interface operations {
   PublicFormsController_consultation: {
     parameters: {
       header: {
-        'Idempotency-Key': string;
+        "Idempotency-Key": string;
       };
     };
     responses: {
       /** @description Successful response */
       201: {
         content: {
-          'application/json': {
-            data: components['schemas']['SubmissionReceipt'];
+          "application/json": {
+            data: components["schemas"]["SubmissionReceipt"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -522,22 +515,22 @@ export interface operations {
   PublicFormsController_assessment: {
     parameters: {
       header: {
-        'Idempotency-Key': string;
+        "Idempotency-Key": string;
       };
     };
     responses: {
       /** @description Successful response */
       201: {
         content: {
-          'application/json': {
-            data: components['schemas']['SubmissionReceipt'];
+          "application/json": {
+            data: components["schemas"]["SubmissionReceipt"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -547,16 +540,16 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['Lead'][];
-            meta: components['schemas']['PaginationMeta'];
+          "application/json": {
+            data: components["schemas"]["Lead"][];
+            meta: components["schemas"]["PaginationMeta"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -566,15 +559,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['Lead'];
+          "application/json": {
+            data: components["schemas"]["Lead"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -584,15 +577,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['Lead'];
+          "application/json": {
+            data: components["schemas"]["Lead"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -602,15 +595,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['Lead'];
+          "application/json": {
+            data: components["schemas"]["Lead"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -634,15 +627,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['Language'][];
+          "application/json": {
+            data: components["schemas"]["Language"][];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -652,15 +645,15 @@ export interface operations {
       /** @description Successful response */
       201: {
         content: {
-          'application/json': {
-            data: components['schemas']['Language'];
+          "application/json": {
+            data: components["schemas"]["Language"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -670,15 +663,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['Language'];
+          "application/json": {
+            data: components["schemas"]["Language"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -688,15 +681,15 @@ export interface operations {
       /** @description Successful response */
       201: {
         content: {
-          'application/json': {
-            data: components['schemas']['Language'];
+          "application/json": {
+            data: components["schemas"]["Language"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -706,15 +699,15 @@ export interface operations {
       /** @description Successful response */
       201: {
         content: {
-          'application/json': {
-            data: components['schemas']['Language'];
+          "application/json": {
+            data: components["schemas"]["Language"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -724,15 +717,15 @@ export interface operations {
       /** @description Successful response */
       201: {
         content: {
-          'application/json': {
-            data: components['schemas']['Language'];
+          "application/json": {
+            data: components["schemas"]["Language"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -742,16 +735,16 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['Media'][];
-            meta: components['schemas']['PaginationMeta'];
+          "application/json": {
+            data: components["schemas"]["Media"][];
+            meta: components["schemas"]["PaginationMeta"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -761,15 +754,15 @@ export interface operations {
       /** @description Successful response */
       201: {
         content: {
-          'application/json': {
-            data: components['schemas']['UploadSession'];
+          "application/json": {
+            data: components["schemas"]["UploadSession"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -779,15 +772,15 @@ export interface operations {
       /** @description Successful response */
       201: {
         content: {
-          'application/json': {
-            data: components['schemas']['UploadSession'];
+          "application/json": {
+            data: components["schemas"]["UploadSession"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -797,15 +790,15 @@ export interface operations {
       /** @description Successful response */
       201: {
         content: {
-          'application/json': {
-            data: components['schemas']['Media'];
+          "application/json": {
+            data: components["schemas"]["Media"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -815,15 +808,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['Media'];
+          "application/json": {
+            data: components["schemas"]["Media"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -833,15 +826,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['MediaUsage'][];
+          "application/json": {
+            data: components["schemas"]["MediaUsage"][];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -851,15 +844,15 @@ export interface operations {
       /** @description Successful response */
       201: {
         content: {
-          'application/json': {
-            data: components['schemas']['Media'];
+          "application/json": {
+            data: components["schemas"]["Media"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -869,15 +862,15 @@ export interface operations {
       /** @description Successful response */
       201: {
         content: {
-          'application/json': {
-            data: components['schemas']['Media'];
+          "application/json": {
+            data: components["schemas"]["Media"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -887,15 +880,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['MediaFolder'][];
+          "application/json": {
+            data: components["schemas"]["MediaFolder"][];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -905,15 +898,15 @@ export interface operations {
       /** @description Successful response */
       201: {
         content: {
-          'application/json': {
-            data: components['schemas']['MediaFolder'];
+          "application/json": {
+            data: components["schemas"]["MediaFolder"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -923,15 +916,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['MediaFolder'];
+          "application/json": {
+            data: components["schemas"]["MediaFolder"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -941,16 +934,16 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['User'][];
-            meta: components['schemas']['PaginationMeta'];
+          "application/json": {
+            data: components["schemas"]["User"][];
+            meta: components["schemas"]["PaginationMeta"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -960,15 +953,15 @@ export interface operations {
       /** @description Successful response */
       201: {
         content: {
-          'application/json': {
-            data: components['schemas']['User'];
+          "application/json": {
+            data: components["schemas"]["User"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -978,15 +971,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['User'];
+          "application/json": {
+            data: components["schemas"]["User"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -996,15 +989,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['User'];
+          "application/json": {
+            data: components["schemas"]["User"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -1014,15 +1007,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['Role'][];
+          "application/json": {
+            data: components["schemas"]["Role"][];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -1032,15 +1025,15 @@ export interface operations {
       /** @description Successful response */
       201: {
         content: {
-          'application/json': {
-            data: components['schemas']['Role'];
+          "application/json": {
+            data: components["schemas"]["Role"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -1050,15 +1043,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['Role'];
+          "application/json": {
+            data: components["schemas"]["Role"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -1068,15 +1061,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['Permission'][];
+          "application/json": {
+            data: components["schemas"]["Permission"][];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -1086,16 +1079,16 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['ContentRecord'][];
-            meta: components['schemas']['PaginationMeta'];
+          "application/json": {
+            data: components["schemas"]["ContentRecord"][];
+            meta: components["schemas"]["PaginationMeta"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -1105,15 +1098,15 @@ export interface operations {
       /** @description Successful response */
       201: {
         content: {
-          'application/json': {
-            data: components['schemas']['ContentRecord'];
+          "application/json": {
+            data: components["schemas"]["ContentRecord"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -1123,15 +1116,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['ContentRecord'];
+          "application/json": {
+            data: components["schemas"]["ContentRecord"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -1141,15 +1134,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['ContentRecord'];
+          "application/json": {
+            data: components["schemas"]["ContentRecord"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -1159,15 +1152,15 @@ export interface operations {
       /** @description Successful response */
       201: {
         content: {
-          'application/json': {
-            data: components['schemas']['ContentRecord'];
+          "application/json": {
+            data: components["schemas"]["ContentRecord"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -1177,15 +1170,15 @@ export interface operations {
       /** @description Successful response */
       201: {
         content: {
-          'application/json': {
-            data: components['schemas']['ContentRecord'];
+          "application/json": {
+            data: components["schemas"]["ContentRecord"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -1195,15 +1188,15 @@ export interface operations {
       /** @description Successful response */
       201: {
         content: {
-          'application/json': {
-            data: components['schemas']['ContentRecord'];
+          "application/json": {
+            data: components["schemas"]["ContentRecord"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -1220,15 +1213,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['Language'][];
+          "application/json": {
+            data: components["schemas"]["Language"][];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -1238,15 +1231,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['PublicSettings'];
+          "application/json": {
+            data: components["schemas"]["PublicSettings"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -1256,15 +1249,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['NavigationMenu'];
+          "application/json": {
+            data: components["schemas"]["NavigationMenu"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -1274,15 +1267,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['RedirectMatch'] | null;
+          "application/json": {
+            data: components["schemas"]["RedirectMatch"] | null;
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -1298,15 +1291,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['ContentRecord'][];
+          "application/json": {
+            data: components["schemas"]["ContentRecord"][];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };
@@ -1321,15 +1314,15 @@ export interface operations {
       /** @description Successful response */
       200: {
         content: {
-          'application/json': {
-            data: components['schemas']['ContentRecord'];
+          "application/json": {
+            data: components["schemas"]["ContentRecord"];
           };
         };
       };
       /** @description Problem Details error response */
       default: {
         content: {
-          'application/problem+json': components['schemas']['ProblemDetails'];
+          "application/problem+json": components["schemas"]["ProblemDetails"];
         };
       };
     };

@@ -1,6 +1,21 @@
-import { ApiError } from '@gatevia/api-client';
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3002/api/v1';
-function cookie(name: string) {
+import {
+  ApiError,
+  createApiClient,
+  resolveApiOrigin,
+  resolveApiPath,
+  resolveApiUrl,
+} from '@gatevia/api-client';
+
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3002/api/v1';
+
+/** Base origin (e.g. https://api.gatevia.sa or http://localhost:3002) */
+export const apiOrigin = resolveApiOrigin(rawApiUrl);
+
+/** Canonical API base URL with /api/v1 prefix */
+export const apiUrl = resolveApiUrl(rawApiUrl);
+
+function cookie(name: string): string | undefined {
+  if (typeof document === 'undefined') return undefined;
   return document.cookie
     .split('; ')
     .find((item) => item.startsWith(`${name}=`))
@@ -8,8 +23,24 @@ function cookie(name: string) {
     .slice(1)
     .join('=');
 }
+
+/** Typed OpenAPI client instance with credentials and CSRF support */
+export const client = createApiClient({
+  baseUrl: apiOrigin,
+  fetcher: (req) =>
+    fetch(req, {
+      credentials: 'include',
+      headers: {
+        ...(typeof document !== 'undefined' && cookie('gatevia_csrf')
+          ? { 'X-CSRF-Token': cookie('gatevia_csrf')! }
+          : {}),
+      },
+    }),
+});
+
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${API}${path}`, {
+  const fullUrl = `${apiOrigin}${resolveApiPath(path)}`;
+  const response = await fetch(fullUrl, {
     ...init,
     credentials: 'include',
     headers: {
@@ -31,13 +62,15 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     });
   return body.data;
 }
+
 export const apiEnvelope = async <T>(
   path: string,
 ): Promise<{
   data: T[];
   meta: { page: number; pageSize: number; total: number; pageCount: number };
 }> => {
-  const response = await fetch(`${API}${path}`, {
+  const fullUrl = `${apiOrigin}${resolveApiPath(path)}`;
+  const response = await fetch(fullUrl, {
     credentials: 'include',
     headers: { Accept: 'application/json' },
   });

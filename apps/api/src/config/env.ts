@@ -22,6 +22,7 @@ class Environment {
   @IsString() @IsNotEmpty() REDIS_URL!: string;
   @IsString() @MinLength(32) AUTH_SESSION_SECRET!: string;
   @IsString() @MinLength(32) CSRF_SECRET!: string;
+  @IsOptional() @IsString() SESSION_COOKIE_DOMAIN?: string;
   @IsString() @IsNotEmpty() ALLOWED_ORIGINS!: string;
   @IsUrl({ require_tld: false }) ADMIN_URL!: string;
   @IsUrl({ require_tld: false }) API_URL!: string;

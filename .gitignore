@@ -12,4 +12,3 @@ test-results/
 !.env.staging.example
 !.env.production.example
 *.log
-apps/api/openapi.json

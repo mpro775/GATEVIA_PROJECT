@@ -78,15 +78,15 @@ async function seed() {
       ['seo.default_title', 'seo', '', true],
       ['seo.default_description', 'seo', '', true],
       ['seo.default_og_media_id', 'seo', null, true],
-      ['analytics.ga4_id', 'analytics', '', false],
-      ['analytics.gtm_id', 'analytics', '', false],
+      ['analytics.ga4_id', 'analytics', '', true],
+      ['analytics.gtm_id', 'analytics', '', true],
       ['forms.notification_recipients', 'forms', [], false],
     ] as const;
     for (const [key, category, value, isPublic] of settings) {
       await tx.globalSetting.upsert({
         where: { key },
         create: { key, category, value, isPublic },
-        update: {},
+        update: { isPublic },
       });
     }
   });

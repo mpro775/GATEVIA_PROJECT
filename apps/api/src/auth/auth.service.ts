@@ -16,18 +16,50 @@ export class AuthService {
     private readonly config: ConfigService,
     private readonly queues: QueueService,
   ) {}
-  private setCookies(response: Response, sessionId: string, refresh: string, csrf: string): void {
+  private getCookieOptions() {
     const secure = this.config.get('APP_ENV') !== 'development';
-    const domain = this.config.get<string>('SESSION_COOKIE_DOMAIN') || undefined;
-    const common = {
+    const domain = this.config.get<string>('SESSION_COOKIE_DOMAIN')?.trim() || undefined;
+    return {
       secure,
       sameSite: 'lax' as const,
       path: '/',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
       ...(domain ? { domain } : {}),
     };
-    response.cookie('gatevia_session', `${sessionId}.${refresh}`, { ...common, httpOnly: true });
-    response.cookie('gatevia_csrf', csrf, { ...common, httpOnly: false });
+  }
+
+  private setCookies(response: Response, sessionId: string, refresh: string, csrf: string): void {
+    const common = this.getCookieOptions();
+    const maxAge = 7 * 24 * 60 * 60 * 1000;
+    response.cookie('gatevia_session', `${sessionId}.${refresh}`, {
+      ...common,
+      maxAge,
+      httpOnly: true,
+    });
+    response.cookie('gatevia_csrf', csrf, {
+      ...common,
+      maxAge,
+      httpOnly: false,
+    });
+  }
+
+  private clearCookies(response: Response): void {
+    const common = this.getCookieOptions();
+    response.clearCookie('gatevia_session', { ...common, httpOnly: true });
+    response.clearCookie('gatevia_csrf', { ...common, httpOnly: false });
+    if (common.domain) {
+      response.clearCookie('gatevia_session', {
+        secure: common.secure,
+        sameSite: common.sameSite,
+        path: '/',
+        httpOnly: true,
+      });
+      response.clearCookie('gatevia_csrf', {
+        secure: common.secure,
+        sameSite: common.sameSite,
+        path: '/',
+        httpOnly: false,
+      });
+    }
   }
   async login(
     email: string,
@@ -84,8 +116,7 @@ export class AuthService {
         where: { id: sessionId, revokedAt: null },
         data: { revokedAt: new Date() },
       });
-    response.clearCookie('gatevia_session', { path: '/' });
-    response.clearCookie('gatevia_csrf', { path: '/' });
+    this.clearCookies(response);
   }
   async forgotPassword(email: string): Promise<void> {
     const user = await this.prisma.user.findUnique({

@@ -1,6 +1,9 @@
 const required = (key: string): string => {
   const value = process.env[key];
-  if (!value) throw new Error(`Missing required environment value: ${key}`);
+  if (!value) {
+    if (process.env.NODE_ENV === 'test' || process.env.VITEST) return `mock-${key.toLowerCase()}`;
+    throw new Error(`Missing required environment value: ${key}`);
+  }
   return value;
 };
 export const config = {

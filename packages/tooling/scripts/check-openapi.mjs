@@ -11,7 +11,15 @@ const digest = async (path) =>
     .digest('hex');
 const before = await Promise.all(artifacts.map(digest));
 const executable = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
-const result = spawnSync(executable, ['openapi:generate'], { cwd: root, stdio: 'inherit' });
+const result = spawnSync(executable, ['openapi:generate'], {
+  cwd: root,
+  stdio: 'inherit',
+  shell: true,
+});
+if (result.error) {
+  console.error(result.error);
+  process.exit(1);
+}
 if (result.status !== 0) process.exit(result.status ?? 1);
 const after = await Promise.all(artifacts.map(digest));
 const stale = artifacts.filter((_, index) => before[index] !== after[index]);

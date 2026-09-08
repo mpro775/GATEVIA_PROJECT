@@ -5,7 +5,7 @@ import { Button, Field, Input, Textarea } from '@gatevia/ui';
 import { api } from '@/lib/api';
 import { useAdminAuth } from './auth-context';
 
-const SETTING_GROUPS = ['company', 'contact', 'seo', 'social', 'appearance', 'general'];
+const SETTING_GROUPS = ['company', 'contact', 'seo', 'social', 'analytics', 'appearance', 'general'];
 
 export function SettingsEditor() {
   const { can } = useAdminAuth();
