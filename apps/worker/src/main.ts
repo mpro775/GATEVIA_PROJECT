@@ -1,0 +1,8 @@
+import { PrismaClient } from '@prisma/client'; import { Worker } from 'bullmq'; import IORedis from 'ioredis'; import { config } from './config'; import { cleanupObject, processImage } from './media'; import { sendIdentityEmail, sendLeadNotification } from './email';
+const prisma=new PrismaClient();const emailConnection=new IORedis(config.redisUrl,{maxRetriesPerRequest:null});const mediaConnection=new IORedis(config.redisUrl,{maxRetriesPerRequest:null});
+const emailWorker=new Worker('transactional-email',async job=>{if(job.name==='new-lead')await sendLeadNotification(prisma,String(job.data.leadId));else if(job.name==='password-reset'||job.name==='admin-invitation')await sendIdentityEmail(prisma,job.name,String(job.data.userId),String(job.data.token))},{connection:emailConnection,concurrency:5});
+const mediaWorker=new Worker('media-image-process',async job=>job.name==='cleanup-replaced-object'?cleanupObject(String(job.data.bucket),String(job.data.storageKey)):processImage(prisma,String(job.data.mediaId)),{connection:mediaConnection,concurrency:2,lockDuration:120000});
+for(const worker of [emailWorker,mediaWorker])worker.on('failed',(job,error)=>process.stderr.write(JSON.stringify({level:'error',queue:worker.name,jobId:job?.id,error:error.name})+'\n'));
+async function shutdown(){await Promise.all([emailWorker.close(),mediaWorker.close()]);await Promise.all([emailConnection.quit(),mediaConnection.quit()]);await prisma.$disconnect()}
+process.on('SIGTERM',()=>void shutdown().then(()=>process.exit(0)));process.on('SIGINT',()=>void shutdown().then(()=>process.exit(0)));
+process.stdout.write(JSON.stringify({level:'info',event:'worker_started',queues:['transactional-email','media-image-process']})+'\n');

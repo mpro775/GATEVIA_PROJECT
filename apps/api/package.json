@@ -1,0 +1,47 @@
+{
+  "name": "@gatevia/api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "nest build",
+    "start": "node dist/main.js",
+    "lint": "eslint src test",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "openapi": "tsx src/openapi.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.758.0",
+    "@aws-sdk/s3-request-presigner": "^3.758.0",
+    "@gatevia/contracts": "workspace:*",
+    "@nestjs/common": "^11.0.11",
+    "@nestjs/config": "^4.0.1",
+    "@nestjs/core": "^11.0.11",
+    "@nestjs/platform-express": "^11.0.11",
+    "@nestjs/swagger": "^11.0.5",
+    "@nestjs/throttler": "^6.4.0",
+    "@prisma/client": "^6.5.0",
+    "argon2": "^0.41.1",
+    "bullmq": "^5.41.9",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "cookie-parser": "^1.4.7",
+    "helmet": "^8.0.0",
+    "ioredis": "^5.6.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "sanitize-html": "^2.14.0"
+  },
+  "devDependencies": {
+    "@gatevia/eslint-config": "workspace:*",
+    "@gatevia/typescript-config": "workspace:*",
+    "@nestjs/cli": "^11.0.5",
+    "@nestjs/testing": "^11.0.11",
+    "@types/cookie-parser": "^1.4.8",
+    "@types/express": "^5.0.1",
+    "@types/sanitize-html": "^2.13.0",
+    "supertest": "^7.1.0",
+    "vitest": "^3.0.8"
+  }
+}

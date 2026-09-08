@@ -1,0 +1,1028 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [citext]
+}
+
+enum UserStatus { active suspended invited }
+enum Direction { ltr rtl }
+enum ContentStatus { draft review published archived }
+enum MediaStatus { pending_upload processing ready failed archived }
+enum InsightType { article guide report }
+enum NavigationItemType { internal external }
+enum LeadStatus { new contacted qualified proposal won lost }
+enum LeadSource { contact consultation assessment landing_page manual }
+enum NotificationStatus { pending queued sent failed }
+
+model User {
+  id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email               String               @unique @db.Citext
+  passwordHash        String               @map("password_hash")
+  displayName         String               @map("display_name")
+  status              UserStatus           @default(invited)
+  mustChangePassword  Boolean              @default(false) @map("must_change_password")
+  lastLoginAt         DateTime?            @map("last_login_at") @db.Timestamptz(6)
+  createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  roles               UserRole[]
+  sessions            AuthSession[]
+  passwordResetTokens PasswordResetToken[]
+  uploads             Media[]
+  leadAssignments     Lead[]
+  leadNotes           LeadNote[]
+  leadActivities      LeadActivity[]
+  auditLogs           AuditLog[]
+  createdPages        Page[]               @relation("PageCreator")
+  updatedPages        Page[]               @relation("PageUpdater")
+  insights            Insight[]
+
+  @@map("users")
+}
+
+model Role {
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key         String           @unique
+  name        String
+  isSystem    Boolean          @default(false) @map("is_system")
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  users       UserRole[]
+  permissions RolePermission[]
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key         String           @unique
+  description String?
+  roles       RolePermission[]
+  @@map("permissions")
+}
+
+model UserRole {
+  userId String @map("user_id") @db.Uuid
+  roleId String @map("role_id") @db.Uuid
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId String @map("role_id") @db.Uuid
+  permissionId String @map("permission_id") @db.Uuid
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model AuthSession {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  refreshTokenHash String @map("refresh_token_hash")
+  csrfTokenHash String @map("csrf_token_hash")
+  userAgent String? @map("user_agent")
+  ipHash String? @map("ip_hash")
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, expiresAt])
+  @@map("auth_sessions")
+}
+
+model PasswordResetToken {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  tokenHash String @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  usedAt DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, expiresAt])
+  @@map("password_reset_tokens")
+}
+
+model Language {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code String @unique @db.VarChar(16)
+  name String
+  nativeName String @map("native_name")
+  direction Direction
+  isActive Boolean @default(true) @map("is_active")
+  isDefault Boolean @default(false) @map("is_default")
+  sortOrder Int @default(0) @map("sort_order")
+  localeFormat String? @map("locale_format")
+  dateLocale String? @map("date_locale")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  mediaTranslations MediaTranslation[]
+  pageTranslations PageTranslation[]
+  sectionTranslations PageSectionTranslation[]
+  categoryTranslations ServiceCategoryTranslation[]
+  serviceTranslations ServiceTranslation[]
+  industryTranslations IndustryTranslation[]
+  caseStudyTranslations CaseStudyTranslation[]
+  insightCategoryTranslations InsightCategoryTranslation[]
+  insightTranslations InsightTranslation[]
+  tagTranslations TagTranslation[]
+  faqTranslations FaqTranslation[]
+  teamTranslations TeamMemberTranslation[]
+  clientTranslations ClientTranslation[]
+  partnerTranslations PartnerTranslation[]
+  brandTranslations BrandTranslation[]
+  productTranslations ProductVentureTranslation[]
+  testimonialTranslations TestimonialTranslation[]
+  certificationTranslations CertificationTranslation[]
+  trustMetricTranslations TrustMetricTranslation[]
+  navigationTranslations NavigationItemTranslation[]
+  @@index([isActive, sortOrder])
+  @@map("languages")
+}
+
+model MediaFolder {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  parentId String? @map("parent_id") @db.Uuid
+  name String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  parent MediaFolder? @relation("MediaFolderTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children MediaFolder[] @relation("MediaFolderTree")
+  media Media[]
+  @@unique([parentId, name])
+  @@map("media_folders")
+}
+
+model Media {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  folderId String? @map("folder_id") @db.Uuid
+  storageProvider String @map("storage_provider")
+  bucket String
+  storageKey String @unique @map("storage_key")
+  originalFilename String @map("original_filename")
+  normalizedFilename String @map("normalized_filename")
+  mimeType String @map("mime_type")
+  extension String?
+  sizeBytes BigInt @map("size_bytes")
+  width Int?
+  height Int?
+  durationSeconds Decimal? @map("duration_seconds") @db.Decimal(12,3)
+  checksum String?
+  status MediaStatus @default(pending_upload)
+  uploadedById String @map("uploaded_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  folder MediaFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  uploadedBy User @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  translations MediaTranslation[]
+  variants MediaVariant[]
+  caseStudyMedia CaseStudyMedia[]
+  @@index([status, createdAt])
+  @@index([folderId, createdAt])
+  @@map("media")
+}
+
+model MediaTranslation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mediaId String @map("media_id") @db.Uuid
+  locale String @db.VarChar(16)
+  title String?
+  altText String? @map("alt_text")
+  caption String?
+  decorative Boolean @default(false)
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [locale], references: [code], onDelete: Restrict)
+  @@unique([mediaId, locale])
+  @@map("media_translations")
+}
+
+model MediaVariant {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mediaId String @map("media_id") @db.Uuid
+  variantKey String @map("variant_key")
+  storageKey String @unique @map("storage_key")
+  mimeType String @map("mime_type")
+  width Int
+  height Int
+  sizeBytes BigInt @map("size_bytes")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  @@unique([mediaId, variantKey, mimeType])
+  @@map("media_variants")
+}
+
+model Page {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pageType String @map("page_type")
+  templateKey String @map("template_key")
+  status ContentStatus @default(draft)
+  featured Boolean @default(false)
+  publishedAt DateTime? @map("published_at") @db.Timestamptz(6)
+  createdById String? @map("created_by") @db.Uuid
+  updatedById String? @map("updated_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdBy User? @relation("PageCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy User? @relation("PageUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+  translations PageTranslation[]
+  sections PageSection[]
+  faqs PageFaq[]
+  @@index([status, publishedAt])
+  @@map("pages")
+}
+
+model PageTranslation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pageId String @map("page_id") @db.Uuid
+  locale String @db.VarChar(16)
+  title String
+  slug String
+  excerpt String?
+  seoTitle String? @map("seo_title")
+  seoDescription String? @map("seo_description")
+  ogTitle String? @map("og_title")
+  ogDescription String? @map("og_description")
+  ogMediaId String? @map("og_media_id") @db.Uuid
+  canonicalUrl String? @map("canonical_url")
+  robotsIndex Boolean @default(true) @map("robots_index")
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [locale], references: [code], onDelete: Restrict)
+  @@unique([pageId, locale])
+  @@unique([locale, slug])
+  @@map("page_translations")
+}
+
+model PageSection {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pageId String @map("page_id") @db.Uuid
+  sectionType String @map("section_type")
+  sortOrder Int @map("sort_order")
+  isVisible Boolean @default(true) @map("is_visible")
+  settings Json @default("{}")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  translations PageSectionTranslation[]
+  @@unique([pageId, sortOrder])
+  @@map("page_sections")
+}
+
+model PageSectionTranslation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sectionId String @map("section_id") @db.Uuid
+  locale String @db.VarChar(16)
+  content Json
+  section PageSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [locale], references: [code], onDelete: Restrict)
+  @@unique([sectionId, locale])
+  @@map("page_section_translations")
+}
+
+model ServiceCategory {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  iconMediaId String? @map("icon_media_id") @db.Uuid
+  status ContentStatus @default(draft)
+  sortOrder Int @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  translations ServiceCategoryTranslation[]
+  services Service[]
+  @@index([status, sortOrder])
+  @@map("service_categories")
+}
+
+model ServiceCategoryTranslation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoryId String @map("category_id") @db.Uuid
+  locale String @db.VarChar(16)
+  name String
+  slug String
+  description String?
+  category ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [locale], references: [code], onDelete: Restrict)
+  @@unique([categoryId, locale])
+  @@unique([locale, slug])
+  @@map("service_category_translations")
+}
+
+model Service {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoryId String @map("category_id") @db.Uuid
+  heroMediaId String? @map("hero_media_id") @db.Uuid
+  iconMediaId String? @map("icon_media_id") @db.Uuid
+  status ContentStatus @default(draft)
+  featured Boolean @default(false)
+  sortOrder Int @default(0) @map("sort_order")
+  publishedAt DateTime? @map("published_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  category ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  translations ServiceTranslation[]
+  industries ServiceIndustry[]
+  caseStudies CaseStudyService[]
+  insights InsightService[]
+  faqs ServiceFaq[]
+  leads Lead[]
+  @@index([status, featured, sortOrder])
+  @@map("services")
+}
+
+model ServiceTranslation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  serviceId String @map("service_id") @db.Uuid
+  locale String @db.VarChar(16)
+  title String
+  slug String
+  shortDescription String @map("short_description")
+  overview String
+  whoFor Json @default("[]") @map("who_for")
+  problems Json @default("[]")
+  deliverables Json @default("[]")
+  process Json @default("[]")
+  benefits Json @default("[]")
+  timelineText String? @map("timeline_text")
+  ctaLabel String? @map("cta_label")
+  seoTitle String? @map("seo_title")
+  seoDescription String? @map("seo_description")
+  ogMediaId String? @map("og_media_id") @db.Uuid
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [locale], references: [code], onDelete: Restrict)
+  @@unique([serviceId, locale])
+  @@unique([locale, slug])
+  @@map("service_translations")
+}
+
+model Industry {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  heroMediaId String? @map("hero_media_id") @db.Uuid
+  status ContentStatus @default(draft)
+  featured Boolean @default(false)
+  sortOrder Int @default(0) @map("sort_order")
+  publishedAt DateTime? @map("published_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  translations IndustryTranslation[]
+  services ServiceIndustry[]
+  caseStudies CaseStudyIndustry[]
+  insights InsightIndustry[]
+  clients Client[]
+  brands Brand[]
+  products ProductVenture[]
+  leads Lead[]
+  @@index([status, featured, sortOrder])
+  @@map("industries")
+}
+
+model IndustryTranslation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  industryId String @map("industry_id") @db.Uuid
+  locale String @db.VarChar(16)
+  name String
+  slug String
+  shortDescription String @map("short_description")
+  overview String
+  challenges Json @default("[]")
+  opportunities Json @default("[]")
+  ctaLabel String? @map("cta_label")
+  seoTitle String? @map("seo_title")
+  seoDescription String? @map("seo_description")
+  ogMediaId String? @map("og_media_id") @db.Uuid
+  industry Industry @relation(fields: [industryId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [locale], references: [code], onDelete: Restrict)
+  @@unique([industryId, locale])
+  @@unique([locale, slug])
+  @@map("industry_translations")
+}
+
+model ServiceIndustry {
+  serviceId String @map("service_id") @db.Uuid
+  industryId String @map("industry_id") @db.Uuid
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  industry Industry @relation(fields: [industryId], references: [id], onDelete: Restrict)
+  @@id([serviceId, industryId])
+  @@map("service_industries")
+}
+
+model Client {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  logoMediaId String? @map("logo_media_id") @db.Uuid
+  website String?
+  industryId String? @map("industry_id") @db.Uuid
+  countryCode String? @map("country_code")
+  featured Boolean @default(false)
+  publicVisibility Boolean @default(false) @map("public_visibility")
+  sortOrder Int @default(0) @map("sort_order")
+  status ContentStatus @default(draft)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  industry Industry? @relation(fields: [industryId], references: [id], onDelete: SetNull)
+  translations ClientTranslation[]
+  caseStudies CaseStudy[]
+  testimonials Testimonial[]
+  @@index([status, publicVisibility, sortOrder])
+  @@map("clients")
+}
+
+model ClientTranslation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clientId String @map("client_id") @db.Uuid
+  locale String @db.VarChar(16)
+  name String
+  shortDescription String? @map("short_description")
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [locale], references: [code], onDelete: Restrict)
+  @@unique([clientId, locale])
+  @@map("client_translations")
+}
+
+model CaseStudy {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clientId String? @map("client_id") @db.Uuid
+  anonymized Boolean @default(false)
+  countryCode String? @map("country_code")
+  heroMediaId String? @map("hero_media_id") @db.Uuid
+  status ContentStatus @default(draft)
+  featured Boolean @default(false)
+  publishedAt DateTime? @map("published_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  client Client? @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  translations CaseStudyTranslation[]
+  services CaseStudyService[]
+  industries CaseStudyIndustry[]
+  gallery CaseStudyMedia[]
+  @@index([status, featured, publishedAt])
+  @@map("case_studies")
+}
+
+model CaseStudyTranslation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  caseStudyId String @map("case_study_id") @db.Uuid
+  locale String @db.VarChar(16)
+  title String
+  slug String
+  clientLabel String? @map("client_label")
+  context String
+  challenge String
+  objectives Json @default("[]")
+  solution String
+  process Json @default("[]")
+  results Json @default("[]")
+  metrics Json @default("[]")
+  testimonialText String? @map("testimonial_text")
+  seoTitle String? @map("seo_title")
+  seoDescription String? @map("seo_description")
+  ogMediaId String? @map("og_media_id") @db.Uuid
+  caseStudy CaseStudy @relation(fields: [caseStudyId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [locale], references: [code], onDelete: Restrict)
+  @@unique([caseStudyId, locale])
+  @@unique([locale, slug])
+  @@map("case_study_translations")
+}
+
+model CaseStudyService {
+  caseStudyId String @map("case_study_id") @db.Uuid
+  serviceId   String @map("service_id") @db.Uuid
+  caseStudy CaseStudy @relation(fields: [caseStudyId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  @@id([caseStudyId, serviceId])
+  @@map("case_study_services")
+}
+model CaseStudyIndustry {
+  caseStudyId String @map("case_study_id") @db.Uuid
+  industryId  String @map("industry_id") @db.Uuid
+  caseStudy CaseStudy @relation(fields: [caseStudyId], references: [id], onDelete: Cascade)
+  industry Industry @relation(fields: [industryId], references: [id], onDelete: Restrict)
+  @@id([caseStudyId, industryId])
+  @@map("case_study_industries")
+}
+model CaseStudyMedia {
+  caseStudyId String @map("case_study_id") @db.Uuid
+  mediaId     String @map("media_id") @db.Uuid
+  sortOrder   Int @default(0) @map("sort_order")
+  caseStudy CaseStudy @relation(fields: [caseStudyId], references: [id], onDelete: Cascade)
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+  @@id([caseStudyId, mediaId])
+  @@map("case_study_media")
+}
+
+model InsightCategory {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  status ContentStatus @default(draft)
+  sortOrder Int @default(0) @map("sort_order")
+  translations InsightCategoryTranslation[]
+  insights Insight[]
+  @@map("insight_categories")
+}
+model InsightCategoryTranslation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoryId String @map("category_id") @db.Uuid
+  locale String @db.VarChar(16)
+  name String
+  slug String
+  category InsightCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [locale], references: [code], onDelete: Restrict)
+  @@unique([categoryId, locale])
+  @@unique([locale, slug])
+  @@map("insight_category_translations")
+}
+model Insight {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type InsightType
+  categoryId String? @map("category_id") @db.Uuid
+  authorUserId String? @map("author_user_id") @db.Uuid
+  coverMediaId String? @map("cover_media_id") @db.Uuid
+  downloadableMediaId String? @map("downloadable_media_id") @db.Uuid
+  status ContentStatus @default(draft)
+  featured Boolean @default(false)
+  publishedAt DateTime? @map("published_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  category InsightCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  author User? @relation(fields: [authorUserId], references: [id], onDelete: SetNull)
+  translations InsightTranslation[]
+  tags InsightTag[]
+  services InsightService[]
+  industries InsightIndustry[]
+  @@index([status, type, publishedAt])
+  @@map("insights")
+}
+model InsightTranslation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  insightId String @map("insight_id") @db.Uuid
+  locale String @db.VarChar(16)
+  title String
+  slug String
+  excerpt String
+  content Json
+  seoTitle String? @map("seo_title")
+  seoDescription String? @map("seo_description")
+  ogMediaId String? @map("og_media_id") @db.Uuid
+  insight Insight @relation(fields: [insightId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [locale], references: [code], onDelete: Restrict)
+  @@unique([insightId, locale])
+  @@unique([locale, slug])
+  @@map("insight_translations")
+}
+model Tag {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key String @unique
+  translations TagTranslation[]
+  insights InsightTag[]
+  @@map("tags")
+}
+model TagTranslation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tagId String @map("tag_id") @db.Uuid
+  locale String @db.VarChar(16)
+  name String
+  slug String
+  tag Tag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [locale], references: [code], onDelete: Restrict)
+  @@unique([tagId, locale])
+  @@unique([locale, slug])
+  @@map("tag_translations")
+}
+model InsightTag {
+  insightId String @map("insight_id") @db.Uuid
+  tagId String @map("tag_id") @db.Uuid
+  insight Insight @relation(fields: [insightId], references: [id], onDelete: Cascade)
+  tag Tag @relation(fields: [tagId], references: [id], onDelete: Restrict)
+  @@id([insightId, tagId])
+  @@map("insight_tags")
+}
+model InsightService {
+  insightId String @map("insight_id") @db.Uuid
+  serviceId String @map("service_id") @db.Uuid
+  insight Insight @relation(fields: [insightId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  @@id([insightId, serviceId])
+  @@map("insight_services")
+}
+model InsightIndustry {
+  insightId String @map("insight_id") @db.Uuid
+  industryId String @map("industry_id") @db.Uuid
+  insight Insight @relation(fields: [insightId], references: [id], onDelete: Cascade)
+  industry Industry @relation(fields: [industryId], references: [id], onDelete: Restrict)
+  @@id([insightId, industryId])
+  @@map("insight_industries")
+}
+
+model Faq {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoryKey String? @map("category_key")
+  status ContentStatus @default(draft)
+  sortOrder Int @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  translations FaqTranslation[]
+  services ServiceFaq[]
+  pages PageFaq[]
+  @@map("faqs")
+}
+model FaqTranslation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  faqId String @map("faq_id") @db.Uuid
+  locale String @db.VarChar(16)
+  question String
+  answer String
+  faq Faq @relation(fields: [faqId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [locale], references: [code], onDelete: Restrict)
+  @@unique([faqId, locale])
+  @@map("faq_translations")
+}
+model ServiceFaq {
+  serviceId String @map("service_id") @db.Uuid
+  faqId String @map("faq_id") @db.Uuid
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  faq Faq @relation(fields: [faqId], references: [id], onDelete: Cascade)
+  @@id([serviceId, faqId])
+  @@map("service_faqs")
+}
+model PageFaq {
+  pageId String @map("page_id") @db.Uuid
+  faqId String @map("faq_id") @db.Uuid
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  faq Faq @relation(fields: [faqId], references: [id], onDelete: Cascade)
+  @@id([pageId, faqId])
+  @@map("page_faqs")
+}
+
+model TeamMember {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  photoMediaId String? @map("photo_media_id") @db.Uuid
+  linkedinUrl String? @map("linkedin_url")
+  status ContentStatus @default(draft)
+  sortOrder Int @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  translations TeamMemberTranslation[]
+  @@map("team_members")
+}
+model TeamMemberTranslation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  memberId String @map("member_id") @db.Uuid
+  locale String @db.VarChar(16)
+  name String
+  position String
+  bio String
+  member TeamMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [locale], references: [code], onDelete: Restrict)
+  @@unique([memberId, locale])
+  @@map("team_member_translations")
+}
+
+model Partner {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  partnerType String @map("partner_type")
+  logoMediaId String? @map("logo_media_id") @db.Uuid
+  website String?
+  countryCode String? @map("country_code")
+  featured Boolean @default(false)
+  publicVisibility Boolean @default(false) @map("public_visibility")
+  sortOrder Int @default(0) @map("sort_order")
+  status ContentStatus @default(draft)
+  translations PartnerTranslation[]
+  @@map("partners")
+}
+model PartnerTranslation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  partnerId String @map("partner_id") @db.Uuid
+  locale String @db.VarChar(16)
+  name String
+  description String?
+  partner Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [locale], references: [code], onDelete: Restrict)
+  @@unique([partnerId, locale])
+  @@map("partner_translations")
+}
+
+model Brand {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  logoMediaId String? @map("logo_media_id") @db.Uuid
+  coverMediaId String? @map("cover_media_id") @db.Uuid
+  industryId String? @map("industry_id") @db.Uuid
+  website String?
+  relationshipType String @map("relationship_type")
+  status ContentStatus @default(draft)
+  featured Boolean @default(false)
+  sortOrder Int @default(0) @map("sort_order")
+  publishedAt DateTime? @map("published_at") @db.Timestamptz(6)
+  industry Industry? @relation(fields: [industryId], references: [id], onDelete: SetNull)
+  translations BrandTranslation[]
+  @@map("brands")
+}
+model BrandTranslation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  brandId String @map("brand_id") @db.Uuid
+  locale String @db.VarChar(16)
+  name String
+  slug String
+  shortDescription String @map("short_description")
+  fullDescription String @map("full_description")
+  seoTitle String? @map("seo_title")
+  seoDescription String? @map("seo_description")
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [locale], references: [code], onDelete: Restrict)
+  @@unique([brandId, locale])
+  @@unique([locale, slug])
+  @@map("brand_translations")
+}
+
+model ProductVenture {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  logoMediaId String? @map("logo_media_id") @db.Uuid
+  productType String @map("product_type")
+  industryId String? @map("industry_id") @db.Uuid
+  website String?
+  launchStatus String @map("launch_status")
+  relationshipType String @map("relationship_type")
+  status ContentStatus @default(draft)
+  featured Boolean @default(false)
+  sortOrder Int @default(0) @map("sort_order")
+  publishedAt DateTime? @map("published_at") @db.Timestamptz(6)
+  industry Industry? @relation(fields: [industryId], references: [id], onDelete: SetNull)
+  translations ProductVentureTranslation[]
+  @@map("product_ventures")
+}
+model ProductVentureTranslation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productVentureId String @map("product_venture_id") @db.Uuid
+  locale String @db.VarChar(16)
+  name String
+  slug String
+  shortDescription String @map("short_description")
+  fullDescription String @map("full_description")
+  keyFeatures Json @default("[]") @map("key_features")
+  seoTitle String? @map("seo_title")
+  seoDescription String? @map("seo_description")
+  productVenture ProductVenture @relation(fields: [productVentureId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [locale], references: [code], onDelete: Restrict)
+  @@unique([productVentureId, locale])
+  @@unique([locale, slug])
+  @@map("product_venture_translations")
+}
+
+model Testimonial {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clientId String? @map("client_id") @db.Uuid
+  logoMediaId String? @map("logo_media_id") @db.Uuid
+  personName String @map("person_name")
+  personRole String? @map("person_role")
+  companyName String? @map("company_name")
+  countryCode String? @map("country_code")
+  consentConfirmed Boolean @default(false) @map("consent_confirmed")
+  featured Boolean @default(false)
+  status ContentStatus @default(draft)
+  sortOrder Int @default(0) @map("sort_order")
+  client Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  translations TestimonialTranslation[]
+  @@map("testimonials")
+}
+model TestimonialTranslation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  testimonialId String @map("testimonial_id") @db.Uuid
+  locale String @db.VarChar(16)
+  quote String
+  testimonial Testimonial @relation(fields: [testimonialId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [locale], references: [code], onDelete: Restrict)
+  @@unique([testimonialId, locale])
+  @@map("testimonial_translations")
+}
+
+model Certification {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  logoMediaId String? @map("logo_media_id") @db.Uuid
+  issuer String
+  certificateNumber String? @map("certificate_number")
+  validFrom DateTime? @map("valid_from") @db.Date
+  validUntil DateTime? @map("valid_until") @db.Date
+  verificationUrl String? @map("verification_url")
+  publicVisibility Boolean @default(false) @map("public_visibility")
+  status ContentStatus @default(draft)
+  sortOrder Int @default(0) @map("sort_order")
+  translations CertificationTranslation[]
+  @@map("certifications")
+}
+model CertificationTranslation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  certificationId String @map("certification_id") @db.Uuid
+  locale String @db.VarChar(16)
+  name String
+  description String?
+  certification Certification @relation(fields: [certificationId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [locale], references: [code], onDelete: Restrict)
+  @@unique([certificationId, locale])
+  @@map("certification_translations")
+}
+
+model TrustMetric {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  value String
+  suffix String?
+  evidenceNoteInternal String? @map("evidence_note_internal")
+  publicVisibility Boolean @default(false) @map("public_visibility")
+  sortOrder Int @default(0) @map("sort_order")
+  status ContentStatus @default(draft)
+  translations TrustMetricTranslation[]
+  @@map("trust_metrics")
+}
+model TrustMetricTranslation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  trustMetricId String @map("trust_metric_id") @db.Uuid
+  locale String @db.VarChar(16)
+  label String
+  trustMetric TrustMetric @relation(fields: [trustMetricId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [locale], references: [code], onDelete: Restrict)
+  @@unique([trustMetricId, locale])
+  @@map("trust_metric_translations")
+}
+
+model NavigationMenu {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key String @unique
+  location String
+  status ContentStatus @default(draft)
+  items NavigationItem[]
+  @@map("navigation_menus")
+}
+model NavigationItem {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  menuId String @map("menu_id") @db.Uuid
+  parentId String? @map("parent_id") @db.Uuid
+  itemType NavigationItemType @map("item_type")
+  internalEntityType String? @map("internal_entity_type")
+  internalEntityId String? @map("internal_entity_id") @db.Uuid
+  externalUrl String? @map("external_url")
+  sortOrder Int @default(0) @map("sort_order")
+  visible Boolean @default(true)
+  menu NavigationMenu @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  parent NavigationItem? @relation("NavigationTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children NavigationItem[] @relation("NavigationTree")
+  translations NavigationItemTranslation[]
+  @@index([menuId, parentId, sortOrder])
+  @@map("navigation_items")
+}
+model NavigationItemTranslation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  navigationItemId String @map("navigation_item_id") @db.Uuid
+  locale String @db.VarChar(16)
+  label String
+  navigationItem NavigationItem @relation(fields: [navigationItemId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [locale], references: [code], onDelete: Restrict)
+  @@unique([navigationItemId, locale])
+  @@map("navigation_item_translations")
+}
+
+model GlobalSetting {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key String @unique
+  category String
+  value Json
+  isPublic Boolean @default(false) @map("is_public")
+  updatedById String? @map("updated_by") @db.Uuid
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  @@map("global_settings")
+}
+model Redirect {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourcePath String @unique @map("source_path")
+  destinationPath String @map("destination_path")
+  statusCode Int @map("status_code")
+  locale String? @db.VarChar(16)
+  active Boolean @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  @@index([active, sourcePath])
+  @@map("redirects")
+}
+
+model Lead {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fullName String @map("full_name")
+  companyName String? @map("company_name")
+  email String @db.Citext
+  phone String?
+  countryCode String? @map("country_code")
+  preferredLocale String? @map("preferred_locale")
+  industryId String? @map("industry_id") @db.Uuid
+  serviceId String? @map("service_id") @db.Uuid
+  message String?
+  sourceType LeadSource @map("source_type")
+  sourcePage String? @map("source_page")
+  sourceUrl String? @map("source_url")
+  submissionLocale String? @map("submission_locale")
+  status LeadStatus @default(new)
+  assignedToUserId String? @map("assigned_to_user_id") @db.Uuid
+  duplicateOfId String? @map("duplicate_of_id") @db.Uuid
+  utmSource String? @map("utm_source")
+  utmMedium String? @map("utm_medium")
+  utmCampaign String? @map("utm_campaign")
+  utmTerm String? @map("utm_term")
+  utmContent String? @map("utm_content")
+  referrer String?
+  landingPage String? @map("landing_page")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  industry Industry? @relation(fields: [industryId], references: [id], onDelete: SetNull)
+  service Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  assignedTo User? @relation(fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  duplicateOf Lead? @relation("LeadDuplicate", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+  duplicates Lead[] @relation("LeadDuplicate")
+  notes LeadNote[]
+  activities LeadActivity[]
+  assessments Assessment[]
+  @@index([email])
+  @@index([phone])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([assignedToUserId, status])
+  @@index([sourceType, createdAt(sort: Desc)])
+  @@index([serviceId, createdAt(sort: Desc)])
+  @@map("leads")
+}
+
+model LeadNote {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leadId String @map("lead_id") @db.Uuid
+  authorUserId String @map("author_user_id") @db.Uuid
+  body String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorUserId], references: [id], onDelete: Restrict)
+  @@index([leadId, createdAt])
+  @@map("lead_notes")
+}
+model LeadActivity {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leadId String @map("lead_id") @db.Uuid
+  actorUserId String? @map("actor_user_id") @db.Uuid
+  type String
+  payload Json @default("{}")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  @@index([leadId, createdAt])
+  @@map("lead_activities")
+}
+model Assessment {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leadId String @map("lead_id") @db.Uuid
+  formVersion String @map("form_version")
+  answers Json
+  submittedAt DateTime @map("submitted_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  @@index([leadId])
+  @@map("assessments")
+}
+model IdempotencyRecord {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key String
+  endpoint String
+  requestHash String @map("request_hash")
+  response Json
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  @@unique([key, endpoint])
+  @@index([expiresAt])
+  @@map("idempotency_records")
+}
+
+model AuditLog {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actorUserId String? @map("actor_user_id") @db.Uuid
+  action String
+  entityType String @map("entity_type")
+  entityId String? @map("entity_id")
+  summary Json?
+  requestId String? @map("request_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  @@index([entityType, entityId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@map("audit_logs")
+}
+
+model NotificationDelivery {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type String
+  recipient String
+  provider String
+  providerMessageId String? @map("provider_message_id")
+  status NotificationStatus @default(pending)
+  errorCode String? @map("error_code")
+  relatedEntityType String? @map("related_entity_type")
+  relatedEntityId String? @map("related_entity_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  @@index([status, createdAt])
+  @@index([relatedEntityType, relatedEntityId])
+  @@map("notification_deliveries")
+}

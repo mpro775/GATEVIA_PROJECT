@@ -1,0 +1,5 @@
+import { readdir, readFile } from 'node:fs/promises';
+import { extname, join } from 'node:path';
+const roots=['apps','packages','prisma','docker','.github'];const extensions=new Set(['.ts','.tsx','.js','.mjs','.json','.yml','.yaml','.prisma','.md']);const ignored=new Set(['node_modules','.next','dist','coverage']);const patterns=[/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/,/AKIA[0-9A-Z]{16}/,/sk_live_[0-9a-zA-Z]{20,}/,/password\s*[:=]\s*["'][^"']{8,}["']/i];const findings=[];
+async function walk(path){for(const entry of await readdir(path,{withFileTypes:true})){if(ignored.has(entry.name))continue;const target=join(path,entry.name);if(entry.isDirectory())await walk(target);else if(extensions.has(extname(entry.name))){const source=await readFile(target,'utf8');for(const pattern of patterns)if(pattern.test(source))findings.push(`${target}: ${pattern}`)}}}
+for(const root of roots)await walk(root);if(findings.length){process.stderr.write(`Potential secrets found:\n${findings.join('\n')}\n`);process.exit(1)}process.stdout.write('Security source scan passed.\n');

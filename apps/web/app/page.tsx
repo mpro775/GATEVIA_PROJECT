@@ -1,0 +1,1 @@
+import { redirect } from 'next/navigation'; import { getLanguages, safe } from '@/lib/api'; export default async function Root(){const languages=await safe(getLanguages(),[]);const locale=languages.find(item=>item.isDefault)?.code.toLowerCase()??'ar-sa';redirect(`/${locale}`)}

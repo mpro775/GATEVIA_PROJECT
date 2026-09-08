@@ -1,0 +1,2 @@
+import { writeFile } from 'node:fs/promises'; import { NestFactory } from '@nestjs/core'; import { AppModule } from './app.module'; import { configureApplication, setupOpenApi } from './bootstrap';
+async function generate(){const app=await NestFactory.create(AppModule,{logger:false});configureApplication(app);const document=setupOpenApi(app);await writeFile(new URL('../openapi.json',import.meta.url),JSON.stringify(document,null,2));await app.close()} void generate();

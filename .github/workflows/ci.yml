@@ -1,0 +1,49 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env: { POSTGRES_USER: gatevia, POSTGRES_PASSWORD: gatevia, POSTGRES_DB: gatevia_test }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U gatevia" --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7.4-alpine
+        ports: ["6379:6379"]
+    env:
+      DATABASE_URL: postgresql://gatevia:gatevia@localhost:5432/gatevia_test?schema=public
+      REDIS_URL: redis://localhost:6379
+      AUTH_SESSION_SECRET: ci-only-secret-value-with-at-least-32-characters
+      CSRF_SECRET: ci-only-csrf-value-with-at-least-32-characters
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001
+      ADMIN_URL: http://localhost:3001
+      API_URL: http://localhost:3002
+      R2_ENDPOINT: http://localhost:9000
+      R2_ACCESS_KEY_ID: ci-placeholder
+      R2_SECRET_ACCESS_KEY: ci-placeholder
+      R2_BUCKET: gatevia-ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.15.1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma:validate
+      - run: pnpm prisma:generate
+      - run: pnpm prisma:migrate:deploy
+      - run: pnpm seed && pnpm seed
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm audit --audit-level high
