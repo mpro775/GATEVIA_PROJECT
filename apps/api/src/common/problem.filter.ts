@@ -10,25 +10,54 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     const context = host.switchToHttp();
     const request = context.getRequest<GateviaRequest>();
     const response = context.getResponse<Response>();
-    const status = error instanceof HttpException ? error.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+    const status =
+      error instanceof HttpException ? error.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
     const exceptionResponse = error instanceof HttpException ? error.getResponse() : null;
-    const details = typeof exceptionResponse === 'object' && exceptionResponse !== null ? exceptionResponse as Record<string, unknown> : {};
+    const details =
+      typeof exceptionResponse === 'object' && exceptionResponse !== null
+        ? (exceptionResponse as Record<string, unknown>)
+        : {};
     const rawMessage = details.message;
-    const detail = status >= 500 ? 'An unexpected error occurred.' : Array.isArray(rawMessage) ? 'One or more fields are invalid.' : String(rawMessage ?? exceptionResponse ?? 'Request failed.');
+    const publicMessage = rawMessage ?? exceptionResponse;
+    const detail =
+      status >= 500
+        ? 'An unexpected error occurred.'
+        : Array.isArray(rawMessage)
+          ? 'One or more fields are invalid.'
+          : typeof publicMessage === 'string'
+            ? publicMessage
+            : 'Request failed.';
     if (status >= 500) {
-      import('@sentry/node').then(Sentry => {
-        Sentry.captureException(error, { extra: { requestId: request.requestId, route: request.originalUrl } });
-      });
-      this.logger.error(JSON.stringify({ requestId: request.requestId, route: request.originalUrl, error: error instanceof Error ? error.name : 'UnknownError' }));
+      void import('@sentry/node')
+        .then((Sentry) => {
+          Sentry.captureException(error, {
+            extra: { requestId: request.requestId, route: request.originalUrl },
+          });
+        })
+        .catch((sentryError: unknown) => {
+          this.logger.warn(
+            `Unable to report exception to Sentry: ${sentryError instanceof Error ? sentryError.message : 'unknown error'}`,
+          );
+        });
+      this.logger.error(
+        JSON.stringify({
+          requestId: request.requestId,
+          route: request.originalUrl,
+          error: error instanceof Error ? error.name : 'UnknownError',
+        }),
+      );
     }
-    response.status(status).type('application/problem+json').send({
-      type: `https://gatevia.example/problems/${status === 422 ? 'validation-error' : 'request-error'}`,
-      title: status >= 500 ? 'Internal server error' : HttpStatus[status] ?? 'Request error',
-      status,
-      detail,
-      instance: request.originalUrl,
-      requestId: request.requestId,
-      ...(Array.isArray(rawMessage) ? { errors: { request: rawMessage.map(String) } } : {}),
-    });
+    response
+      .status(status)
+      .type('application/problem+json')
+      .send({
+        type: `https://gatevia.example/problems/${status === 422 ? 'validation-error' : 'request-error'}`,
+        title: status >= 500 ? 'Internal server error' : (HttpStatus[status] ?? 'Request error'),
+        status,
+        detail,
+        instance: request.originalUrl,
+        requestId: request.requestId,
+        ...(Array.isArray(rawMessage) ? { errors: { request: rawMessage.map(String) } } : {}),
+      });
   }
 }

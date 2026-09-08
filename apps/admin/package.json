@@ -1,6 +1,29 @@
 {
-  "name":"@gatevia/admin","version":"1.0.0","private":true,
-  "scripts":{"dev":"next dev --port 3001","build":"next build","start":"next start --port 3001","lint":"eslint .","typecheck":"tsc --noEmit","test":"vitest run --passWithNoTests"},
-  "dependencies":{"@gatevia/api-client":"workspace:*","@gatevia/contracts":"workspace:*","@gatevia/ui":"workspace:*","@sentry/nextjs":"^8.38.0","next":"^15.2.2","react":"^19.0.0","react-dom":"^19.0.0"},
-  "devDependencies":{"@gatevia/eslint-config":"workspace:*","@gatevia/typescript-config":"workspace:*","@types/react":"^19.0.10","@types/react-dom":"^19.0.4","vitest":"^3.0.8"}
+  "name": "@gatevia/admin",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "start": "next start --port 3001",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@gatevia/api-client": "workspace:*",
+    "@gatevia/contracts": "workspace:*",
+    "@gatevia/ui": "workspace:*",
+    "@sentry/nextjs": "^8.38.0",
+    "next": "^15.2.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@gatevia/eslint-config": "workspace:*",
+    "@gatevia/typescript-config": "workspace:*",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "vitest": "^3.0.8"
+  }
 }

@@ -1,5 +1,5 @@
-'use client'; 
-import Script from 'next/script'; 
+'use client';
+import Script from 'next/script';
 import { useEffect } from 'react';
 
 export function track(event: string, properties: Record<string, string | number | boolean> = {}) {
@@ -7,22 +7,28 @@ export function track(event: string, properties: Record<string, string | number 
   (window as unknown as { dataLayer?: unknown[] }).dataLayer?.push({ event, ...properties });
 }
 
-export function Analytics({ gtmId, ga4Id }: { gtmId?: string | undefined; ga4Id?: string | undefined }) {
+export function Analytics({
+  gtmId,
+  ga4Id,
+}: {
+  gtmId?: string | undefined;
+  ga4Id?: string | undefined;
+}) {
   const gtm = gtmId || process.env.NEXT_PUBLIC_GTM_ID;
   const ga4 = ga4Id || process.env.NEXT_PUBLIC_GA4_ID;
-  
+
   useEffect(() => {
     // 1. Landing page attribution
     if (!sessionStorage.getItem('gatevia_landing')) {
       sessionStorage.setItem('gatevia_landing', location.href);
     }
-    
+
     // 2. Global click tracking (CTA & Downloads)
     const onClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const anchor = target.closest('a');
       if (!anchor) return;
-      
+
       // CTA click
       if (anchor.classList.contains('gv-button') || anchor.closest('.hero-actions')) {
         track('cta_click', { url: anchor.href, label: anchor.textContent?.trim() || '' });
@@ -32,13 +38,13 @@ export function Analytics({ gtmId, ga4Id }: { gtmId?: string | undefined; ga4Id?
         track('report_download', { url: anchor.href, label: anchor.textContent?.trim() || '' });
       }
     };
-    
+
     // 3. Theme switch tracking
     const onTheme = (e: Event) => {
       const next = (e as CustomEvent).detail;
       track('theme_switch', { theme: next });
     };
-    
+
     document.addEventListener('click', onClick);
     window.addEventListener('gatevia:theme', onTheme);
     return () => {
@@ -46,7 +52,7 @@ export function Analytics({ gtmId, ga4Id }: { gtmId?: string | undefined; ga4Id?
       window.removeEventListener('gatevia:theme', onTheme);
     };
   }, []);
-  
+
   return (
     <>
       {gtm && (
@@ -56,7 +62,10 @@ export function Analytics({ gtmId, ga4Id }: { gtmId?: string | undefined; ga4Id?
       )}
       {ga4 && (
         <>
-          <Script src={`https://www.googletagmanager.com/gtag/js?id=${ga4}`} strategy="afterInteractive" />
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${ga4}`}
+            strategy="afterInteractive"
+          />
           <Script id="ga4" strategy="afterInteractive">
             {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${ga4}',{send_page_view:true});`}
           </Script>

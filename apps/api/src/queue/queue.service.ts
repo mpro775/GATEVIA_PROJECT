@@ -9,9 +9,13 @@ export class QueueService implements OnModuleDestroy {
   readonly email: Queue;
   readonly media: Queue;
   constructor(config: ConfigService) {
-    this.connection = new IORedis(config.getOrThrow<string>('REDIS_URL'), { maxRetriesPerRequest: null });
+    this.connection = new IORedis(config.getOrThrow<string>('REDIS_URL'), {
+      maxRetriesPerRequest: null,
+    });
     this.email = new Queue('transactional-email', { connection: this.connection });
     this.media = new Queue('media-image-process', { connection: this.connection });
   }
-  async onModuleDestroy(): Promise<void> { await Promise.all([this.email.close(), this.media.close(), this.connection.quit()]); }
+  async onModuleDestroy(): Promise<void> {
+    await Promise.all([this.email.close(), this.media.close(), this.connection.quit()]);
+  }
 }

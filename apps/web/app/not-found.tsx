@@ -1,1 +1,15 @@
-import Link from 'next/link'; export default function NotFound(){return <main className="error-boundary"><div className="gv-state"><div className="gv-state__mark">404</div><h1>Page not found</h1><p>The requested page is unavailable or has not been published.</p><Link className="gv-button" href="/">Return home</Link></div></main>}
+import Link from 'next/link';
+export default function NotFound() {
+  return (
+    <main className="error-boundary">
+      <div className="gv-state">
+        <div className="gv-state__mark">404</div>
+        <h1>Page not found</h1>
+        <p>The requested page is unavailable or has not been published.</p>
+        <Link className="gv-button" href="/">
+          Return home
+        </Link>
+      </div>
+    </main>
+  );
+}

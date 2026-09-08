@@ -1,29 +1,26 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { Badge, Button, EmptyState, ErrorState, Field, Input, Skeleton, Textarea } from '@gatevia/ui';
+import type {
+  Language,
+  Media as MediaRow,
+  MediaFolder as Folder,
+  MediaUsage as Usage,
+  UploadSession,
+} from '@gatevia/api-client';
+import {
+  Badge,
+  Button,
+  EmptyState,
+  ErrorState,
+  Field,
+  Input,
+  Skeleton,
+  Textarea,
+} from '@gatevia/ui';
 import { api, apiEnvelope } from '@/lib/api';
 import { useAdminAuth } from './auth-context';
 
-interface MediaRow {
-  id: string;
-  originalFilename: string;
-  mimeType: string;
-  status: string;
-  sizeBytes: string | number;
-  folderId?: string | null;
-  folder?: { id: string; name: string } | null;
-  translations?: Array<{ locale: string; title?: string; altText?: string; caption?: string; decorative?: boolean }>;
-  variants?: Array<{ variantKey: string; url?: string; width?: number; height?: number }>;
-  createdAt?: string;
-  uploadedById?: string;
-}
-
-interface Folder { id: string; name: string; parentId?: string | null }
-interface Language { code: string; nativeName: string; isActive: boolean; isDefault: boolean }
-
 type DrawerTab = 'meta' | 'translations' | 'variants' | 'usages';
-
-interface Usage { type: string; id: string; label?: string }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -34,7 +31,9 @@ function formatBytes(bytes: string | number): string {
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
 
-function isImage(mime: string) { return mime.startsWith('image/'); }
+function isImage(mime: string) {
+  return mime.startsWith('image/');
+}
 
 function statusTone(status: string): 'success' | 'danger' | 'neutral' | 'warning' {
   if (status === 'ready') return 'success';
@@ -45,14 +44,26 @@ function statusTone(status: string): 'success' | 'danger' | 'neutral' | 'warning
 
 // ─── Media Tile ───────────────────────────────────────────────────────────────
 
-function MediaTile({ row, selected, onClick }: { row: MediaRow; selected: boolean; onClick: () => void }) {
-  const thumb = row.variants?.find((v) => v.variantKey === 'thumbnail' || v.variantKey === 'webp_thumb');
+function MediaTile({
+  row,
+  selected,
+  onClick,
+}: {
+  row: MediaRow;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  const thumb = row.variants?.find(
+    (v) => v.variantKey === 'thumbnail' || v.variantKey === 'webp_thumb',
+  );
   return (
     <article
       className="media-tile"
       onClick={onClick}
       style={{
-        border: selected ? '2px solid var(--color-accent)' : '2px solid var(--color-border-default)',
+        border: selected
+          ? '2px solid var(--color-accent)'
+          : '2px solid var(--color-border-default)',
         borderRadius: '.55rem',
         overflow: 'hidden',
         cursor: 'pointer',
@@ -86,7 +97,15 @@ function MediaTile({ row, selected, onClick }: { row: MediaRow; selected: boolea
         )}
       </div>
       <div style={{ padding: '.5rem .6rem', flex: 1 }}>
-        <div style={{ fontSize: '.78rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div
+          style={{
+            fontSize: '.78rem',
+            fontWeight: 600,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
           {row.originalFilename}
         </div>
         <div className="cell-meta" style={{ fontSize: '.72rem', marginBlockStart: '.2rem' }}>
@@ -117,11 +136,18 @@ function MediaDrawer({
   const [tab, setTab] = useState<DrawerTab>('meta');
   const [usages, setUsages] = useState<Usage[] | null>(null);
   const [usagesLoading, setUsagesLoading] = useState(false);
-  const [translations, setTranslations] = useState<Record<string, { title: string; altText: string; caption: string; decorative: boolean }>>(
+  const [translations, setTranslations] = useState<
+    Record<string, { title: string; altText: string; caption: string; decorative: boolean }>
+  >(
     Object.fromEntries(
       (row.translations ?? []).map((t) => [
         t.locale,
-        { title: t.title ?? '', altText: t.altText ?? '', caption: t.caption ?? '', decorative: t.decorative ?? false },
+        {
+          title: t.title ?? '',
+          altText: t.altText ?? '',
+          caption: t.caption ?? '',
+          decorative: t.decorative ?? false,
+        },
       ]),
     ),
   );
@@ -143,19 +169,46 @@ function MediaDrawer({
   }, [tab, row.id, usages]);
 
   useEffect(() => {
-    void api<Language[]>('/admin/languages').then((items) => {
-      const active = items.filter((item) => item.isActive);
-      setLanguages(active);
-      setTransLocale((current) => active.some((item) => item.code === current) ? current : active.find((item) => item.isDefault)?.code ?? active[0]?.code ?? current);
-    }).catch(() => setLanguages((row.translations ?? []).map((item) => ({ code: item.locale, nativeName: item.locale, isActive: true, isDefault: false }))));
+    void api<Language[]>('/admin/languages')
+      .then((items) => {
+        const active = items.filter((item) => item.isActive);
+        setLanguages(active);
+        setTransLocale((current) =>
+          active.some((item) => item.code === current)
+            ? current
+            : (active.find((item) => item.isDefault)?.code ?? active[0]?.code ?? current),
+        );
+      })
+      .catch(() =>
+        setLanguages(
+          (row.translations ?? []).map((item, index) => ({
+            id: `fallback-${item.locale}`,
+            code: item.locale,
+            name: item.locale,
+            nativeName: item.locale,
+            direction: 'ltr',
+            isActive: true,
+            isDefault: false,
+            sortOrder: index,
+          })),
+        ),
+      );
   }, [row.translations]);
 
-  const currentTrans = translations[transLocale] ?? { title: '', altText: '', caption: '', decorative: false };
+  const currentTrans = translations[transLocale] ?? {
+    title: '',
+    altText: '',
+    caption: '',
+    decorative: false,
+  };
 
   function updateTrans(field: string, value: string | boolean) {
     setTranslations((prev) => ({
       ...prev,
-      [transLocale]: { ...(prev[transLocale] ?? { title: '', altText: '', caption: '', decorative: false }), [field]: value },
+      [transLocale]: {
+        ...(prev[transLocale] ?? { title: '', altText: '', caption: '', decorative: false }),
+        [field]: value,
+      },
     }));
   }
 
@@ -182,16 +235,16 @@ function MediaDrawer({
     setBusy(true);
     setMessage('');
     try {
-      const session = await api<{ url: string; headers: Record<string, string>; uploadToken: string }>(
-        `/admin/media/${row.id}/replace-session`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ filename: file.name, mimeType: file.type, sizeBytes: file.size }),
-        },
-      );
+      const session = await api<UploadSession>(`/admin/media/${row.id}/replace-session`, {
+        method: 'POST',
+        body: JSON.stringify({ filename: file.name, mimeType: file.type, sizeBytes: file.size }),
+      });
       const res = await fetch(session.url, { method: 'PUT', headers: session.headers, body: file });
       if (!res.ok) throw new Error('Upload failed');
-      await api('/admin/media/finalize', { method: 'POST', body: JSON.stringify({ uploadToken: session.uploadToken }) });
+      await api('/admin/media/finalize', {
+        method: 'POST',
+        body: JSON.stringify({ uploadToken: session.uploadToken }),
+      });
       setMessage('File replaced. Processing…');
       onRefresh();
     } catch (err) {
@@ -216,7 +269,9 @@ function MediaDrawer({
     }
   }
 
-  const thumb = row.variants?.find((v) => v.variantKey === 'thumbnail' || v.variantKey === 'webp_thumb');
+  const thumb = row.variants?.find(
+    (v) => v.variantKey === 'thumbnail' || v.variantKey === 'webp_thumb',
+  );
 
   return (
     <div
@@ -235,9 +290,20 @@ function MediaDrawer({
       aria-modal="true"
       aria-label="Media detail"
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBlockEnd: '1rem' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBlockEnd: '1rem',
+        }}
+      >
         <strong style={{ fontSize: '1rem' }}>Media detail</strong>
-        <button className="text-link" style={{ padding: '.3rem .6rem', minHeight: 'unset' }} onClick={onClose}>
+        <button
+          className="text-link"
+          style={{ padding: '.3rem .6rem', minHeight: 'unset' }}
+          onClick={onClose}
+        >
           ✕ Close
         </button>
       </div>
@@ -257,7 +323,11 @@ function MediaDrawer({
       >
         {thumb?.url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={thumb.url} alt={row.originalFilename} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          <img
+            src={thumb.url}
+            alt={row.originalFilename}
+            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+          />
         ) : (
           <span style={{ fontSize: '3rem' }}>
             {isImage(row.mimeType) ? '🖼️' : row.mimeType.startsWith('video/') ? '🎬' : '📄'}
@@ -269,34 +339,69 @@ function MediaDrawer({
       <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginBlockEnd: '1rem' }}>
         <Badge tone={statusTone(row.status)}>{row.status}</Badge>
         {canUpdate && row.status === 'failed' && (
-          <button className="text-link" style={{ padding: '.2rem .5rem', minHeight: 'unset', fontSize: '.85rem' }} onClick={retryProcessing} disabled={busy}>
+          <button
+            className="text-link"
+            style={{ padding: '.2rem .5rem', minHeight: 'unset', fontSize: '.85rem' }}
+            onClick={retryProcessing}
+            disabled={busy}
+          >
             Retry processing
           </button>
         )}
         {canArchive && row.status !== 'archived' && (
           <button
             className="text-link"
-            style={{ padding: '.2rem .5rem', minHeight: 'unset', fontSize: '.85rem', color: 'var(--color-danger)' }}
+            style={{
+              padding: '.2rem .5rem',
+              minHeight: 'unset',
+              fontSize: '.85rem',
+              color: 'var(--color-danger)',
+            }}
             onClick={() => {
-              if (confirm('Archive this media? This may affect content referencing it.')) onArchive();
+              if (
+                confirm(
+                  'Archive this media? Referenced media cannot be archived until every blocking usage is removed.',
+                )
+              )
+                onArchive();
             }}
           >
             Archive
           </button>
         )}
-        {canUpdate && <label
-          className="text-link"
-          style={{ padding: '.2rem .5rem', minHeight: 'unset', fontSize: '.85rem', cursor: 'pointer' }}
-        >
-          Replace file
-          <input ref={replaceRef} type="file" hidden onChange={triggerReplace} accept="image/*,application/pdf,video/mp4,video/webm" />
-        </label>}
+        {canUpdate && (
+          <label
+            className="text-link"
+            style={{
+              padding: '.2rem .5rem',
+              minHeight: 'unset',
+              fontSize: '.85rem',
+              cursor: 'pointer',
+            }}
+          >
+            Replace file
+            <input
+              ref={replaceRef}
+              type="file"
+              hidden
+              onChange={triggerReplace}
+              accept="image/*,application/pdf,video/mp4,video/webm"
+            />
+          </label>
+        )}
       </div>
 
       {/* Tabs */}
       <div className="tabs" role="tablist" style={{ marginBlockEnd: '.8rem' }}>
         {(['meta', 'translations', 'variants', 'usages'] as const).map((t) => (
-          <button key={t} role="tab" className="tab" aria-selected={tab === t} onClick={() => setTab(t)} style={{ textTransform: 'capitalize' }}>
+          <button
+            key={t}
+            role="tab"
+            className="tab"
+            aria-selected={tab === t}
+            onClick={() => setTab(t)}
+            style={{ textTransform: 'capitalize' }}
+          >
             {t}
           </button>
         ))}
@@ -313,7 +418,9 @@ function MediaDrawer({
             ['Uploaded', row.createdAt ? new Date(row.createdAt).toLocaleString() : '—'],
           ].map(([label, value]) => (
             <div key={String(label)} style={{ marginBlockEnd: '.5rem' }}>
-              <dt style={{ color: 'var(--color-text-muted)', fontWeight: 600, fontSize: '.78rem' }}>{String(label)}</dt>
+              <dt style={{ color: 'var(--color-text-muted)', fontWeight: 600, fontSize: '.78rem' }}>
+                {String(label)}
+              </dt>
               <dd style={{ margin: 0 }}>{String(value)}</dd>
             </div>
           ))}
@@ -325,27 +432,57 @@ function MediaDrawer({
         <div className="field-stack">
           <div className="tabs" role="tablist">
             {languages.map((language) => (
-              <button key={language.code} role="tab" className="tab" aria-selected={transLocale === language.code} onClick={() => setTransLocale(language.code)}>
+              <button
+                key={language.code}
+                role="tab"
+                className="tab"
+                aria-selected={transLocale === language.code}
+                onClick={() => setTransLocale(language.code)}
+              >
                 {language.nativeName}
               </button>
             ))}
           </div>
-          <fieldset disabled={!canUpdate} style={{border:0,padding:0,margin:0}}><Field label="Title (display name)">
-            <Input value={currentTrans.title} onChange={(e) => updateTrans('title', e.target.value)} />
-          </Field>
-          <Field label="Alt text (accessibility)">
-            <Textarea value={currentTrans.altText} onChange={(e) => updateTrans('altText', e.target.value)} maxLength={500} />
-          </Field>
-          <Field label="Caption">
-            <Textarea value={currentTrans.caption} onChange={(e) => updateTrans('caption', e.target.value)} maxLength={1000} />
-          </Field>
-          <label>
-            <input type="checkbox" checked={currentTrans.decorative} onChange={(e) => updateTrans('decorative', e.target.checked)} />{' '}
-            Decorative (no alt text needed for screen readers)
-          </label>
-          {canUpdate&&<Button disabled={busy} onClick={saveTranslations}>Save translations</Button>}
+          <fieldset disabled={!canUpdate} style={{ border: 0, padding: 0, margin: 0 }}>
+            <Field label="Title (display name)">
+              <Input
+                value={currentTrans.title}
+                onChange={(e) => updateTrans('title', e.target.value)}
+              />
+            </Field>
+            <Field label="Alt text (accessibility)">
+              <Textarea
+                value={currentTrans.altText}
+                onChange={(e) => updateTrans('altText', e.target.value)}
+                maxLength={500}
+              />
+            </Field>
+            <Field label="Caption">
+              <Textarea
+                value={currentTrans.caption}
+                onChange={(e) => updateTrans('caption', e.target.value)}
+                maxLength={1000}
+              />
+            </Field>
+            <label>
+              <input
+                type="checkbox"
+                checked={currentTrans.decorative}
+                onChange={(e) => updateTrans('decorative', e.target.checked)}
+              />{' '}
+              Decorative (no alt text needed for screen readers)
+            </label>
+            {canUpdate && (
+              <Button disabled={busy} onClick={saveTranslations}>
+                Save translations
+              </Button>
+            )}
           </fieldset>
-          {message && <div className="form-status" role="status">{message}</div>}
+          {message && (
+            <div className="form-status" role="status">
+              {message}
+            </div>
+          )}
         </div>
       )}
 
@@ -353,17 +490,28 @@ function MediaDrawer({
       {tab === 'variants' && (
         <>
           {(row.variants ?? []).length === 0 ? (
-            <EmptyState title="No variants" description="Image variants are generated automatically after upload." />
+            <EmptyState
+              title="No variants"
+              description="Image variants are generated automatically after upload."
+            />
           ) : (
             <div style={{ display: 'grid', gap: '.6rem' }}>
               {(row.variants ?? []).map((v, i) => (
                 <div key={i} className="section-row" style={{ fontSize: '.85rem' }}>
                   <span style={{ fontWeight: 600 }}>{v.variantKey}</span>
                   {v.width && v.height && (
-                    <span className="cell-meta">{v.width}×{v.height}</span>
+                    <span className="cell-meta">
+                      {v.width}×{v.height}
+                    </span>
                   )}
                   {v.url && (
-                    <a href={v.url} target="_blank" rel="noopener noreferrer" className="text-link" style={{ fontSize: '.8rem', padding: '.1rem .3rem', minHeight: 'unset' }}>
+                    <a
+                      href={v.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-link"
+                      style={{ fontSize: '.8rem', padding: '.1rem .3rem', minHeight: 'unset' }}
+                    >
                       View
                     </a>
                   )}
@@ -378,12 +526,22 @@ function MediaDrawer({
       {tab === 'usages' && (
         <>
           {usagesLoading ? (
-            <div><Skeleton /><br /><Skeleton width="60%" /></div>
+            <div>
+              <Skeleton />
+              <br />
+              <Skeleton width="60%" />
+            </div>
           ) : usages === null || usages.length === 0 ? (
-            <EmptyState title="No usages found" description="This media is not referenced by any content. It is safe to archive." />
+            <EmptyState
+              title="No usages found"
+              description="This media is not referenced by any content. It is safe to archive."
+            />
           ) : (
             <div style={{ display: 'grid', gap: '.5rem' }}>
-              <p className="cell-meta">{usages.length} reference(s) found — archiving will remove this media from those locations.</p>
+              <p className="cell-meta">
+                {usages.length} blocking reference(s) found. Remove these usages before archiving
+                this media.
+              </p>
               {usages.map((usage, i) => (
                 <div key={i} className="section-row" style={{ fontSize: '.85rem' }}>
                   <Badge tone="neutral">{usage.type}</Badge>
@@ -400,8 +558,17 @@ function MediaDrawer({
 
 // ─── Main MediaLibrary ────────────────────────────────────────────────────────
 
-export function MediaLibrary({ selectMode = false, onSelect }: { selectMode?: boolean; onSelect?: (id: string) => void }) {
-  const { can } = useAdminAuth(); const canUpload=can('media.upload'); const canUpdate=can('media.update'); const canArchive=can('media.archive');
+export function MediaLibrary({
+  selectMode = false,
+  onSelect,
+}: {
+  selectMode?: boolean;
+  onSelect?: (id: string) => void;
+}) {
+  const { can } = useAdminAuth();
+  const canUpload = can('media.upload');
+  const canUpdate = can('media.update');
+  const canArchive = can('media.archive');
   const [rows, setRows] = useState<MediaRow[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -426,7 +593,9 @@ export function MediaLibrary({ selectMode = false, onSelect }: { selectMode?: bo
         q ? `q=${encodeURIComponent(q)}` : '',
         statusFilter ? `status=${encodeURIComponent(statusFilter)}` : '',
         folderId ? `folderId=${encodeURIComponent(folderId)}` : '',
-      ].filter(Boolean).join('&');
+      ]
+        .filter(Boolean)
+        .join('&');
       const result = await apiEnvelope<MediaRow>(`/admin/media?${query}`);
       setRows(result.data);
       setPageCount(result.meta.pageCount);
@@ -441,13 +610,15 @@ export function MediaLibrary({ selectMode = false, onSelect }: { selectMode?: bo
     try {
       const result = await api<Folder[]>('/admin/media-folders');
       setFolders(Array.isArray(result) ? result : []);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   useEffect(() => {
     void load();
     void loadFolders();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, q, statusFilter, folderId]);
 
   async function upload(event: React.ChangeEvent<HTMLInputElement>) {
@@ -456,11 +627,20 @@ export function MediaLibrary({ selectMode = false, onSelect }: { selectMode?: bo
     setError('');
     for (const file of files) {
       try {
-        const session = await api<{ url: string; headers: Record<string, string>; uploadToken: string }>(
-          '/admin/media/upload-session',
-          { method: 'POST', body: JSON.stringify({ filename: file.name, mimeType: file.type, sizeBytes: file.size, folderId }) },
-        );
-        const res = await fetch(session.url, { method: 'PUT', headers: session.headers, body: file });
+        const session = await api<UploadSession>('/admin/media/upload-session', {
+          method: 'POST',
+          body: JSON.stringify({
+            filename: file.name,
+            mimeType: file.type,
+            sizeBytes: file.size,
+            folderId,
+          }),
+        });
+        const res = await fetch(session.url, {
+          method: 'PUT',
+          headers: session.headers,
+          body: file,
+        });
         if (!res.ok) throw new Error('Object upload failed');
         await api('/admin/media/finalize', {
           method: 'POST',
@@ -488,10 +668,15 @@ export function MediaLibrary({ selectMode = false, onSelect }: { selectMode?: bo
   async function createFolder() {
     if (!newFolderName.trim()) return;
     try {
-      await api('/admin/media-folders', { method: 'POST', body: JSON.stringify({ name: newFolderName.trim(), parentId: folderId || undefined }) });
+      await api('/admin/media-folders', {
+        method: 'POST',
+        body: JSON.stringify({ name: newFolderName.trim(), parentId: folderId || undefined }),
+      });
       setNewFolderName('');
       void loadFolders();
-    } catch { setError('Failed to create folder.'); }
+    } catch {
+      setError('Failed to create folder.');
+    }
   }
 
   function handleSelect(row: MediaRow) {
@@ -509,29 +694,48 @@ export function MediaLibrary({ selectMode = false, onSelect }: { selectMode?: bo
           <h1>Media Library</h1>
           <p>Upload, organise and manage all approved media assets.</p>
         </div>
-        {canUpload && <div className="toolbar">
-          <label className="gv-button">
-            {busy ? 'Uploading…' : 'Upload files'}
-            <input
-              type="file"
-              multiple
-              hidden
-              disabled={busy}
-              accept="image/jpeg,image/png,image/webp,image/avif,application/pdf,video/mp4,video/webm"
-              onChange={(e) => void upload(e)}
-            />
-          </label>
-        </div>}
+        {canUpload && (
+          <div className="toolbar">
+            <label className="gv-button">
+              {busy ? 'Uploading…' : 'Upload files'}
+              <input
+                type="file"
+                multiple
+                hidden
+                disabled={busy}
+                accept="image/jpeg,image/png,image/webp,image/avif,application/pdf,video/mp4,video/webm"
+                onChange={(e) => void upload(e)}
+              />
+            </label>
+          </div>
+        )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '1rem', alignItems: 'start' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '220px 1fr',
+          gap: '1rem',
+          alignItems: 'start',
+        }}
+      >
         {/* Folder sidebar */}
         <aside className="panel" style={{ position: 'sticky', top: '5rem' }}>
           <h2 style={{ marginBlockStart: 0 }}>Folders</h2>
           <button
             className={`text-link${!folderId ? ' nav-group a[aria-current]' : ''}`}
-            style={{ display: 'block', width: '100%', textAlign: 'start', padding: '.4rem .5rem', borderRadius: '.35rem', background: !folderId ? 'var(--color-bg-elevated)' : 'transparent' }}
-            onClick={() => { setFolderId(null); setPage(1); }}
+            style={{
+              display: 'block',
+              width: '100%',
+              textAlign: 'start',
+              padding: '.4rem .5rem',
+              borderRadius: '.35rem',
+              background: !folderId ? 'var(--color-bg-elevated)' : 'transparent',
+            }}
+            onClick={() => {
+              setFolderId(null);
+              setPage(1);
+            }}
           >
             All files
           </button>
@@ -539,23 +743,43 @@ export function MediaLibrary({ selectMode = false, onSelect }: { selectMode?: bo
             <button
               key={folder.id}
               className="text-link"
-              style={{ display: 'block', width: '100%', textAlign: 'start', padding: '.4rem .5rem', borderRadius: '.35rem', background: folderId === folder.id ? 'var(--color-bg-elevated)' : 'transparent' }}
-              onClick={() => { setFolderId(folder.id); setPage(1); }}
+              style={{
+                display: 'block',
+                width: '100%',
+                textAlign: 'start',
+                padding: '.4rem .5rem',
+                borderRadius: '.35rem',
+                background: folderId === folder.id ? 'var(--color-bg-elevated)' : 'transparent',
+              }}
+              onClick={() => {
+                setFolderId(folder.id);
+                setPage(1);
+              }}
             >
               📁 {folder.name}
             </button>
           ))}
-          {canUpdate && <div style={{ display: 'flex', gap: '.3rem', marginBlockStart: '1rem' }}>
-            <input
-              className="gv-input"
-              style={{ flex: 1, fontSize: '.8rem', padding: '.3rem .5rem' }}
-              placeholder="New folder…"
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') void createFolder(); }}
-            />
-            <button className="text-link" style={{ padding: '.3rem .5rem', minHeight: 'unset' }} onClick={createFolder}>+</button>
-          </div>}
+          {canUpdate && (
+            <div style={{ display: 'flex', gap: '.3rem', marginBlockStart: '1rem' }}>
+              <input
+                className="gv-input"
+                style={{ flex: 1, fontSize: '.8rem', padding: '.3rem .5rem' }}
+                placeholder="New folder…"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void createFolder();
+                }}
+              />
+              <button
+                className="text-link"
+                style={{ padding: '.3rem .5rem', minHeight: 'unset' }}
+                onClick={createFolder}
+              >
+                +
+              </button>
+            </div>
+          )}
         </aside>
 
         {/* Main content */}
@@ -567,12 +791,18 @@ export function MediaLibrary({ selectMode = false, onSelect }: { selectMode?: bo
               type="search"
               placeholder="Search files…"
               value={q}
-              onChange={(e) => { setQ(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setPage(1);
+              }}
             />
             <select
               className="gv-input"
               value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
               aria-label="Status filter"
             >
               <option value="">All statuses</option>
@@ -582,21 +812,56 @@ export function MediaLibrary({ selectMode = false, onSelect }: { selectMode?: bo
               <option value="archived">Archived</option>
             </select>
             <div style={{ marginInlineStart: 'auto', display: 'flex', gap: '.3rem' }}>
-              <button className="text-link" style={{ padding: '.3rem .5rem', minHeight: 'unset', background: view === 'grid' ? 'var(--color-bg-elevated)' : '' }} onClick={() => setView('grid')}>Grid</button>
-              <button className="text-link" style={{ padding: '.3rem .5rem', minHeight: 'unset', background: view === 'list' ? 'var(--color-bg-elevated)' : '' }} onClick={() => setView('list')}>List</button>
+              <button
+                className="text-link"
+                style={{
+                  padding: '.3rem .5rem',
+                  minHeight: 'unset',
+                  background: view === 'grid' ? 'var(--color-bg-elevated)' : '',
+                }}
+                onClick={() => setView('grid')}
+              >
+                Grid
+              </button>
+              <button
+                className="text-link"
+                style={{
+                  padding: '.3rem .5rem',
+                  minHeight: 'unset',
+                  background: view === 'list' ? 'var(--color-bg-elevated)' : '',
+                }}
+                onClick={() => setView('list')}
+              >
+                List
+              </button>
             </div>
           </div>
 
           {error && <ErrorState title="Media error" description={error} />}
 
           {loading ? (
-            <div className="panel"><Skeleton /><br /><Skeleton width="70%" /></div>
+            <div className="panel">
+              <Skeleton />
+              <br />
+              <Skeleton width="70%" />
+            </div>
           ) : rows.length === 0 ? (
             <EmptyState title="No media found" description="Upload the first approved asset." />
           ) : view === 'grid' ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: '.8rem' }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))',
+                gap: '.8rem',
+              }}
+            >
               {rows.map((row) => (
-                <MediaTile key={row.id} row={row} selected={selected?.id === row.id} onClick={() => handleSelect(row)} />
+                <MediaTile
+                  key={row.id}
+                  row={row}
+                  selected={selected?.id === row.id}
+                  onClick={() => handleSelect(row)}
+                />
               ))}
             </div>
           ) : (
@@ -614,13 +879,30 @@ export function MediaLibrary({ selectMode = false, onSelect }: { selectMode?: bo
                 </thead>
                 <tbody>
                   {rows.map((row) => (
-                    <tr key={row.id} style={{ cursor: 'pointer' }} onClick={() => handleSelect(row)}>
-                      <td><div className="cell-main">{row.originalFilename}</div></td>
-                      <td><span className="cell-meta">{row.mimeType}</span></td>
+                    <tr
+                      key={row.id}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => handleSelect(row)}
+                    >
+                      <td>
+                        <div className="cell-main">{row.originalFilename}</div>
+                      </td>
+                      <td>
+                        <span className="cell-meta">{row.mimeType}</span>
+                      </td>
                       <td>{formatBytes(row.sizeBytes)}</td>
-                      <td><Badge tone={statusTone(row.status)}>{row.status}</Badge></td>
+                      <td>
+                        <Badge tone={statusTone(row.status)}>{row.status}</Badge>
+                      </td>
                       <td>{row.folder?.name ?? '—'}</td>
-                      <td><button className="text-link" style={{ padding: '.2rem .4rem', minHeight: 'unset' }}>Details</button></td>
+                      <td>
+                        <button
+                          className="text-link"
+                          style={{ padding: '.2rem .4rem', minHeight: 'unset' }}
+                        >
+                          Details
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -630,10 +912,31 @@ export function MediaLibrary({ selectMode = false, onSelect }: { selectMode?: bo
 
           {/* Pagination */}
           {pageCount > 1 && (
-            <div style={{ display: 'flex', gap: '.5rem', justifyContent: 'center', marginBlockStart: '1rem' }}>
-              <button className="text-link" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>← Prev</button>
-              <span className="cell-meta">Page {page} / {pageCount}</span>
-              <button className="text-link" disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)}>Next →</button>
+            <div
+              style={{
+                display: 'flex',
+                gap: '.5rem',
+                justifyContent: 'center',
+                marginBlockStart: '1rem',
+              }}
+            >
+              <button
+                className="text-link"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => p - 1)}
+              >
+                ← Prev
+              </button>
+              <span className="cell-meta">
+                Page {page} / {pageCount}
+              </span>
+              <button
+                className="text-link"
+                disabled={page >= pageCount}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Next →
+              </button>
             </div>
           )}
         </div>

@@ -13,8 +13,16 @@ export async function generateMetadata(): Promise<Metadata> {
   const settings = await safe(getSettings(locale), { values: {}, media: {} });
   const name = localizedSetting(settings.values, 'company.name', locale, 'GATEVIA');
   return {
-    title: { default: localizedSetting(settings.values, 'seo.default_title', locale, name), template: `%s | ${name}` },
-    description: localizedSetting(settings.values, 'seo.default_description', locale, 'Saudi market access, execution and growth.'),
+    title: {
+      default: localizedSetting(settings.values, 'seo.default_title', locale, name),
+      template: `%s | ${name}`,
+    },
+    description: localizedSetting(
+      settings.values,
+      'seo.default_description',
+      locale,
+      'Saudi market access, execution and growth.',
+    ),
     robots: { index: true, follow: true, 'max-image-preview': 'large' },
   };
 }
@@ -34,7 +42,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     name: localizedSetting(values, 'company.name', locale, 'GATEVIA'),
     legalName: localizedSetting(values, 'company.legal_name', locale),
     logoUrl,
-    linkedInUrl: typeof values['social.linkedin'] === 'string' ? values['social.linkedin'] : undefined,
+    linkedInUrl:
+      typeof values['social.linkedin'] === 'string' ? values['social.linkedin'] : undefined,
     address: localizedSetting(values, 'contact.address', locale),
     email: typeof values['contact.email'] === 'string' ? values['contact.email'] : undefined,
     phone: typeof values['contact.phone'] === 'string' ? values['contact.phone'] : undefined,
@@ -45,8 +54,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={locale} dir={direction} data-theme={theme} suppressHydrationWarning>
       <body>
         {children}
-        <Analytics gtmId={typeof values['analytics.gtm_id'] === 'string' ? values['analytics.gtm_id'] : undefined} ga4Id={typeof values['analytics.ga4_id'] === 'string' ? values['analytics.ga4_id'] : undefined} />
-        <Script id="gatevia-theme" strategy="beforeInteractive">{themeScript}</Script>
+        <Analytics
+          gtmId={
+            typeof values['analytics.gtm_id'] === 'string' ? values['analytics.gtm_id'] : undefined
+          }
+          ga4Id={
+            typeof values['analytics.ga4_id'] === 'string' ? values['analytics.ga4_id'] : undefined
+          }
+        />
+        <Script id="gatevia-theme" strategy="beforeInteractive">
+          {themeScript}
+        </Script>
         <JsonLd schema={organization} />
       </body>
     </html>

@@ -61,36 +61,66 @@ const groups = [
 ] as const;
 
 const pathPermission: Record<string, string> = {
-  'content/pages': 'pages.read', 'content/services': 'services.read', 'content/service-categories': 'services.read', 'content/industries': 'industries.read', 'content/case-studies': 'case_studies.read', 'content/insights': 'insights.read', 'content/faqs': 'faqs.read', 'content/team-members': 'team.read',
-  'trust/clients': 'clients.read', 'trust/partners': 'partners.read', 'trust/brands': 'brands.read', 'trust/products': 'products.read', 'trust/testimonials': 'testimonials.read', 'trust/certifications': 'certifications.read', 'trust/trust-metrics': 'trust_metrics.read',
-  'sales/leads': 'leads.read', 'sales/consultation': 'leads.read', 'sales/assessments': 'leads.read', media: 'media.read', 'website/navigation': 'navigation.read', 'website/languages': 'languages.read', 'website/settings': 'settings.read', 'website/redirects': 'redirects.read', 'system/users': 'users.read', 'system/roles': 'roles.read', 'system/audit-logs': 'audit.read',
+  'content/pages': 'pages.read',
+  'content/services': 'services.read',
+  'content/service-categories': 'services.read',
+  'content/industries': 'industries.read',
+  'content/case-studies': 'case_studies.read',
+  'content/insights': 'insights.read',
+  'content/faqs': 'faqs.read',
+  'content/team-members': 'team.read',
+  'trust/clients': 'clients.read',
+  'trust/partners': 'partners.read',
+  'trust/brands': 'brands.read',
+  'trust/products': 'products.read',
+  'trust/testimonials': 'testimonials.read',
+  'trust/certifications': 'certifications.read',
+  'trust/trust-metrics': 'trust_metrics.read',
+  'sales/leads': 'leads.read',
+  'sales/consultation': 'leads.read',
+  'sales/assessments': 'leads.read',
+  media: 'media.read',
+  'website/navigation': 'navigation.read',
+  'website/languages': 'languages.read',
+  'website/settings': 'settings.read',
+  'website/redirects': 'redirects.read',
+  'system/users': 'users.read',
+  'system/roles': 'roles.read',
+  'system/audit-logs': 'audit.read',
 };
 
 function SidebarContent({ pathname, onNavClick }: { pathname: string; onNavClick?: () => void }) {
   const { can } = useAdminAuth();
   return (
     <>
-      <Link href="/dashboard" className="admin-brand" {...(onNavClick ? { onClick: onNavClick } : {})}>
+      <Link
+        href="/dashboard"
+        className="admin-brand"
+        {...(onNavClick ? { onClick: onNavClick } : {})}
+      >
         <span>▰</span> GATEVIA
       </Link>
       {groups.map(([label, items]) => {
-        const visibleItems = (items as ReadonlyArray<readonly [string, string]>).filter(([, path]) => can(pathPermission[path]!));
+        const visibleItems = (items as ReadonlyArray<readonly [string, string]>).filter(
+          ([, path]) => can(pathPermission[path]!),
+        );
         if (!visibleItems.length) return null;
         return (
-        <nav className="nav-group" key={String(label)}>
-          <h2>{String(label)}</h2>
-          {visibleItems.map(([name, path]) => (
-            <Link
-              aria-current={pathname.startsWith(`/${path}`) ? 'page' : undefined}
-              href={`/${path}`}
-              key={path}
-              {...(onNavClick ? { onClick: onNavClick } : {})}
-            >
-              {name}
-            </Link>
-          ))}
-        </nav>
-      )})}
+          <nav className="nav-group" key={String(label)}>
+            <h2>{String(label)}</h2>
+            {visibleItems.map(([name, path]) => (
+              <Link
+                aria-current={pathname.startsWith(`/${path}`) ? 'page' : undefined}
+                href={`/${path}`}
+                key={path}
+                {...(onNavClick ? { onClick: onNavClick } : {})}
+              >
+                {name}
+              </Link>
+            ))}
+          </nav>
+        );
+      })}
     </>
   );
 }
@@ -135,11 +165,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile drawer overlay */}
       {mobileOpen && (
-        <div
-          className="mobile-overlay"
-          aria-hidden="true"
-          onClick={() => setMobileOpen(false)}
-        />
+        <div className="mobile-overlay" aria-hidden="true" onClick={() => setMobileOpen(false)} />
       )}
 
       {/* Mobile drawer */}

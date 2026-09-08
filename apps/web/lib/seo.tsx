@@ -31,19 +31,25 @@ export function buildMetadata(input: SeoInput): Metadata {
   const alternates: Metadata['alternates'] = {
     canonical: url,
     languages: input.localizedAlternates
-      ? Object.fromEntries(Object.entries(input.localizedAlternates).map(([locale, path]) => [locale, new URL(path, SITE).toString()]))
-      : input.languages
       ? Object.fromEntries(
-          input.languages
-            .filter(Boolean)
-            .map((l) => {
+          Object.entries(input.localizedAlternates).map(([locale, path]) => [
+            locale,
+            new URL(path, SITE).toString(),
+          ]),
+        )
+      : input.languages
+        ? Object.fromEntries(
+            input.languages.filter(Boolean).map((l) => {
               const lc = l.code.toLowerCase();
               // Derive alternate URL: swap /en/ or /ar-sa/ prefix
-              const altUrl = url.replace(new RegExp(`/${input.locale.toLowerCase()}(/|$)`), `/${lc}$1`);
+              const altUrl = url.replace(
+                new RegExp(`/${input.locale.toLowerCase()}(/|$)`),
+                `/${lc}$1`,
+              );
               return [l.code, altUrl];
             }),
-        )
-      : undefined,
+          )
+        : undefined,
   };
 
   const openGraph: Metadata['openGraph'] = {
@@ -83,7 +89,17 @@ export function buildMetadata(input: SeoInput): Metadata {
 // ─── JSON-LD schemas ──────────────────────────────────────────────────────────
 
 /** Organization — goes on every page, injected at root layout level */
-export function organizationSchema(input: { name?: string | undefined; legalName?: string | undefined; logoUrl?: string | undefined; linkedInUrl?: string | undefined; address?: string | undefined; email?: string | undefined; phone?: string | undefined } = {}) {
+export function organizationSchema(
+  input: {
+    name?: string | undefined;
+    legalName?: string | undefined;
+    logoUrl?: string | undefined;
+    linkedInUrl?: string | undefined;
+    address?: string | undefined;
+    email?: string | undefined;
+    phone?: string | undefined;
+  } = {},
+) {
   const name = input.name ?? BRAND;
   return {
     '@context': 'https://schema.org',
@@ -139,7 +155,11 @@ export function serviceSchema(input: {
     url: `${SITE}${input.url}`,
     provider: { '@id': `${SITE}/#organization` },
     serviceType: input.category ?? input.name,
-    areaServed: { '@type': 'Country', name: 'Saudi Arabia', '@id': 'https://www.wikidata.org/wiki/Q851' },
+    areaServed: {
+      '@type': 'Country',
+      name: 'Saudi Arabia',
+      '@id': 'https://www.wikidata.org/wiki/Q851',
+    },
     inLanguage: input.locale,
   };
 }

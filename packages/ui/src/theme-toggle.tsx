@@ -5,7 +5,11 @@ import type { Theme } from '@gatevia/contracts';
 
 const COOKIE = 'gatevia_theme';
 
-export function ThemeToggle({ labels = { light: 'Use light mode', dark: 'Use dark mode' } }: { labels?: Record<Theme, string> }) {
+export function ThemeToggle({
+  labels = { light: 'Use light mode', dark: 'Use dark mode' },
+}: {
+  labels?: Record<Theme, string>;
+}) {
   const [theme, setTheme] = useState<Theme>('dark');
   useEffect(() => {
     const current = document.documentElement.dataset.theme;
@@ -19,5 +23,15 @@ export function ThemeToggle({ labels = { light: 'Use light mode', dark: 'Use dar
     setTheme(next);
     window.dispatchEvent(new CustomEvent('gatevia:theme', { detail: next }));
   };
-  return <button type="button" className="gv-theme-toggle" onClick={toggle} aria-label={labels[theme === 'dark' ? 'light' : 'dark']} aria-pressed={theme === 'light'}><span aria-hidden="true">{theme === 'dark' ? '☼' : '◐'}</span></button>;
+  return (
+    <button
+      type="button"
+      className="gv-theme-toggle"
+      onClick={toggle}
+      aria-label={labels[theme === 'dark' ? 'light' : 'dark']}
+      aria-pressed={theme === 'light'}
+    >
+      <span aria-hidden="true">{theme === 'dark' ? '☼' : '◐'}</span>
+    </button>
+  );
 }

@@ -27,16 +27,70 @@ const domains = {
   audit: ['read'],
 } as const;
 
-export const permissions = Object.entries(domains).flatMap(([domain, actions]) => actions.map((action) => `${domain}.${action}`));
+export const permissions = Object.entries(domains).flatMap(([domain, actions]) =>
+  actions.map((action) => `${domain}.${action}`),
+);
 
 const readPermissions = permissions.filter((permission) => permission.endsWith('.read'));
-const cmsDomains = ['pages', 'services', 'industries', 'case_studies', 'insights', 'faqs', 'team', 'clients', 'partners', 'brands', 'products', 'testimonials', 'certifications', 'trust_metrics'];
-const cmsPermissions = permissions.filter((permission) => cmsDomains.some((domain) => permission.startsWith(`${domain}.`)));
+const cmsDomains = [
+  'pages',
+  'services',
+  'industries',
+  'case_studies',
+  'insights',
+  'faqs',
+  'team',
+  'clients',
+  'partners',
+  'brands',
+  'products',
+  'testimonials',
+  'certifications',
+  'trust_metrics',
+];
+const cmsPermissions = permissions.filter((permission) =>
+  cmsDomains.some((domain) => permission.startsWith(`${domain}.`)),
+);
 
 export const grants: Record<(typeof roles)[number], string[]> = {
   super_admin: permissions,
-  content_manager: [...cmsPermissions, 'dashboard.read', 'media.read', 'media.upload', 'media.update', 'media.archive', 'languages.read', 'navigation.read'],
-  marketing: [...cmsPermissions, 'dashboard.read', 'media.read', 'media.upload', 'media.update', 'languages.read', 'navigation.read', 'navigation.manage', 'settings.read'],
-  sales: [...readPermissions.filter((permission) => !permission.startsWith('users.') && !permission.startsWith('roles.') && !permission.startsWith('audit.')), 'leads.update_status', 'leads.assign', 'leads.note'],
-  viewer: readPermissions.filter((permission) => !permission.startsWith('leads.') && !permission.startsWith('users.') && !permission.startsWith('roles.') && !permission.startsWith('audit.')),
+  content_manager: [
+    ...cmsPermissions,
+    'dashboard.read',
+    'media.read',
+    'media.upload',
+    'media.update',
+    'media.archive',
+    'languages.read',
+    'navigation.read',
+  ],
+  marketing: [
+    ...cmsPermissions,
+    'dashboard.read',
+    'media.read',
+    'media.upload',
+    'media.update',
+    'languages.read',
+    'navigation.read',
+    'navigation.manage',
+    'settings.read',
+  ],
+  sales: [
+    ...readPermissions.filter(
+      (permission) =>
+        !permission.startsWith('users.') &&
+        !permission.startsWith('roles.') &&
+        !permission.startsWith('audit.'),
+    ),
+    'leads.update_status',
+    'leads.assign',
+    'leads.note',
+  ],
+  viewer: readPermissions.filter(
+    (permission) =>
+      !permission.startsWith('leads.') &&
+      !permission.startsWith('users.') &&
+      !permission.startsWith('roles.') &&
+      !permission.startsWith('audit.'),
+  ),
 };

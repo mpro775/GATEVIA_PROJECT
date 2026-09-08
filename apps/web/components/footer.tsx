@@ -38,7 +38,20 @@ function FallbackFooter({ locale }: { locale: string }) {
   );
 }
 
-export function Footer({ locale, navItems, identity }: { locale: string; navItems: NavItem[]; identity: { name: string; email?: string | undefined; phone?: string | undefined; linkedInUrl?: string | undefined } }) {
+export function Footer({
+  locale,
+  navItems,
+  identity,
+}: {
+  locale: string;
+  navItems: NavItem[];
+  identity: {
+    name: string;
+    email?: string | undefined;
+    phone?: string | undefined;
+    linkedInUrl?: string | undefined;
+  };
+}) {
   const t = copy(locale);
 
   // Group CMS footer items by their top-level label (items with children become columns,
@@ -53,9 +66,23 @@ export function Footer({ locale, navItems, identity }: { locale: string; navItem
             <div>
               <div className="footer-title">{identity.name}</div>
               <p>Saudi market access, execution and growth.</p>
-              {identity.email && <p><a href={`mailto:${identity.email}`}>{identity.email}</a></p>}
-              {identity.phone && <p><a href={`tel:${identity.phone}`}>{identity.phone}</a></p>}
-              {identity.linkedInUrl && <p><a href={identity.linkedInUrl} target="_blank" rel="noopener noreferrer">LinkedIn</a></p>}
+              {identity.email && (
+                <p>
+                  <a href={`mailto:${identity.email}`}>{identity.email}</a>
+                </p>
+              )}
+              {identity.phone && (
+                <p>
+                  <a href={`tel:${identity.phone}`}>{identity.phone}</a>
+                </p>
+              )}
+              {identity.linkedInUrl && (
+                <p>
+                  <a href={identity.linkedInUrl} target="_blank" rel="noopener noreferrer">
+                    LinkedIn
+                  </a>
+                </p>
+              )}
             </div>
             {/* Render CMS top-level items as columns if they have children,
                 otherwise render them as a flat list of links */}
@@ -93,7 +120,9 @@ export function Footer({ locale, navItems, identity }: { locale: string; navItem
         )}
 
         <div className="legal-row">
-          <span>© {new Date().getFullYear()} {identity.name}</span>
+          <span>
+            © {new Date().getFullYear()} {identity.name}
+          </span>
           <span>
             <Link href={`/${locale}/privacy`}>Privacy</Link>
             {' · '}

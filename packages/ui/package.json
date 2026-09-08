@@ -3,8 +3,26 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts", "./theme.css": "./src/theme.css" },
-  "scripts": { "build": "tsc -p tsconfig.json", "typecheck": "tsc --noEmit", "lint": "eslint src" },
-  "peerDependencies": { "react": ">=19", "react-dom": ">=19", "@gatevia/contracts": "workspace:*" },
-  "devDependencies": { "@gatevia/eslint-config": "workspace:*", "@gatevia/typescript-config": "workspace:*", "@types/react": "^19.0.10", "@types/react-dom": "^19.0.4", "react": "^19.0.0", "react-dom": "^19.0.0" }
+  "exports": {
+    ".": "./src/index.ts",
+    "./theme.css": "./src/theme.css"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "peerDependencies": {
+    "react": ">=19",
+    "react-dom": ">=19",
+    "@gatevia/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "@gatevia/eslint-config": "workspace:*",
+    "@gatevia/typescript-config": "workspace:*",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
 }

@@ -1,4 +1,5 @@
 # GATEVIA — MASTER IMPLEMENTATION PROMPT
+
 **Purpose:** Full code-first implementation from scratch, followed only after code completion by build/fix/test/closure.  
 **Execution Mode:** CODE FIRST → VALIDATE LATER  
 **Project:** GATEVIA V1  
@@ -217,6 +218,7 @@ gatevia-docs/3-technical/README.md
 إذا كان المستودع فارغًا، أنشئ المشروع من الصفر وفق Architecture المعتمدة.
 
 إذا كان به كود جزئي:
+
 - افحصه.
 - احتفظ فقط بما يطابق العقود.
 - أكمل أو صحح المخالفات.
@@ -270,6 +272,7 @@ GA4 + GTM
 ممنوع استبدال PostgreSQL بـMongoDB.
 
 ممنوع إدخال:
+
 - GraphQL.
 - microservices.
 - Kafka.
@@ -443,6 +446,7 @@ description_en
 نفّذ:
 
 ### Insights
+
 - article.
 - guide.
 - report.
@@ -454,6 +458,7 @@ description_en
 - listing/detail.
 
 ### Case Studies
+
 - anonymized support.
 - clients.
 - industries.
@@ -463,6 +468,7 @@ description_en
 - metrics representation.
 
 ### Trust & Ecosystem
+
 - clients.
 - partners.
 - brands.
@@ -491,7 +497,9 @@ description_en
 نفّذ:
 
 ### Contact
+
 ### Consultation
+
 ### Market Entry Assessment
 
 ثم:
@@ -703,6 +711,7 @@ RTL/LTR من البداية.
 **هذا مطلب إطلاق أساسي وليس تحسينًا اختياريًا.**
 
 نفّذ Light Mode وDark Mode كاملين في:
+
 - `apps/web`.
 - `apps/admin`.
 
@@ -721,6 +730,7 @@ Do not implement Light Mode with automatic CSS inversion
 ```
 
 ضع Theme Toggle في:
+
 - Header للموقع العام Desktop.
 - Mobile Navigation.
 - Admin App Shell.
@@ -728,6 +738,7 @@ Do not implement Light Mode with automatic CSS inversion
 استخدم **Semantic Design Tokens** بحيث تستخدم Components نفس أسماء Tokens وتتغير القيم حسب Theme. يجب أن تشمل على الأقل backgrounds, surfaces, text, borders, accent, focus, status colors, shadows, form controls, overlays, charts/tooltips.
 
 يجب أن يعمل كل Component وكل State في الوضعين، بما في ذلك:
+
 - Header / Mega Menu / Footer.
 - Hero / Sections / Cards.
 - Forms / Dropdowns / Modals / Toasts.
@@ -821,6 +832,7 @@ Do not implement Light Mode with automatic CSS inversion
 اكتب:
 
 ### System seeds
+
 - languages.
 - roles.
 - permissions.
@@ -829,6 +841,7 @@ Do not implement Light Mode with automatic CSS inversion
 - controlled settings defaults.
 
 ### Business seeds
+
 أنشئ infrastructure/code فقط للمحتوى المعتمد.
 
 ### ممنوع
@@ -922,6 +935,7 @@ Docs
 شغّل package installation باستخدام lockfile strategy الصحيحة.
 
 أصلح:
+
 - dependency versions.
 - peer conflicts.
 - missing imports.
@@ -1020,13 +1034,17 @@ web
 بعد استقرار Build/Runtime فقط شغّل:
 
 ## Unit Tests
+
 أصلح حتى Green.
 
 ## Integration Tests
+
 أصلح حتى Green.
 
 ## RBAC Tests
+
 اختبر:
+
 - Super Admin.
 - Content Manager.
 - Marketing.
@@ -1034,13 +1052,17 @@ web
 - Viewer.
 
 ## Multilingual Tests
+
 اختبر إضافة لغة ثالثة فعلًا.
 
 ## Media Tests
+
 اختبر flow كامل أو mock/provider-safe equivalent.
 
 ## Lead Tests
+
 اختبر:
+
 - Contact.
 - Consultation.
 - Assessment.
@@ -1049,12 +1071,15 @@ web
 - email failure persistence.
 
 ## E2E
+
 شغّل Playwright critical flows.
 
 ## Accessibility
+
 شغّل critical accessibility checks.
 
 ## SEO
+
 تحقق من representative routes.
 
 ---
@@ -1188,6 +1213,7 @@ SEO checks
 ```
 
 إن تعذر Gate بسبب خدمة خارجية/Credential فقط:
+
 - لا تخترع نجاحًا.
 - وضح أنه External UAT Pending.
 - أثبت أن الكود المحلي والعقد جاهزان.

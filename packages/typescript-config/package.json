@@ -1,1 +1,8 @@
-{"name":"@gatevia/typescript-config","version":"1.0.0","private":true,"files":["*.json"]}
+{
+  "name": "@gatevia/typescript-config",
+  "version": "1.0.0",
+  "private": true,
+  "files": [
+    "*.json"
+  ]
+}

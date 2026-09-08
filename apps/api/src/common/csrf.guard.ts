@@ -13,10 +13,15 @@ export class CsrfGuard implements CanActivate {
     if (SAFE.has(request.method)) return true;
     const header = request.header('x-csrf-token');
     const cookie = request.cookies?.gatevia_csrf as string | undefined;
-    if (!header || !cookie || header !== cookie || !request.sessionId) throw new ForbiddenException('CSRF validation failed.');
-    const session = await this.prisma.authSession.findUnique({ where: { id: request.sessionId }, select: { csrfTokenHash: true } });
+    if (!header || !cookie || header !== cookie || !request.sessionId)
+      throw new ForbiddenException('CSRF validation failed.');
+    const session = await this.prisma.authSession.findUnique({
+      where: { id: request.sessionId },
+      select: { csrfTokenHash: true },
+    });
     const presented = createHash('sha256').update(header).digest();
-    if (!session || !timingSafeEqual(presented, Buffer.from(session.csrfTokenHash, 'hex'))) throw new ForbiddenException('CSRF validation failed.');
+    if (!session || !timingSafeEqual(presented, Buffer.from(session.csrfTokenHash, 'hex')))
+      throw new ForbiddenException('CSRF validation failed.');
     return true;
   }
 }

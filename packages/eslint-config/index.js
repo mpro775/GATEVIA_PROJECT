@@ -6,11 +6,13 @@ export default tseslint.config(
   ...tseslint.configs.recommendedTypeChecked,
   { ignores: ['dist/**', '.next/**', 'coverage/**'] },
   {
-    languageOptions: { parserOptions: { projectService: true } },
+    languageOptions: {
+      parserOptions: { projectService: { allowDefaultProject: ['test/*.ts'] } },
+    },
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/consistent-type-imports': 'error',
-      '@typescript-eslint/no-floating-promises': 'error'
-    }
+      '@typescript-eslint/no-floating-promises': 'error',
+    },
   },
 );

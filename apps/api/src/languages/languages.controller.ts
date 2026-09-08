@@ -1,15 +1,108 @@
-import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiCookieAuth, ApiTags } from '@nestjs/swagger';
 import type { Direction } from '@prisma/client';
-import { SessionGuard, PermissionGuard } from '../common/auth.guard'; import { CsrfGuard } from '../common/csrf.guard'; import { RequirePermissions } from '../common/permissions'; import type { GateviaRequest } from '../common/request-context'; import { PrismaService } from '../prisma/prisma.service'; import { AuditService } from '../audit/audit.service';
+import { SessionGuard, PermissionGuard } from '../common/auth.guard';
+import { CsrfGuard } from '../common/csrf.guard';
+import { RequirePermissions } from '../common/permissions';
+import type { GateviaRequest } from '../common/request-context';
+import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 
-@ApiTags('admin/languages') @ApiCookieAuth() @UseGuards(SessionGuard, CsrfGuard, PermissionGuard) @Controller('admin/languages')
+@ApiTags('admin/languages')
+@ApiCookieAuth()
+@UseGuards(SessionGuard, CsrfGuard, PermissionGuard)
+@Controller('admin/languages')
 export class LanguagesController {
-  constructor(private readonly prisma: PrismaService, private readonly audit: AuditService) {}
-  @Get() @RequirePermissions('languages.read') async list() { return { data: await this.prisma.language.findMany({ orderBy: { sortOrder: 'asc' } }) }; }
-  @Post() @RequirePermissions('languages.manage') async create(@Body() body: { code: string; name: string; nativeName: string; direction: Direction; sortOrder?: number }, @Req() request: GateviaRequest) { if (!/^[a-z]{2,3}(?:-[A-Z]{2})?$/.test(body.code)) throw new BadRequestException('Locale code must be a normalized BCP 47 code.'); const row = await this.prisma.language.create({ data: body }); await this.audit.record({ actorUserId: request.user!.id, action: 'language.created', entityType: 'language', entityId: row.id, requestId: request.requestId }); return { data: row }; }
-  @Patch(':id') @RequirePermissions('languages.manage') async update(@Param('id') id: string, @Body() body: { name?: string; nativeName?: string; direction?: Direction; sortOrder?: number }, @Req() request: GateviaRequest) { const row = await this.prisma.language.update({ where: { id }, data: body }); await this.audit.record({ actorUserId: request.user!.id, action: 'language.updated', entityType: 'language', entityId: id, requestId: request.requestId }); return { data: row }; }
-  @Post(':id/activate') @RequirePermissions('languages.manage') async activate(@Param('id') id: string) { return { data: await this.prisma.language.update({ where: { id }, data: { isActive: true } }) }; }
-  @Post(':id/deactivate') @RequirePermissions('languages.manage') async deactivate(@Param('id') id: string) { const language = await this.prisma.language.findUniqueOrThrow({ where: { id } }); if (language.isDefault) throw new BadRequestException('Choose another default language before deactivating this language.'); return { data: await this.prisma.language.update({ where: { id }, data: { isActive: false } }) }; }
-  @Post(':id/set-default') @RequirePermissions('languages.manage') async setDefault(@Param('id') id: string, @Req() request: GateviaRequest) { const result = await this.prisma.$transaction(async (tx) => { const target = await tx.language.findUniqueOrThrow({ where: { id } }); if (!target.isActive) throw new BadRequestException('Only an active language can be the default.'); await tx.language.updateMany({ where: { isDefault: true }, data: { isDefault: false } }); return tx.language.update({ where: { id }, data: { isDefault: true } }); }); await this.audit.record({ actorUserId: request.user!.id, action: 'language.default_changed', entityType: 'language', entityId: id, requestId: request.requestId }); return { data: result }; }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
+  @Get() @RequirePermissions('languages.read') async list() {
+    return { data: await this.prisma.language.findMany({ orderBy: { sortOrder: 'asc' } }) };
+  }
+  @Post() @RequirePermissions('languages.manage') async create(
+    @Body()
+    body: {
+      code: string;
+      name: string;
+      nativeName: string;
+      direction: Direction;
+      sortOrder?: number;
+    },
+    @Req() request: GateviaRequest,
+  ) {
+    if (!/^[a-z]{2,3}(?:-[A-Z]{2})?$/.test(body.code))
+      throw new BadRequestException('Locale code must be a normalized BCP 47 code.');
+    const row = await this.prisma.language.create({ data: body });
+    await this.audit.record({
+      actorUserId: request.user!.id,
+      action: 'language.created',
+      entityType: 'language',
+      entityId: row.id,
+      requestId: request.requestId,
+    });
+    return { data: row };
+  }
+  @Patch(':id') @RequirePermissions('languages.manage') async update(
+    @Param('id') id: string,
+    @Body() body: { name?: string; nativeName?: string; direction?: Direction; sortOrder?: number },
+    @Req() request: GateviaRequest,
+  ) {
+    const row = await this.prisma.language.update({ where: { id }, data: body });
+    await this.audit.record({
+      actorUserId: request.user!.id,
+      action: 'language.updated',
+      entityType: 'language',
+      entityId: id,
+      requestId: request.requestId,
+    });
+    return { data: row };
+  }
+  @Post(':id/activate') @RequirePermissions('languages.manage') async activate(
+    @Param('id') id: string,
+  ) {
+    return { data: await this.prisma.language.update({ where: { id }, data: { isActive: true } }) };
+  }
+  @Post(':id/deactivate') @RequirePermissions('languages.manage') async deactivate(
+    @Param('id') id: string,
+  ) {
+    const language = await this.prisma.language.findUniqueOrThrow({ where: { id } });
+    if (language.isDefault)
+      throw new BadRequestException(
+        'Choose another default language before deactivating this language.',
+      );
+    return {
+      data: await this.prisma.language.update({ where: { id }, data: { isActive: false } }),
+    };
+  }
+  @Post(':id/set-default') @RequirePermissions('languages.manage') async setDefault(
+    @Param('id') id: string,
+    @Req() request: GateviaRequest,
+  ) {
+    const result = await this.prisma.$transaction(async (tx) => {
+      const target = await tx.language.findUniqueOrThrow({ where: { id } });
+      if (!target.isActive)
+        throw new BadRequestException('Only an active language can be the default.');
+      await tx.language.updateMany({ where: { isDefault: true }, data: { isDefault: false } });
+      return tx.language.update({ where: { id }, data: { isDefault: true } });
+    });
+    await this.audit.record({
+      actorUserId: request.user!.id,
+      action: 'language.default_changed',
+      entityType: 'language',
+      entityId: id,
+      requestId: request.requestId,
+    });
+    return { data: result };
+  }
 }

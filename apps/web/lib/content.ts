@@ -1,7 +1,51 @@
-export interface Translation {title?:string;name?:string;slug?:string;excerpt?:string;shortDescription?:string;overview?:string;content?:unknown;seoTitle?:string;seoDescription?:string;[key:string]:unknown}
-export const translation=(entity:Record<string,unknown>):Translation=>{const rows=entity.translations;return Array.isArray(rows)&&rows[0]&&typeof rows[0]==='object'?rows[0] as Translation:{}};
-export const text=(value:unknown,fallback=''):string=>typeof value==='string'?value:fallback;
-export const list=(value:unknown):unknown[]=>Array.isArray(value)?value:[];
-export const plainText=(value:unknown):string=>{if(typeof value==='string')return value.replace(/<[^>]+>/g,' ');if(Array.isArray(value))return value.map(plainText).join(' ');if(value&&typeof value==='object')return Object.values(value).map(plainText).join(' ');return ''};
-export const localizedSetting=(values:Record<string,unknown>,key:string,locale:string,fallback=''):string=>{const value=values[key];if(typeof value==='string')return value;if(value&&typeof value==='object'){const localized=value as Record<string,unknown>;const exact=localized[locale]??localized[locale.toLowerCase()]??localized[locale.split('-')[0]??''];return typeof exact==='string'?exact:fallback;}return fallback};
-export const resolvedMediaUrl=(entity:Record<string,unknown>,mediaId:unknown):string|undefined=>{if(typeof mediaId!=='string')return undefined;const media=entity.media as Record<string,{url?:string}>|undefined;return media?.[mediaId]?.url};
+export interface Translation {
+  title?: string;
+  name?: string;
+  slug?: string;
+  excerpt?: string;
+  shortDescription?: string;
+  overview?: string;
+  content?: unknown;
+  seoTitle?: string;
+  seoDescription?: string;
+  [key: string]: unknown;
+}
+export const translation = (entity: Record<string, unknown>): Translation => {
+  const rows = entity.translations;
+  return Array.isArray(rows) && rows[0] && typeof rows[0] === 'object'
+    ? (rows[0] as Translation)
+    : {};
+};
+export const text = (value: unknown, fallback = ''): string =>
+  typeof value === 'string' ? value : fallback;
+export const list = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
+export const plainText = (value: unknown): string => {
+  if (typeof value === 'string') return value.replace(/<[^>]+>/g, ' ');
+  if (Array.isArray(value)) return value.map(plainText).join(' ');
+  if (value && typeof value === 'object') return Object.values(value).map(plainText).join(' ');
+  return '';
+};
+export const localizedSetting = (
+  values: Record<string, unknown>,
+  key: string,
+  locale: string,
+  fallback = '',
+): string => {
+  const value = values[key];
+  if (typeof value === 'string') return value;
+  if (value && typeof value === 'object') {
+    const localized = value as Record<string, unknown>;
+    const exact =
+      localized[locale] ?? localized[locale.toLowerCase()] ?? localized[locale.split('-')[0] ?? ''];
+    return typeof exact === 'string' ? exact : fallback;
+  }
+  return fallback;
+};
+export const resolvedMediaUrl = (
+  entity: Record<string, unknown>,
+  mediaId: unknown,
+): string | undefined => {
+  if (typeof mediaId !== 'string') return undefined;
+  const media = entity.media as Record<string, { url?: string }> | undefined;
+  return media?.[mediaId]?.url;
+};

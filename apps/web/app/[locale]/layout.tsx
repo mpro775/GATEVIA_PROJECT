@@ -14,8 +14,26 @@ export default async function LocaleLayout({
 }) {
   const { locale } = await params;
   const languages = await safe(getLanguages(), [
-    { code: 'ar-SA', name: 'Arabic', nativeName: 'العربية', direction: 'rtl' as const, isDefault: true },
-    { code: 'en', name: 'English', nativeName: 'English', direction: 'ltr' as const, isDefault: false },
+    {
+      id: 'fallback-ar',
+      code: 'ar-SA',
+      name: 'Arabic',
+      nativeName: 'العربية',
+      direction: 'rtl' as const,
+      isActive: true,
+      isDefault: true,
+      sortOrder: 0,
+    },
+    {
+      id: 'fallback-en',
+      code: 'en',
+      name: 'English',
+      nativeName: 'English',
+      direction: 'ltr' as const,
+      isActive: true,
+      isDefault: false,
+      sortOrder: 1,
+    },
   ]);
   const language = languages.find((item) => item.code.toLowerCase() === locale.toLowerCase());
   if (!language) notFound();
@@ -32,9 +50,18 @@ export default async function LocaleLayout({
   const identity = {
     name: localizedSetting(settings.values, 'company.name', language.code, 'GATEVIA'),
     logoUrl: typeof logoId === 'string' ? settings.media[logoId]?.url : undefined,
-    email: typeof settings.values['contact.email'] === 'string' ? settings.values['contact.email'] : undefined,
-    phone: typeof settings.values['contact.phone'] === 'string' ? settings.values['contact.phone'] : undefined,
-    linkedInUrl: typeof settings.values['social.linkedin'] === 'string' ? settings.values['social.linkedin'] : undefined,
+    email:
+      typeof settings.values['contact.email'] === 'string'
+        ? settings.values['contact.email']
+        : undefined,
+    phone:
+      typeof settings.values['contact.phone'] === 'string'
+        ? settings.values['contact.phone']
+        : undefined,
+    linkedInUrl:
+      typeof settings.values['social.linkedin'] === 'string'
+        ? settings.values['social.linkedin']
+        : undefined,
   };
 
   return (

@@ -1,10 +1,9 @@
 'use client';
 import { useEffect, useState } from 'react';
+import type { User } from '@gatevia/api-client';
 import { Badge, Button, EmptyState, ErrorState, Field, Input, Textarea } from '@gatevia/ui';
 import { api } from '@/lib/api';
 import { useAdminAuth } from './auth-context';
-
-interface User { id: string; displayName: string; email: string }
 
 // ─── Readable nested object display ──────────────────────────────────────────
 
@@ -56,7 +55,15 @@ function Attribution({ lead }: { lead: Record<string, unknown> }) {
   return (
     <dl style={{ fontSize: '.88rem' }}>
       {rows.map(([label, value]) => (
-        <div key={label} style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: '.3rem', marginBlockEnd: '.4rem' }}>
+        <div
+          key={label}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '130px 1fr',
+            gap: '.3rem',
+            marginBlockEnd: '.4rem',
+          }}
+        >
           <dt style={{ color: 'var(--color-text-muted)' }}>{label}</dt>
           <dd style={{ margin: 0, wordBreak: 'break-all' }}>{value}</dd>
         </div>
@@ -68,13 +75,18 @@ function Attribution({ lead }: { lead: Record<string, unknown> }) {
 // ─── Main component ─────────────────────────────────────────────────────────
 
 export function LeadDetail({ id }: { id: string }) {
-  const { can } = useAdminAuth(); const canStatus=can('leads.update_status'); const canAssign=can('leads.assign'); const canNote=can('leads.note');
+  const { can } = useAdminAuth();
+  const canStatus = can('leads.update_status');
+  const canAssign = can('leads.assign');
+  const canNote = can('leads.note');
   const [lead, setLead] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [assignBusy, setAssignBusy] = useState(false);
   const [noteError, setNoteError] = useState('');
-  const [activeTab, setActiveTab] = useState<'details' | 'assessment' | 'notes' | 'activity'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'assessment' | 'notes' | 'activity'>(
+    'details',
+  );
 
   async function load() {
     try {
@@ -87,12 +99,18 @@ export function LeadDetail({ id }: { id: string }) {
   useEffect(() => {
     void load();
     // Load assignable users
-    void api<{ data: User[] }>('/admin/users?pageSize=100&status=active')
-      .then((r) => setUsers(Array.isArray(r) ? r : (r as { data: User[] }).data ?? []))
+    void api<User[]>('/admin/users?pageSize=100&status=active')
+      .then(setUsers)
       .catch(() => {});
   }, [id]);
 
-  if (error) return <ErrorState title="Lead unavailable" description="The record does not exist or you cannot access it." />;
+  if (error)
+    return (
+      <ErrorState
+        title="Lead unavailable"
+        description="The record does not exist or you cannot access it."
+      />
+    );
   if (!lead) return <p className="cell-meta">Loading…</p>;
 
   const assessments = (lead.assessments as Array<Record<string, unknown>>) ?? [];
@@ -101,14 +119,17 @@ export function LeadDetail({ id }: { id: string }) {
   const assigned = lead.assignedTo as Record<string, string> | null | undefined;
 
   async function changeStatus(value: string) {
-    await api(`/admin/leads/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: value }) });
+    await api(`/admin/leads/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: value }),
+    });
     void load();
   }
 
   async function assign(userId: string | null) {
     setAssignBusy(true);
     try {
-      await api(`/admin/leads/${id}/assign`, {
+      await api(`/admin/leads/${id}/assignee`, {
         method: 'PATCH',
         body: JSON.stringify({ assignedToUserId: userId || null }),
       });
@@ -123,7 +144,10 @@ export function LeadDetail({ id }: { id: string }) {
     setNoteError('');
     const form = new FormData(event.currentTarget);
     const body = String(form.get('body') ?? '').trim();
-    if (!body) { setNoteError('Note cannot be empty.'); return; }
+    if (!body) {
+      setNoteError('Note cannot be empty.');
+      return;
+    }
     try {
       await api(`/admin/leads/${id}/notes`, { method: 'POST', body: JSON.stringify({ body }) });
       (event.currentTarget as HTMLFormElement).reset();
@@ -135,7 +159,12 @@ export function LeadDetail({ id }: { id: string }) {
 
   const STATUSES = ['new', 'contacted', 'qualified', 'proposal', 'won', 'lost'];
   const STATUS_TONES: Record<string, 'success' | 'danger' | 'neutral' | 'warning'> = {
-    new: 'warning', contacted: 'neutral', qualified: 'success', proposal: 'warning', won: 'success', lost: 'danger',
+    new: 'warning',
+    contacted: 'neutral',
+    qualified: 'success',
+    proposal: 'warning',
+    won: 'success',
+    lost: 'danger',
   };
 
   return (
@@ -170,10 +199,16 @@ export function LeadDetail({ id }: { id: string }) {
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 {tab === 'notes' && notes.length > 0 && (
-                  <> <Badge tone="neutral">{notes.length}</Badge></>
+                  <>
+                    {' '}
+                    <Badge tone="neutral">{notes.length}</Badge>
+                  </>
                 )}
                 {tab === 'assessment' && assessments.length > 0 && (
-                  <> <Badge tone="warning">{assessments.length}</Badge></>
+                  <>
+                    {' '}
+                    <Badge tone="warning">{assessments.length}</Badge>
+                  </>
                 )}
               </button>
             ))}
@@ -185,7 +220,16 @@ export function LeadDetail({ id }: { id: string }) {
               <h2>Contact &amp; attribution</h2>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                 <div>
-                  <h3 style={{ marginBlockStart: 0, fontSize: '.9rem', textTransform: 'uppercase', letterSpacing: '.06em' }}>Contact</h3>
+                  <h3
+                    style={{
+                      marginBlockStart: 0,
+                      fontSize: '.9rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '.06em',
+                    }}
+                  >
+                    Contact
+                  </h3>
                   <dl style={{ fontSize: '.88rem' }}>
                     {[
                       ['Email', lead.email],
@@ -196,14 +240,25 @@ export function LeadDetail({ id }: { id: string }) {
                       ['Message', lead.message ?? '—'],
                     ].map(([label, value]) => (
                       <div key={String(label)} style={{ marginBlockEnd: '.5rem' }}>
-                        <dt style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>{String(label)}</dt>
+                        <dt style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                          {String(label)}
+                        </dt>
                         <dd style={{ margin: 0 }}>{String(value ?? '—')}</dd>
                       </div>
                     ))}
                   </dl>
                 </div>
                 <div>
-                  <h3 style={{ marginBlockStart: 0, fontSize: '.9rem', textTransform: 'uppercase', letterSpacing: '.06em' }}>Attribution</h3>
+                  <h3
+                    style={{
+                      marginBlockStart: 0,
+                      fontSize: '.9rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '.06em',
+                    }}
+                  >
+                    Attribution
+                  </h3>
                   <Attribution lead={lead} />
                 </div>
               </div>
@@ -214,7 +269,10 @@ export function LeadDetail({ id }: { id: string }) {
           {activeTab === 'assessment' && (
             <>
               {assessments.length === 0 ? (
-                <EmptyState title="No assessment data" description="This lead did not submit an assessment form." />
+                <EmptyState
+                  title="No assessment data"
+                  description="This lead did not submit an assessment form."
+                />
               ) : (
                 assessments.map((assessment, index) => (
                   <section className="panel" key={String(assessment.id)}>
@@ -235,22 +293,37 @@ export function LeadDetail({ id }: { id: string }) {
           {/* Tab: Notes */}
           {activeTab === 'notes' && (
             <>
-              {canNote&&<form className="panel field-stack" onSubmit={addNote}>
-                <h2>Add internal note</h2>
-                <Field label="Note (visible only to your team)">
-                  <Textarea name="body" required maxLength={5000} placeholder="Add context, next steps or outcome…" />
-                </Field>
-                <Button type="submit">Add note</Button>
-                {noteError && (
-                  <div className="form-status form-status--error" role="alert">{noteError}</div>
-                )}
-              </form>}
+              {canNote && (
+                <form className="panel field-stack" onSubmit={addNote}>
+                  <h2>Add internal note</h2>
+                  <Field label="Note (visible only to your team)">
+                    <Textarea
+                      name="body"
+                      required
+                      maxLength={5000}
+                      placeholder="Add context, next steps or outcome…"
+                    />
+                  </Field>
+                  <Button type="submit">Add note</Button>
+                  {noteError && (
+                    <div className="form-status form-status--error" role="alert">
+                      {noteError}
+                    </div>
+                  )}
+                </form>
+              )}
               {notes.length === 0 ? (
                 <EmptyState title="No notes yet" description="Internal notes will appear here." />
               ) : (
                 notes.map((note) => (
                   <section className="panel" key={String(note.id)}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBlockEnd: '.4rem' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        marginBlockEnd: '.4rem',
+                      }}
+                    >
                       <strong>
                         {String((note.author as Record<string, unknown>)?.displayName ?? 'System')}
                       </strong>
@@ -270,7 +343,10 @@ export function LeadDetail({ id }: { id: string }) {
             <section className="panel">
               <h2>Activity timeline</h2>
               {activities.length === 0 ? (
-                <EmptyState title="No activity yet" description="Events will appear here as this lead progresses." />
+                <EmptyState
+                  title="No activity yet"
+                  description="Events will appear here as this lead progresses."
+                />
               ) : (
                 <div className="timeline">
                   {activities.map((item) => (
@@ -280,11 +356,19 @@ export function LeadDetail({ id }: { id: string }) {
                         {new Date(String(item.createdAt)).toLocaleString()}
                         {Boolean(item.actorUserId) && ` · by user`}
                       </div>
-                      {Boolean(item.payload) && typeof item.payload === 'object' && Object.keys(item.payload as object).length > 0 && (
-                        <div style={{ fontSize: '.8rem', color: 'var(--color-text-muted)', marginBlockStart: '.2rem' }}>
-                          <Readable value={item.payload} />
-                        </div>
-                      )}
+                      {Boolean(item.payload) &&
+                        typeof item.payload === 'object' &&
+                        Object.keys(item.payload as object).length > 0 && (
+                          <div
+                            style={{
+                              fontSize: '.8rem',
+                              color: 'var(--color-text-muted)',
+                              marginBlockStart: '.2rem',
+                            }}
+                          >
+                            <Readable value={item.payload} />
+                          </div>
+                        )}
                     </article>
                   ))}
                 </div>
@@ -306,7 +390,9 @@ export function LeadDetail({ id }: { id: string }) {
                 onChange={(e) => void changeStatus(e.target.value)}
               >
                 {STATUSES.map((s) => (
-                  <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                  <option key={s} value={s}>
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                  </option>
                 ))}
               </select>
             </Field>
@@ -324,7 +410,7 @@ export function LeadDetail({ id }: { id: string }) {
               <select
                 className="gv-input"
                 value={assigned?.id ?? ''}
-                disabled={assignBusy||!canAssign}
+                disabled={assignBusy || !canAssign}
                 onChange={(e) => void assign(e.target.value || null)}
               >
                 <option value="">— Unassigned —</option>
@@ -335,10 +421,15 @@ export function LeadDetail({ id }: { id: string }) {
                 ))}
               </select>
             </Field>
-            {canAssign&&assigned && (
+            {canAssign && assigned && (
               <button
                 className="text-link"
-                style={{ marginBlockStart: '.4rem', padding: '.2rem 0', minHeight: 'unset', fontSize: '.85rem' }}
+                style={{
+                  marginBlockStart: '.4rem',
+                  padding: '.2rem 0',
+                  minHeight: 'unset',
+                  fontSize: '.85rem',
+                }}
                 disabled={assignBusy}
                 onClick={() => void assign(null)}
               >
@@ -353,10 +444,16 @@ export function LeadDetail({ id }: { id: string }) {
             <dl style={{ fontSize: '.85rem' }}>
               <dt className="cell-meta">Created</dt>
               <dd>{lead.createdAt ? new Date(String(lead.createdAt)).toLocaleString() : '—'}</dd>
-              <dt className="cell-meta" style={{ marginBlockStart: '.4rem' }}>Source</dt>
+              <dt className="cell-meta" style={{ marginBlockStart: '.4rem' }}>
+                Source
+              </dt>
               <dd>{String(lead.sourceType)}</dd>
-              <dt className="cell-meta" style={{ marginBlockStart: '.4rem' }}>Source page</dt>
-              <dd style={{ wordBreak: 'break-all', fontSize: '.8rem' }}>{String(lead.sourcePage ?? '—')}</dd>
+              <dt className="cell-meta" style={{ marginBlockStart: '.4rem' }}>
+                Source page
+              </dt>
+              <dd style={{ wordBreak: 'break-all', fontSize: '.8rem' }}>
+                {String(lead.sourcePage ?? '—')}
+              </dd>
             </dl>
           </section>
         </aside>

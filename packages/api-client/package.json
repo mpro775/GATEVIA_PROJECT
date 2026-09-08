@@ -3,8 +3,22 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "scripts": { "build": "tsc -p tsconfig.json", "typecheck": "tsc --noEmit", "lint": "eslint src", "generate": "openapi-typescript ../../apps/api/openapi.json -o src/generated.ts" },
-  "dependencies": { "@gatevia/contracts": "workspace:*", "openapi-fetch": "^0.9.3" },
-  "devDependencies": { "@gatevia/eslint-config": "workspace:*", "@gatevia/typescript-config": "workspace:*", "openapi-typescript": "^6.7.5" }
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "generate": "openapi-typescript ../../apps/api/openapi.json -o src/generated.ts"
+  },
+  "dependencies": {
+    "@gatevia/contracts": "workspace:*",
+    "openapi-fetch": "^0.9.3"
+  },
+  "devDependencies": {
+    "@gatevia/eslint-config": "workspace:*",
+    "@gatevia/typescript-config": "workspace:*",
+    "openapi-typescript": "^6.7.5"
+  }
 }

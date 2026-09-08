@@ -4,7 +4,7 @@
 **Execution Mode:** `READ CONTRACTS → AUDIT CURRENT CODE → IMPLEMENT ALL MISSING CODE → STATIC SELF-REVIEW ONLY → STOP`  
 **Project:** GATEVIA V1  
 **Current Phase:** CODE COMPLETION ONLY  
-**Next Separate Phase:** INSTALL/SYNC → GENERATE → MIGRATE/BUILD → LINT/TYPECHECK → TEST → FIX → UAT → STAGING → PRODUCTION  
+**Next Separate Phase:** INSTALL/SYNC → GENERATE → MIGRATE/BUILD → LINT/TYPECHECK → TEST → FIX → UAT → STAGING → PRODUCTION
 
 ---
 
@@ -572,7 +572,7 @@ Public:
 التدقيق السابق أثبت أن hashing المبني على:
 
 ```ts
-JSON.stringify(input, Object.keys(input).sort())
+JSON.stringify(input, Object.keys(input).sort());
 ```
 
 غير آمن للـnested assessment payload ويمكن أن يسقط nested keys ويولد نفس hash لطلبات مختلفة.
@@ -1264,24 +1264,31 @@ P13 Full W0–W10 contract sweep and remaining production-code gaps
 استخدم القاعدة التالية:
 
 ### موجود وصحيح
+
 احتفظ به.
 
 ### موجود لكن غير موصول
+
 اربطه بالطبقات المستهلكة.
 
 ### موجود شكليًا
+
 أكمل behavior الحقيقي.
 
 ### generic implementation لا يغطي domain
+
 حوّله إلى domain-aware implementation دون نسخ غير ضروري.
 
 ### contract لا يطلبه
+
 لا توسعه.
 
 ### يحتاج client content غير موجود
+
 ابنِ model/editor/renderer/hidden-state واترك البيانات فارغة.
 
 ### يحتاج secret/provider حي
+
 اكتب integration/config source فقط واترك runtime للجولة التالية.
 
 ---

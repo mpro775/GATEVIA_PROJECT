@@ -1,18 +1,17 @@
 'use client';
 import { useEffect, useState } from 'react';
+import type { Setting } from '@gatevia/api-client';
 import { Button, Field, Input, Textarea } from '@gatevia/ui';
 import { api } from '@/lib/api';
 import { useAdminAuth } from './auth-context';
 
-interface Setting { id: string; key: string; value: any; category: string; isPublic: boolean; description?: string }
-
 const SETTING_GROUPS = ['company', 'contact', 'seo', 'social', 'appearance', 'general'];
 
 export function SettingsEditor() {
-  const { can }=useAdminAuth();
-  const canManage=can('settings.manage');
+  const { can } = useAdminAuth();
+  const canManage = can('settings.manage');
   const [settings, setSettings] = useState<Setting[]>([]);
-  const [changes, setChanges] = useState<Record<string, any>>({});
+  const [changes, setChanges] = useState<Record<string, unknown>>({});
   const [activeGroup, setActiveGroup] = useState(SETTING_GROUPS[0] ?? 'company');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -24,7 +23,7 @@ export function SettingsEditor() {
   }, []);
 
   function change(key: string, value: string) {
-    let parsed = value;
+    let parsed: unknown = value;
     try {
       parsed = JSON.parse(value);
     } catch {
@@ -42,14 +41,23 @@ export function SettingsEditor() {
     setBusy(true);
     setMessage('');
     const updates = Object.entries(changes);
-    if (updates.length === 0) { setMessage('No changes to save.'); setBusy(false); return; }
+    if (updates.length === 0) {
+      setMessage('No changes to save.');
+      setBusy(false);
+      return;
+    }
     try {
       await Promise.all(
         updates.map(([key, value]) =>
-          api(`/admin/settings/${encodeURIComponent(key)}`, { method: 'PATCH', body: JSON.stringify({ value }) }),
+          api(`/admin/settings/${encodeURIComponent(key)}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ value }),
+          }),
         ),
       );
-      setSettings((prev) => prev.map((s) => (changes[s.key] !== undefined ? { ...s, value: changes[s.key] } : s)));
+      setSettings((prev) =>
+        prev.map((s) => (changes[s.key] !== undefined ? { ...s, value: changes[s.key] } : s)),
+      );
       setChanges({});
       setMessage('Settings saved.');
     } catch (e) {
@@ -74,13 +82,18 @@ export function SettingsEditor() {
       <div className="page-title">
         <div>
           <h1>Global Settings</h1>
-          <p>Manage site-wide configuration: company info, SEO defaults, social links and appearance.</p>
+          <p>
+            Manage site-wide configuration: company info, SEO defaults, social links and appearance.
+          </p>
         </div>
-        {canManage&&<div className="toolbar">
-          <Button disabled={busy} onClick={save}>
-            Save {Object.keys(changes).length > 0 ? `(${Object.keys(changes).length} changes)` : ''}
-          </Button>
-        </div>}
+        {canManage && (
+          <div className="toolbar">
+            <Button disabled={busy} onClick={save}>
+              Save{' '}
+              {Object.keys(changes).length > 0 ? `(${Object.keys(changes).length} changes)` : ''}
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="editor">
@@ -101,29 +114,36 @@ export function SettingsEditor() {
               ))}
             </div>
 
-            <fieldset disabled={!canManage} style={{border:0,padding:0,margin:0}}><div className="field-stack" style={{ marginBlockStart: '1rem' }}>
-              {visibleSettings.length === 0 && (
-                <p className="cell-meta">No settings in this group.</p>
-              )}
-              {visibleSettings.map((setting) => (
-                <Field key={setting.key} label={`${setting.key}${setting.description ? ` — ${setting.description}` : ''}`}>
-                  {effectiveValueString(setting).length > 80 ? (
-                    <Textarea
-                      value={effectiveValueString(setting)}
-                      onChange={(e) => change(setting.key, e.target.value)}
-                    />
-                  ) : (
-                    <Input
-                      value={effectiveValueString(setting)}
-                      onChange={(e) => change(setting.key, e.target.value)}
-                    />
-                  )}
-                  {changes[setting.key] !== undefined && (
-                    <span className="cell-meta" style={{ color: 'var(--color-accent)' }}>Modified</span>
-                  )}
-                </Field>
-              ))}
-            </div></fieldset>
+            <fieldset disabled={!canManage} style={{ border: 0, padding: 0, margin: 0 }}>
+              <div className="field-stack" style={{ marginBlockStart: '1rem' }}>
+                {visibleSettings.length === 0 && (
+                  <p className="cell-meta">No settings in this group.</p>
+                )}
+                {visibleSettings.map((setting) => (
+                  <Field
+                    key={setting.key}
+                    label={`${setting.key}${setting.description ? ` — ${setting.description}` : ''}`}
+                  >
+                    {effectiveValueString(setting).length > 80 ? (
+                      <Textarea
+                        value={effectiveValueString(setting)}
+                        onChange={(e) => change(setting.key, e.target.value)}
+                      />
+                    ) : (
+                      <Input
+                        value={effectiveValueString(setting)}
+                        onChange={(e) => change(setting.key, e.target.value)}
+                      />
+                    )}
+                    {changes[setting.key] !== undefined && (
+                      <span className="cell-meta" style={{ color: 'var(--color-accent)' }}>
+                        Modified
+                      </span>
+                    )}
+                  </Field>
+                ))}
+              </div>
+            </fieldset>
           </section>
         </div>
 
@@ -137,7 +157,11 @@ export function SettingsEditor() {
               </p>
             )}
           </section>
-          {message && <div className="form-status" role="status">{message}</div>}
+          {message && (
+            <div className="form-status" role="status">
+              {message}
+            </div>
+          )}
         </aside>
       </div>
     </>

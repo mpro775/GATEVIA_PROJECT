@@ -1,1 +1,2 @@
-import config from '@gatevia/eslint-config'; export default config;
+import config from '@gatevia/eslint-config';
+export default config;

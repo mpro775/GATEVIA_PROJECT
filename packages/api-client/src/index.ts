@@ -1,7 +1,25 @@
 import createClient from 'openapi-fetch';
-import type { paths } from './generated.js';
+import type { components, paths } from './generated.js';
 
-export type { paths };
+export type { components, paths };
+export type Language = components['schemas']['Language'];
+export type AuthUser = components['schemas']['AuthUser'];
+export type User = components['schemas']['User'];
+export type Role = components['schemas']['Role'];
+export type Permission = components['schemas']['Permission'];
+export type Media = components['schemas']['Media'];
+export type MediaFolder = components['schemas']['MediaFolder'];
+export type MediaUsage = components['schemas']['MediaUsage'];
+export type UploadSession = components['schemas']['UploadSession'];
+export type NavigationItem = components['schemas']['NavigationItem'];
+export type NavigationMenu = components['schemas']['NavigationMenu'];
+export type PublicSettings = components['schemas']['PublicSettings'];
+export type Setting = components['schemas']['Setting'];
+export type Redirect = components['schemas']['Redirect'];
+export type RedirectMatch = components['schemas']['RedirectMatch'];
+export type SubmissionReceipt = components['schemas']['SubmissionReceipt'];
+export type ContentRecord = components['schemas']['ContentRecord'];
+export type Lead = components['schemas']['Lead'];
 
 export class ApiError extends Error {
   readonly type: string;

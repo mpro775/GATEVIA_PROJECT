@@ -1,17 +1,19 @@
 'use client';
 
 import { createContext, useContext } from 'react';
+import type { AuthUser as AdminUser } from '@gatevia/api-client';
 
-export interface AdminUser {
-  id: string;
-  email: string;
-  displayName: string;
-  permissions: string[];
-}
+export type { AdminUser };
 
 const AuthContext = createContext<AdminUser | null>(null);
 
-export function AdminAuthProvider({ user, children }: { user: AdminUser; children: React.ReactNode }) {
+export function AdminAuthProvider({
+  user,
+  children,
+}: {
+  user: AdminUser;
+  children: React.ReactNode;
+}) {
   return <AuthContext.Provider value={user}>{children}</AuthContext.Provider>;
 }
 

@@ -1,7 +1,20 @@
 import { plainToInstance } from 'class-transformer';
-import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUrl, MinLength, validateSync } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUrl,
+  MinLength,
+  validateSync,
+} from 'class-validator';
 
-enum RuntimeEnvironment { development = 'development', test = 'test', staging = 'staging', production = 'production' }
+enum RuntimeEnvironment {
+  development = 'development',
+  test = 'test',
+  staging = 'staging',
+  production = 'production',
+}
 
 class Environment {
   @IsEnum(RuntimeEnvironment) APP_ENV: RuntimeEnvironment = RuntimeEnvironment.development;
@@ -18,6 +31,9 @@ class Environment {
 export function validateEnvironment(input: Record<string, unknown>): Record<string, unknown> {
   const config = plainToInstance(Environment, input, { enableImplicitConversion: true });
   const errors = validateSync(config, { skipMissingProperties: false });
-  if (errors.length) throw new Error(`Invalid environment configuration: ${errors.map((error) => error.property).join(', ')}`);
+  if (errors.length)
+    throw new Error(
+      `Invalid environment configuration: ${errors.map((error) => error.property).join(', ')}`,
+    );
   return input;
 }

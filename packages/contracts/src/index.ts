@@ -12,7 +12,13 @@ export type Direction = z.infer<typeof directionSchema>;
 export const themes = ['light', 'dark'] as const;
 export type Theme = (typeof themes)[number];
 
-export const leadSources = ['contact', 'consultation', 'assessment', 'landing_page', 'manual'] as const;
+export const leadSources = [
+  'contact',
+  'consultation',
+  'assessment',
+  'landing_page',
+  'manual',
+] as const;
 export const leadStatuses = ['new', 'contacted', 'qualified', 'proposal', 'won', 'lost'] as const;
 
 export const paginationSchema = z.object({
@@ -85,7 +91,11 @@ export const assessmentSubmissionSchema = z.object({
     currentSaudiPresence: z.string().max(300),
     objective: z.enum(['research', 'setup', 'partner_search', 'growth', 'other']),
     timeline: z.enum(['immediate', '1_3_months', '3_6_months', '6_plus_months']),
-    needs: z.array(z.enum(['company_formation', 'licensing', 'research', 'local_partner', 'gtm', 'other'])).min(1),
+    needs: z
+      .array(
+        z.enum(['company_formation', 'licensing', 'research', 'local_partner', 'gtm', 'other']),
+      )
+      .min(1),
     notes: z.string().max(3000).optional(),
   }),
   consent: z.literal(true),
@@ -96,18 +106,25 @@ export type ContactSubmission = z.infer<typeof contactSubmissionSchema>;
 export type ConsultationSubmission = z.infer<typeof consultationSubmissionSchema>;
 export type AssessmentSubmission = z.infer<typeof assessmentSubmissionSchema>;
 
-export function normalizeVideoEmbed(value: string): { provider: 'youtube' | 'vimeo'; videoId: string } | null {
+export function normalizeVideoEmbed(
+  value: string,
+): { provider: 'youtube' | 'vimeo'; videoId: string } | null {
   try {
     const url = new URL(value);
     if (['youtube.com', 'www.youtube.com', 'youtu.be'].includes(url.hostname)) {
-      const videoId = url.hostname === 'youtu.be' ? url.pathname.slice(1) : url.searchParams.get('v') ?? url.pathname.split('/').filter(Boolean).at(-1) ?? '';
+      const videoId =
+        url.hostname === 'youtu.be'
+          ? url.pathname.slice(1)
+          : (url.searchParams.get('v') ?? url.pathname.split('/').filter(Boolean).at(-1) ?? '');
       return /^[a-zA-Z0-9_-]{6,20}$/.test(videoId) ? { provider: 'youtube', videoId } : null;
     }
     if (['vimeo.com', 'www.vimeo.com'].includes(url.hostname)) {
       const videoId = url.pathname.split('/').filter(Boolean).at(-1) ?? '';
       return /^\d{6,12}$/.test(videoId) ? { provider: 'vimeo', videoId } : null;
     }
-  } catch { return null; }
+  } catch {
+    return null;
+  }
   return null;
 }
 

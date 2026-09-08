@@ -1,3 +1,23 @@
-import type { Metadata } from 'next'; import { cookies } from 'next/headers'; import Script from 'next/script'; import './globals.css';
-export const metadata:Metadata={title:{default:'GATEVIA Admin',template:'%s | GATEVIA Admin'},robots:{index:false,follow:false}};const script=`(()=>{try{const m=document.cookie.match(/(?:^|; )gatevia_theme=(light|dark)/);const t=m?m[1]:(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t}catch{document.documentElement.dataset.theme='dark'}})()`;
-export default async function Layout({children}:{children:React.ReactNode}){const store=await cookies();const saved=store.get('gatevia_theme')?.value;return <html lang="en" data-theme={saved==='light'?'light':'dark'} suppressHydrationWarning><body>{children}<Script id="admin-theme" strategy="beforeInteractive">{script}</Script></body></html>}
+import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
+import Script from 'next/script';
+import './globals.css';
+export const metadata: Metadata = {
+  title: { default: 'GATEVIA Admin', template: '%s | GATEVIA Admin' },
+  robots: { index: false, follow: false },
+};
+const script = `(()=>{try{const m=document.cookie.match(/(?:^|; )gatevia_theme=(light|dark)/);const t=m?m[1]:(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t}catch{document.documentElement.dataset.theme='dark'}})()`;
+export default async function Layout({ children }: { children: React.ReactNode }) {
+  const store = await cookies();
+  const saved = store.get('gatevia_theme')?.value;
+  return (
+    <html lang="en" data-theme={saved === 'light' ? 'light' : 'dark'} suppressHydrationWarning>
+      <body>
+        {children}
+        <Script id="admin-theme" strategy="beforeInteractive">
+          {script}
+        </Script>
+      </body>
+    </html>
+  );
+}

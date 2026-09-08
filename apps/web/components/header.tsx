@@ -29,19 +29,41 @@ function resolveUrl(item: NavItem, locale: string): string {
   return `/${locale}${href.startsWith('/') ? '' : '/'}${href}`;
 }
 
-function NavBranch({ item, locale, mobile = false, onNavigate }: { item: NavItem; locale: string; mobile?: boolean; onNavigate?: () => void }) {
-  const link = <Link
-    href={resolveUrl(item, locale)}
-    {...(onNavigate ? { onClick: onNavigate } : {})}
-    {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-  >{item.label}</Link>;
+function NavBranch({
+  item,
+  locale,
+  mobile = false,
+  onNavigate,
+}: {
+  item: NavItem;
+  locale: string;
+  mobile?: boolean;
+  onNavigate?: () => void;
+}) {
+  const link = (
+    <Link
+      href={resolveUrl(item, locale)}
+      {...(onNavigate ? { onClick: onNavigate } : {})}
+      {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+    >
+      {item.label}
+    </Link>
+  );
   if (!item.children?.length) return link;
   return (
     <details className={mobile ? 'mobile-nav-branch' : 'nav-branch'}>
       <summary>{item.label}</summary>
       <div className="nav-children">
         {item.href && link}
-        {item.children.map((child) => <NavBranch key={child.id} item={child} locale={locale} mobile={mobile} {...(onNavigate ? { onNavigate } : {})} />)}
+        {item.children.map((child) => (
+          <NavBranch
+            key={child.id}
+            item={child}
+            locale={locale}
+            mobile={mobile}
+            {...(onNavigate ? { onNavigate } : {})}
+          />
+        ))}
       </div>
     </details>
   );
@@ -71,18 +93,57 @@ export function Header({
   const switchLanguage = async (language: Language) => {
     const parts = pathname.split('/').filter(Boolean);
     const route = parts.slice(1);
-    const detailResources = new Set(['services','industries','case-studies','insights','brands','products']);
-    const listResources = new Set([...detailResources,'clients','partners','certifications','trust-metrics','testimonials','team','faqs']);
-    let resource:string|undefined;
-    let slug:string|undefined;
-    if (route[0] && route[1] && detailResources.has(route[0])) { resource=route[0]; slug=route[1]; }
-    else if (!route[0]) { resource='pages'; slug='home'; }
-    else if (!listResources.has(route[0])) { resource='pages'; slug=route.join('/'); }
-    if (resource&&slug) {
+    const detailResources = new Set([
+      'services',
+      'industries',
+      'case-studies',
+      'insights',
+      'brands',
+      'products',
+    ]);
+    const listResources = new Set([
+      ...detailResources,
+      'clients',
+      'partners',
+      'certifications',
+      'trust-metrics',
+      'testimonials',
+      'team',
+      'faqs',
+    ]);
+    let resource: string | undefined;
+    let slug: string | undefined;
+    if (route[0] && route[1] && detailResources.has(route[0])) {
+      resource = route[0];
+      slug = route[1];
+    } else if (!route[0]) {
+      resource = 'pages';
+      slug = 'home';
+    } else if (!listResources.has(route[0])) {
+      resource = 'pages';
+      slug = route.join('/');
+    }
+    if (resource && slug) {
       try {
-        const response=await fetch(`${publicApiUrl}/public/${resource}/${encodeURIComponent(slug)}?locale=${encodeURIComponent(locale)}`,{headers:{Accept:'application/json'}});
-        if(response.ok){const body=await response.json() as {data?:{alternates?:Record<string,string>}};const target=Object.entries(body.data?.alternates??{}).find(([code])=>code.toLowerCase()===language.code.toLowerCase())?.[1];if(target){window.location.assign(target);return;}}
-      } catch { /* Fall back to retaining the current route below. */ }
+        const response = await fetch(
+          `${publicApiUrl}/public/${resource}/${encodeURIComponent(slug)}?locale=${encodeURIComponent(locale)}`,
+          { headers: { Accept: 'application/json' } },
+        );
+        if (response.ok) {
+          const body = (await response.json()) as {
+            data?: { alternates?: Record<string, string> };
+          };
+          const target = Object.entries(body.data?.alternates ?? {}).find(
+            ([code]) => code.toLowerCase() === language.code.toLowerCase(),
+          )?.[1];
+          if (target) {
+            window.location.assign(target);
+            return;
+          }
+        }
+      } catch {
+        /* Fall back to retaining the current route below. */
+      }
     }
     window.location.assign(localizedPath(language));
   };
@@ -91,11 +152,21 @@ export function Header({
     <header className="site-header">
       <div className="container header-row">
         <Link href={`/${locale}`} className="brand" aria-label={`${identity.name} home`}>
-          {identity.logoUrl ? <>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={identity.logoUrl} alt="" className="brand-mark" /></> : <span className="brand-mark">▰</span>} {identity.name}
+          {identity.logoUrl ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={identity.logoUrl} alt="" className="brand-mark" />
+            </>
+          ) : (
+            <span className="brand-mark">▰</span>
+          )}{' '}
+          {identity.name}
         </Link>
 
         <nav className="desktop-nav" aria-label="Main navigation">
-          {links.map((item) => <NavBranch key={item.id} item={item} locale={locale} />)}
+          {links.map((item) => (
+            <NavBranch key={item.id} item={item} locale={locale} />
+          ))}
         </nav>
 
         <div className="header-tools">
@@ -109,11 +180,18 @@ export function Header({
                   const language = languages.find((item) => item.code === event.target.value);
                   if (!language) return;
                   // @ts-expect-error optional analytics global
-                  window.dataLayer?.push({ event: 'language_switch', to: language.code.toLowerCase() });
+                  window.dataLayer?.push({
+                    event: 'language_switch',
+                    to: language.code.toLowerCase(),
+                  });
                   void switchLanguage(language);
                 }}
               >
-                {languages.map((language) => <option key={language.code} value={language.code}>{language.nativeName}</option>)}
+                {languages.map((language) => (
+                  <option key={language.code} value={language.code}>
+                    {language.nativeName}
+                  </option>
+                ))}
               </select>
             </label>
           )}
@@ -134,7 +212,15 @@ export function Header({
 
       {open && (
         <nav className="mobile-panel" aria-label="Mobile navigation">
-          {links.map((item) => <NavBranch key={item.id} item={item} locale={locale} mobile onNavigate={() => setOpen(false)} />)}
+          {links.map((item) => (
+            <NavBranch
+              key={item.id}
+              item={item}
+              locale={locale}
+              mobile
+              onNavigate={() => setOpen(false)}
+            />
+          ))}
           <Link onClick={() => setOpen(false)} href={`/${locale}/book-consultation`}>
             {t.consultation}
           </Link>

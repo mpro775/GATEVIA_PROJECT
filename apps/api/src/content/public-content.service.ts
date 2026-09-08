@@ -8,36 +8,398 @@ import { contentDelegate, contentInclude, type Row } from './admin-content.servi
 import { contentPath } from './website-content.service';
 
 export interface PublicNavigationItem {
- id:string;
- parentId:string|null;
- label:string;
- href:string|null;
- external:boolean;
- children:PublicNavigationItem[];
+  id: string;
+  parentId: string | null;
+  label: string;
+  href: string | null;
+  external: boolean;
+  children: PublicNavigationItem[];
 }
 @Injectable()
 export class PublicContentService {
- constructor(private readonly prisma:PrismaService,private readonly config:ConfigService){}
- languages(){return this.prisma.language.findMany({where:{isActive:true},orderBy:{sortOrder:'asc'},select:{code:true,name:true,nativeName:true,direction:true,isDefault:true,dateLocale:true,localeFormat:true}})}
- async locale(raw:string){const row=await this.prisma.language.findFirst({where:{code:{equals:raw??'',mode:'insensitive'},isActive:true}});if(!row)throw new NotFoundException('Language unavailable.');return row.code;}
- private resource(raw:string){const resource=raw==='team'?'team-members':raw;const def=cmsDefinitions[resource];if(!def)throw new NotFoundException('Unknown public resource.');return{resource,def};}
- private visible(resource:string,locale:string){return{...(resource==='tags'?{}:{status:'published'}),...(['clients','partners','certifications','trust-metrics'].includes(resource)?{publicVisibility:true}:{}),...(resource==='testimonials'?{consentConfirmed:true}:{}),translations:{some:{locale}}};}
- async list(rawResource:string,raw:Record<string,string|undefined>){const {resource,def}=this.resource(rawResource);const query=paginationSchema.extend({locale:z.string(),q:z.string().max(200).optional(),type:z.enum(['article','guide','report']).optional(),category:z.string().uuid().optional(),tag:z.string().uuid().optional(),service:z.string().uuid().optional(),industry:z.string().uuid().optional(),featured:z.enum(['true','false']).optional(),ids:z.string().optional()}).strict().parse(raw);const locale=await this.locale(query.locale);const where:Record<string,unknown>=this.visible(resource,locale);if(query.q)where.translations={some:{locale,OR:Object.entries(def.translations).filter(([,f])=>['text','long'].includes(f.kind)).map(([key])=>({[key]:{contains:query.q,mode:'insensitive'}}))}};if(query.type&&resource==='insights')where.type=query.type;if(query.featured&&def.fields.featured)where.featured=query.featured==='true';if(query.category&&def.relations.categoryId)where.categoryId=query.category;if(query.tag&&resource==='insights')where.tags={some:{tagId:query.tag}};for(const [filter,key,foreignKey]of [['service','services','serviceId'],['industry','industries','industryId']] as const){if(query[filter]&&def.relations[key])where[key]={some:{[foreignKey]:query[filter]}};else if(query[filter]&&def.relations[foreignKey])where[foreignKey]=query[filter];}if(query.ids)where.id={in:z.array(z.string().uuid()).max(100).parse(query.ids.split(','))};const delegate=contentDelegate(this.prisma,def.model);const [rows,total]=await Promise.all([delegate.findMany({where,skip:(query.page-1)*query.pageSize,take:query.pageSize,orderBy:[...(def.fields.featured?[{featured:'desc'}]:[]),{[def.fields.sortOrder?'sortOrder':'createdAt']:'asc'},{id:'asc'}],include:{translations:true}}),delegate.count({where})]);return{data:await Promise.all(rows.map(row=>this.present(resource,row,locale))),meta:{page:query.page,pageSize:query.pageSize,total,pageCount:Math.ceil(total/query.pageSize)}};}
- previewToken(resource:string,id:string,locale:string){const payload=Buffer.from(JSON.stringify({resource,id,locale,expiresAt:Date.now()+60*60*1000})).toString('base64url');const signature=createHmac('sha256',this.config.getOrThrow<string>('AUTH_SESSION_SECRET')).update(payload).digest('base64url');return`${payload}.${signature}`;}
- private verifyPreview(token:string,resource:string,locale:string){const [payload,signature]=token.split('.');if(!payload||!signature)throw new NotFoundException('Preview unavailable.');const expected=Buffer.from(createHmac('sha256',this.config.getOrThrow<string>('AUTH_SESSION_SECRET')).update(payload).digest('base64url'));const supplied=Buffer.from(signature);if(expected.length!==supplied.length||!timingSafeEqual(expected,supplied))throw new NotFoundException('Preview unavailable.');let data:{resource:string;id:string;locale:string;expiresAt:number};try{data=JSON.parse(Buffer.from(payload,'base64url').toString('utf8')) as typeof data;}catch{throw new NotFoundException('Preview unavailable.');}if(data.resource!==resource||data.locale.toLowerCase()!==locale.toLowerCase()||data.expiresAt<Date.now())throw new NotFoundException('Preview unavailable.');return data.id;}
- async detail(rawResource:string,rawLocale:string,slug:string,previewToken?:string){const {resource,def}=this.resource(rawResource);const locale=await this.locale(rawLocale);const previewId=previewToken?this.verifyPreview(previewToken,resource,locale):undefined;const row=await contentDelegate(this.prisma,def.model).findFirst({where:previewId?{id:previewId}:{...this.visible(resource,locale),translations:{some:{locale,slug}}},include:contentInclude(resource)});if(!row||!row.translations?.some(t=>t.locale===locale))throw new NotFoundException('Content translation unavailable.');const output=await this.present(resource,row,locale);
-  const related:Record<string,unknown>={};for(const [key,r]of Object.entries(def.relations)){if(key==='gallery'){const gallery=row[key] as Array<{mediaId:string}>|undefined;output.gallery=(await Promise.all((gallery??[]).map(g=>this.media(g.mediaId,locale)))).filter(Boolean);continue;}if(r.resource==='users')continue;const ids=r.many?(row[key]as Array<Record<string,string>>??[]).map(x=>x[r.foreignKey]!):row[key]?[String(row[key])]:[];if(!ids.length)continue;const records=await this.list(r.resource,{locale,ids:ids.join(','),pageSize:'100'});related[key]=records.data;}
-  if(resource==='case-studies'&&row.anonymized)delete related.clientId;
-  output.related=related;
-  Object.assign(output, related);
-  if(resource==='insights'&&row.authorUserId){const author=await this.prisma.user.findUnique({where:{id:String(row.authorUserId)},select:{displayName:true}});if(author)output.authorName=author.displayName;}
-  if(resource==='pages'){output.sections=await Promise.all((row.sections as Array<Record<string,unknown>>??[]).filter(s=>s.isVisible).map(async section=>{const t=(section.translations as Array<{locale:string;content:Record<string,unknown>}>).find(t=>t.locale===locale);if(!t)return null;const content={...t.content};const collections:Record<string,unknown>={};for(const [key,target]of Object.entries({serviceIds:'services',industryIds:'industries',caseStudyIds:'case-studies',insightIds:'insights',clientIds:'clients',partnerIds:'partners',testimonialIds:'testimonials',faqIds:'faqs',brandIds:'brands',productIds:'products'})){const ids=content[key]as string[]|undefined;if(ids?.length){const result=await this.list(target,{locale,ids:ids.join(','),pageSize:'100',...(content.featuredOnly?{featured:'true'}:{})});collections[target]=ids.map(id=>result.data.find(r=>r.id===id)).filter(Boolean);}else if(ids&&content.featuredOnly){collections[target]=(await this.list(target,{locale,featured:'true',pageSize:'12'})).data;}}return{id:section.id,sectionType:section.sectionType,isVisible:true,settings:section.settings,translations:[t],collections,media:await this.resolveMedia(content,locale)};})).then(items=>items.filter(Boolean));}
-  return output;
- }
- private async present(resource:string,row:Row,locale:string):Promise<Row>{const def=cmsDefinitions[resource]!;const tr=row.translations?.find(t=>t.locale===locale)??{};const active=await this.languages();const alternates=Object.fromEntries((row.translations??[]).filter(t=>t.slug&&active.some(l=>l.code===t.locale)).map(t=>[String(t.locale),contentPath(resource,String(t.locale),String(t.slug))]));const fields=Object.fromEntries(Object.keys(def.fields).filter(k=>k!=='evidenceNoteInternal'&&k!=='consentConfirmed').map(k=>[k,row[k]]));return{id:row.id,...fields,publishedAt:row.publishedAt,updatedAt:row.updatedAt,translations:[Object.fromEntries(Object.keys(def.translations).map(k=>[k,tr[k]]))],alternates,media:await this.resolveMedia({...fields,...tr},locale)};}
- async media(id:string,locale:string){const media=await this.prisma.media.findFirst({where:{id,status:'ready'},include:{translations:{where:{locale}},variants:true}});if(!media)return null;const base=process.env.R2_PUBLIC_BASE_URL?.replace(/\/$/,'');if(!base)return null;return{id:media.id,url:`${base}/${media.storageKey}`,mimeType:media.mimeType,width:media.width,height:media.height,translations:media.translations.map(t=>({title:t.title,altText:t.altText,caption:t.caption,decorative:t.decorative})),variants:media.variants.map(v=>({key:v.variantKey,url:`${base}/${v.storageKey}`,width:v.width,height:v.height,mimeType:v.mimeType}))};}
- async resolveMedia(value:unknown,locale:string){const ids=new Set<string>();function walk(v:unknown){if(!v||typeof v!=='object')return;if(Array.isArray(v)){v.forEach(walk);return;}for(const [key,item]of Object.entries(v)){if(/mediaId$/i.test(key)&&typeof item==='string'&&z.string().uuid().safeParse(item).success)ids.add(item);else walk(item);}}walk(value);return Object.fromEntries((await Promise.all([...ids].map(async id=>[id,await this.media(id,locale)]as const))).filter(([,media])=>media));}
- async settings(rawLocale?:string){const [rows,languages]=await Promise.all([this.prisma.globalSetting.findMany({where:{isPublic:true},select:{key:true,value:true}}),this.languages()]);const locale=rawLocale&&languages.some(language=>language.code.toLowerCase()===rawLocale.toLowerCase())?languages.find(language=>language.code.toLowerCase()===rawLocale.toLowerCase())!.code:languages.find(language=>language.isDefault)?.code??languages[0]?.code??'en';const values=Object.fromEntries(rows.map(row=>[row.key,row.value]));return{values,media:await this.resolveMedia(values,locale)};}
- async navigation(rawLocale:string,key:string):Promise<{key:string;items:PublicNavigationItem[]}|null>{const locale=await this.locale(rawLocale);const menu=await this.prisma.navigationMenu.findFirst({where:{key,status:'published'},include:{items:{orderBy:{sortOrder:'asc'},include:{translations:{where:{locale}}}}}});if(!menu)return null;const resolved=await Promise.all(menu.items.map(async item=>{const label=item.translations[0]?.label;if(!item.visible||!label)return null;let href=item.externalUrl;if(item.itemType==='internal'){const resource=item.internalEntityType??'';const def=cmsDefinitions[resource];if(!def||!item.internalEntityId)return null;const target=await contentDelegate(this.prisma,def.model).findFirst({where:{id:item.internalEntityId,...this.visible(resource,locale)},include:{translations:{where:{locale}}}});const slug=target?.translations?.[0]?.slug;if(!slug)return null;href=contentPath(resource,locale,String(slug));}return{id:item.id,parentId:item.parentId,label,href,external:item.itemType==='external'};}));const rows=resolved.filter((i):i is NonNullable<typeof i>=>Boolean(i));function tree(parentId:string|null):PublicNavigationItem[]{return rows.filter(i=>i.parentId===parentId).map(i=>({...i,children:tree(i.id)}));}return{key:menu.key,items:tree(null)};}
- async redirect(path:string){return this.prisma.redirect.findFirst({where:{sourcePath:path,active:true},select:{destinationPath:true,statusCode:true}});}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
+  ) {}
+  languages() {
+    return this.prisma.language.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: 'asc' },
+      select: {
+        code: true,
+        name: true,
+        nativeName: true,
+        direction: true,
+        isDefault: true,
+        dateLocale: true,
+        localeFormat: true,
+      },
+    });
+  }
+  async locale(raw: string) {
+    const row = await this.prisma.language.findFirst({
+      where: { code: { equals: raw ?? '', mode: 'insensitive' }, isActive: true },
+    });
+    if (!row) throw new NotFoundException('Language unavailable.');
+    return row.code;
+  }
+  private resource(raw: string) {
+    const resource = raw === 'team' ? 'team-members' : raw;
+    const def = cmsDefinitions[resource];
+    if (!def) throw new NotFoundException('Unknown public resource.');
+    return { resource, def };
+  }
+  private visible(resource: string, locale: string) {
+    return {
+      ...(resource === 'tags' ? {} : { status: 'published' }),
+      ...(['clients', 'partners', 'certifications', 'trust-metrics'].includes(resource)
+        ? { publicVisibility: true }
+        : {}),
+      ...(resource === 'testimonials' ? { consentConfirmed: true } : {}),
+      translations: { some: { locale } },
+    };
+  }
+  async list(rawResource: string, raw: Record<string, string | undefined>) {
+    const { resource, def } = this.resource(rawResource);
+    const query = paginationSchema
+      .extend({
+        locale: z.string(),
+        q: z.string().max(200).optional(),
+        type: z.enum(['article', 'guide', 'report']).optional(),
+        category: z.string().uuid().optional(),
+        tag: z.string().uuid().optional(),
+        service: z.string().uuid().optional(),
+        industry: z.string().uuid().optional(),
+        featured: z.enum(['true', 'false']).optional(),
+        ids: z.string().optional(),
+      })
+      .strict()
+      .parse(raw);
+    const locale = await this.locale(query.locale);
+    const where: Record<string, unknown> = this.visible(resource, locale);
+    if (query.q)
+      where.translations = {
+        some: {
+          locale,
+          OR: Object.entries(def.translations)
+            .filter(([, f]) => ['text', 'long'].includes(f.kind))
+            .map(([key]) => ({ [key]: { contains: query.q, mode: 'insensitive' } })),
+        },
+      };
+    if (query.type && resource === 'insights') where.type = query.type;
+    if (query.featured && def.fields.featured) where.featured = query.featured === 'true';
+    if (query.category && def.relations.categoryId) where.categoryId = query.category;
+    if (query.tag && resource === 'insights') where.tags = { some: { tagId: query.tag } };
+    for (const [filter, key, foreignKey] of [
+      ['service', 'services', 'serviceId'],
+      ['industry', 'industries', 'industryId'],
+    ] as const) {
+      if (query[filter] && def.relations[key])
+        where[key] = { some: { [foreignKey]: query[filter] } };
+      else if (query[filter] && def.relations[foreignKey]) where[foreignKey] = query[filter];
+    }
+    if (query.ids)
+      where.id = { in: z.array(z.string().uuid()).max(100).parse(query.ids.split(',')) };
+    const delegate = contentDelegate(this.prisma, def.model);
+    const [rows, total] = await Promise.all([
+      delegate.findMany({
+        where,
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+        orderBy: [
+          ...(def.fields.featured ? [{ featured: 'desc' }] : []),
+          { [def.fields.sortOrder ? 'sortOrder' : 'createdAt']: 'asc' },
+          { id: 'asc' },
+        ],
+        include: { translations: true },
+      }),
+      delegate.count({ where }),
+    ]);
+    return {
+      data: await Promise.all(rows.map((row) => this.present(resource, row, locale))),
+      meta: {
+        page: query.page,
+        pageSize: query.pageSize,
+        total,
+        pageCount: Math.ceil(total / query.pageSize),
+      },
+    };
+  }
+  previewToken(resource: string, id: string, locale: string) {
+    const payload = Buffer.from(
+      JSON.stringify({ resource, id, locale, expiresAt: Date.now() + 60 * 60 * 1000 }),
+    ).toString('base64url');
+    const signature = createHmac('sha256', this.config.getOrThrow<string>('AUTH_SESSION_SECRET'))
+      .update(payload)
+      .digest('base64url');
+    return `${payload}.${signature}`;
+  }
+  private verifyPreview(token: string, resource: string, locale: string) {
+    const [payload, signature] = token.split('.');
+    if (!payload || !signature) throw new NotFoundException('Preview unavailable.');
+    const expected = Buffer.from(
+      createHmac('sha256', this.config.getOrThrow<string>('AUTH_SESSION_SECRET'))
+        .update(payload)
+        .digest('base64url'),
+    );
+    const supplied = Buffer.from(signature);
+    if (expected.length !== supplied.length || !timingSafeEqual(expected, supplied))
+      throw new NotFoundException('Preview unavailable.');
+    let data: { resource: string; id: string; locale: string; expiresAt: number };
+    try {
+      data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as typeof data;
+    } catch {
+      throw new NotFoundException('Preview unavailable.');
+    }
+    if (
+      data.resource !== resource ||
+      data.locale.toLowerCase() !== locale.toLowerCase() ||
+      data.expiresAt < Date.now()
+    )
+      throw new NotFoundException('Preview unavailable.');
+    return data.id;
+  }
+  async detail(rawResource: string, rawLocale: string, slug: string, previewToken?: string) {
+    const { resource, def } = this.resource(rawResource);
+    const locale = await this.locale(rawLocale);
+    const previewId = previewToken ? this.verifyPreview(previewToken, resource, locale) : undefined;
+    const row = await contentDelegate(this.prisma, def.model).findFirst({
+      where: previewId
+        ? { id: previewId }
+        : { ...this.visible(resource, locale), translations: { some: { locale, slug } } },
+      include: contentInclude(resource),
+    });
+    if (!row || !row.translations?.some((t) => t.locale === locale))
+      throw new NotFoundException('Content translation unavailable.');
+    const output = await this.present(resource, row, locale);
+    const related: Record<string, unknown> = {};
+    for (const [key, r] of Object.entries(def.relations)) {
+      if (key === 'gallery') {
+        const gallery = row[key] as Array<{ mediaId: string }> | undefined;
+        output.gallery = (
+          await Promise.all((gallery ?? []).map((g) => this.media(g.mediaId, locale)))
+        ).filter(Boolean);
+        continue;
+      }
+      if (r.resource === 'users') continue;
+      const ids = r.many
+        ? ((row[key] as Array<Record<string, string>>) ?? []).map((x) => x[r.foreignKey]!)
+        : typeof row[key] === 'string'
+          ? [row[key]]
+          : [];
+      if (!ids.length) continue;
+      const records = await this.list(r.resource, { locale, ids: ids.join(','), pageSize: '100' });
+      related[key] = records.data;
+    }
+    if (resource === 'case-studies' && row.anonymized) delete related.clientId;
+    output.related = related;
+    Object.assign(output, related);
+    if (resource === 'insights' && typeof row.authorUserId === 'string') {
+      const author = await this.prisma.user.findUnique({
+        where: { id: row.authorUserId },
+        select: { displayName: true },
+      });
+      if (author) output.authorName = author.displayName;
+    }
+    if (resource === 'pages') {
+      output.sections = await Promise.all(
+        ((row.sections as Array<Record<string, unknown>>) ?? [])
+          .filter((s) => s.isVisible)
+          .map(async (section) => {
+            const t = (
+              section.translations as Array<{ locale: string; content: Record<string, unknown> }>
+            ).find((t) => t.locale === locale);
+            if (!t) return null;
+            const content = { ...t.content };
+            const collections: Record<string, unknown> = {};
+            for (const [key, target] of Object.entries({
+              serviceIds: 'services',
+              industryIds: 'industries',
+              caseStudyIds: 'case-studies',
+              insightIds: 'insights',
+              clientIds: 'clients',
+              partnerIds: 'partners',
+              testimonialIds: 'testimonials',
+              faqIds: 'faqs',
+              brandIds: 'brands',
+              productIds: 'products',
+            })) {
+              const ids = content[key] as string[] | undefined;
+              if (ids?.length) {
+                const result = await this.list(target, {
+                  locale,
+                  ids: ids.join(','),
+                  pageSize: '100',
+                  ...(content.featuredOnly ? { featured: 'true' } : {}),
+                });
+                collections[target] = ids
+                  .map((id) => result.data.find((r) => r.id === id))
+                  .filter(Boolean);
+              } else if (ids && content.featuredOnly) {
+                collections[target] = (
+                  await this.list(target, { locale, featured: 'true', pageSize: '12' })
+                ).data;
+              }
+            }
+            return {
+              id: section.id,
+              sectionType: section.sectionType,
+              isVisible: true,
+              settings: section.settings,
+              translations: [t],
+              collections,
+              media: await this.resolveMedia(content, locale),
+            };
+          }),
+      ).then((items) => items.filter(Boolean));
+    }
+    return output;
+  }
+  private async present(resource: string, row: Row, locale: string): Promise<Row> {
+    const def = cmsDefinitions[resource]!;
+    const tr = row.translations?.find((t) => t.locale === locale) ?? {};
+    const active = await this.languages();
+    const alternates = Object.fromEntries(
+      (row.translations ?? [])
+        .filter((t) => t.slug && active.some((l) => l.code === t.locale))
+        .map((t) => [String(t.locale), contentPath(resource, String(t.locale), String(t.slug))]),
+    );
+    const fields = Object.fromEntries(
+      Object.keys(def.fields)
+        .filter((k) => k !== 'evidenceNoteInternal' && k !== 'consentConfirmed')
+        .map((k) => [k, row[k]]),
+    );
+    return {
+      id: row.id,
+      ...fields,
+      publishedAt: row.publishedAt,
+      updatedAt: row.updatedAt,
+      translations: [Object.fromEntries(Object.keys(def.translations).map((k) => [k, tr[k]]))],
+      alternates,
+      media: await this.resolveMedia({ ...fields, ...tr }, locale),
+    };
+  }
+  async media(id: string, locale: string) {
+    const media = await this.prisma.media.findFirst({
+      where: { id, status: 'ready' },
+      include: { translations: { where: { locale } }, variants: true },
+    });
+    if (!media) return null;
+    const base = process.env.R2_PUBLIC_BASE_URL?.replace(/\/$/, '');
+    if (!base) return null;
+    return {
+      id: media.id,
+      url: `${base}/${media.storageKey}`,
+      mimeType: media.mimeType,
+      width: media.width,
+      height: media.height,
+      translations: media.translations.map((t) => ({
+        title: t.title,
+        altText: t.altText,
+        caption: t.caption,
+        decorative: t.decorative,
+      })),
+      variants: media.variants.map((v) => ({
+        key: v.variantKey,
+        url: `${base}/${v.storageKey}`,
+        width: v.width,
+        height: v.height,
+        mimeType: v.mimeType,
+      })),
+    };
+  }
+  async resolveMedia(value: unknown, locale: string) {
+    const ids = new Set<string>();
+    function walk(v: unknown) {
+      if (!v || typeof v !== 'object') return;
+      if (Array.isArray(v)) {
+        v.forEach(walk);
+        return;
+      }
+      for (const [key, item] of Object.entries(v)) {
+        if (
+          /mediaId$/i.test(key) &&
+          typeof item === 'string' &&
+          z.string().uuid().safeParse(item).success
+        )
+          ids.add(item);
+        else walk(item);
+      }
+    }
+    walk(value);
+    return Object.fromEntries(
+      (
+        await Promise.all([...ids].map(async (id) => [id, await this.media(id, locale)] as const))
+      ).filter(([, media]) => media),
+    );
+  }
+  async settings(rawLocale?: string) {
+    const [rows, languages] = await Promise.all([
+      this.prisma.globalSetting.findMany({
+        where: { isPublic: true },
+        select: { key: true, value: true },
+      }),
+      this.languages(),
+    ]);
+    const locale =
+      rawLocale &&
+      languages.some((language) => language.code.toLowerCase() === rawLocale.toLowerCase())
+        ? languages.find((language) => language.code.toLowerCase() === rawLocale.toLowerCase())!
+            .code
+        : (languages.find((language) => language.isDefault)?.code ?? languages[0]?.code ?? 'en');
+    const values = Object.fromEntries(rows.map((row) => [row.key, row.value]));
+    return { values, media: await this.resolveMedia(values, locale) };
+  }
+  async navigation(
+    rawLocale: string,
+    key: string,
+  ): Promise<{ key: string; items: PublicNavigationItem[] } | null> {
+    const locale = await this.locale(rawLocale);
+    const menu = await this.prisma.navigationMenu.findFirst({
+      where: { key, status: 'published' },
+      include: {
+        items: { orderBy: { sortOrder: 'asc' }, include: { translations: { where: { locale } } } },
+      },
+    });
+    if (!menu) return null;
+    const resolved = await Promise.all(
+      menu.items.map(async (item) => {
+        const label = item.translations[0]?.label;
+        if (!item.visible || !label) return null;
+        let href = item.externalUrl;
+        if (item.itemType === 'internal') {
+          const resource = item.internalEntityType ?? '';
+          const def = cmsDefinitions[resource];
+          if (!def || !item.internalEntityId) return null;
+          const target = await contentDelegate(this.prisma, def.model).findFirst({
+            where: { id: item.internalEntityId, ...this.visible(resource, locale) },
+            include: { translations: { where: { locale } } },
+          });
+          const slug = target?.translations?.[0]?.slug;
+          if (typeof slug !== 'string' || !slug) return null;
+          href = contentPath(resource, locale, slug);
+        }
+        return {
+          id: item.id,
+          parentId: item.parentId,
+          label,
+          href,
+          external: item.itemType === 'external',
+        };
+      }),
+    );
+    const rows = resolved.filter((i): i is NonNullable<typeof i> => Boolean(i));
+    function tree(parentId: string | null): PublicNavigationItem[] {
+      return rows
+        .filter((i) => i.parentId === parentId)
+        .map((i) => ({ ...i, children: tree(i.id) }));
+    }
+    return { key: menu.key, items: tree(null) };
+  }
+  async redirect(path: string) {
+    return this.prisma.redirect.findFirst({
+      where: { sourcePath: path, active: true },
+      select: { destinationPath: true, statusCode: true },
+    });
+  }
 }

@@ -47,11 +47,7 @@ type SpecialEditorKey = 'users' | 'roles' | 'languages' | 'navigation' | 'settin
 
 const SPECIALIZED_LIST_ONLY = new Set<string>(['navigation', 'settings']);
 
-export default async function Workspace({
-  params,
-}: {
-  params: Promise<{ segments: string[] }>;
-}) {
+export default async function Workspace({ params }: { params: Promise<{ segments: string[] }> }) {
   const { segments } = await params;
   const module = segments[0] ?? '';
   const key = segments[1] ?? segments[0] ?? '';
@@ -102,7 +98,7 @@ export default async function Workspace({
     if (isNew || recordId) {
       return (
         <main className="admin-content">
-        <UserEditor {...(recordId ? { id: recordId } : {})} returnPath={basePath} />
+          <UserEditor {...(recordId ? { id: recordId } : {})} returnPath={basePath} />
         </main>
       );
     }
@@ -118,7 +114,7 @@ export default async function Workspace({
     if (isNew || recordId) {
       return (
         <main className="admin-content">
-        <RoleEditor {...(recordId ? { id: recordId } : {})} returnPath={basePath} />
+          <RoleEditor {...(recordId ? { id: recordId } : {})} returnPath={basePath} />
         </main>
       );
     }
@@ -134,7 +130,7 @@ export default async function Workspace({
     if (isNew || recordId) {
       return (
         <main className="admin-content">
-        <LanguageEditor {...(recordId ? { id: recordId } : {})} returnPath={basePath} />
+          <LanguageEditor {...(recordId ? { id: recordId } : {})} returnPath={basePath} />
         </main>
       );
     }
@@ -150,7 +146,7 @@ export default async function Workspace({
     if (isNew || recordId) {
       return (
         <main className="admin-content">
-        <RedirectEditor {...(recordId ? { id: recordId } : {})} returnPath={basePath} />
+          <RedirectEditor {...(recordId ? { id: recordId } : {})} returnPath={basePath} />
         </main>
       );
     }
@@ -165,7 +161,11 @@ export default async function Workspace({
   if (isNew || (recordId && CONTENT_MODULES.has(module))) {
     return (
       <main className="admin-content">
-        <ContentEditor resource={resource} {...(recordId ? { id: recordId } : {})} returnPath={basePath} />
+        <ContentEditor
+          resource={resource}
+          {...(recordId ? { id: recordId } : {})}
+          returnPath={basePath}
+        />
       </main>
     );
   }
@@ -191,7 +191,11 @@ export default async function Workspace({
                     ? 'role'
                     : 'content'
         }
-        {...(key === 'consultation' ? { source: 'consultation' as const } : key === 'assessments' ? { source: 'assessment' as const } : {})}
+        {...(key === 'consultation'
+          ? { source: 'consultation' as const }
+          : key === 'assessments'
+            ? { source: 'assessment' as const }
+            : {})}
       />
     </main>
   );

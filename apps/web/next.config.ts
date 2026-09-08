@@ -1,4 +1,34 @@
 import type { NextConfig } from 'next';
-const apiOrigin=process.env.NEXT_PUBLIC_API_URL?new URL(process.env.NEXT_PUBLIC_API_URL).origin:"'self'";
-const nextConfig:NextConfig={output:'standalone',transpilePackages:['@gatevia/ui','@gatevia/contracts','@gatevia/api-client'],webpack(config){config.resolve.extensionAlias={...config.resolve.extensionAlias,'.js':['.ts','.tsx','.js']};return config;},images:{remotePatterns:[{protocol:'https',hostname:'**'}]},async headers(){return[{source:'/:path*',headers:[{key:'Content-Security-Policy',value:`default-src 'self'; img-src 'self' data: blob: https:; media-src 'self' https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; connect-src 'self' ${apiOrigin} https://*.sentry.io https://www.google-analytics.com; frame-src https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`},{key:'Referrer-Policy',value:'strict-origin-when-cross-origin'},{key:'X-Content-Type-Options',value:'nosniff'},{key:'Permissions-Policy',value:'camera=(), microphone=(), geolocation=()'},{key:'Strict-Transport-Security',value:'max-age=31536000; includeSubDomains'}]}]}};
+const apiOrigin = process.env.NEXT_PUBLIC_API_URL
+  ? new URL(process.env.NEXT_PUBLIC_API_URL).origin
+  : "'self'";
+const nextConfig: NextConfig = {
+  output: 'standalone',
+  transpilePackages: ['@gatevia/ui', '@gatevia/contracts', '@gatevia/api-client'],
+  webpack(config) {
+    config.resolve.extensionAlias = {
+      ...config.resolve.extensionAlias,
+      '.js': ['.ts', '.tsx', '.js'],
+    };
+    return config;
+  },
+  images: { remotePatterns: [{ protocol: 'https', hostname: '**' }] },
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: `default-src 'self'; img-src 'self' data: blob: https:; media-src 'self' https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; connect-src 'self' ${apiOrigin} https://*.sentry.io https://www.google-analytics.com; frame-src https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`,
+          },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
+        ],
+      },
+    ];
+  },
+};
 export default nextConfig;

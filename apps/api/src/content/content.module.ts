@@ -1,3 +1,17 @@
 import { WebsiteContentService } from './website-content.service';
-import { Module } from '@nestjs/common'; import { AdminContentController } from './admin-content.controller'; import { AdminContentService } from './admin-content.service'; import { PublicContentController } from './public-content.controller'; import { PublicContentService } from './public-content.service'; import { ResourcePolicyService } from './resource-policy.service'; @Module({ controllers: [AdminContentController, PublicContentController], providers: [WebsiteContentService, AdminContentService, PublicContentService, ResourcePolicyService] }) export class ContentModule {}
-
+import { Module } from '@nestjs/common';
+import { AdminContentController } from './admin-content.controller';
+import { AdminContentService } from './admin-content.service';
+import { PublicContentController } from './public-content.controller';
+import { PublicContentService } from './public-content.service';
+import { ResourcePolicyService } from './resource-policy.service';
+@Module({
+  controllers: [AdminContentController, PublicContentController],
+  providers: [
+    WebsiteContentService,
+    AdminContentService,
+    PublicContentService,
+    ResourcePolicyService,
+  ],
+})
+export class ContentModule {}

@@ -1,1 +1,6 @@
-import { Module } from '@nestjs/common'; import { LeadsService } from './leads.service'; import { PublicFormsController } from './public-forms.controller'; import { AdminLeadsController } from './admin-leads.controller'; @Module({ providers: [LeadsService], controllers: [PublicFormsController, AdminLeadsController] }) export class LeadsModule {}
+import { Module } from '@nestjs/common';
+import { LeadsService } from './leads.service';
+import { PublicFormsController } from './public-forms.controller';
+import { AdminLeadsController } from './admin-leads.controller';
+@Module({ providers: [LeadsService], controllers: [PublicFormsController, AdminLeadsController] })
+export class LeadsModule {}
