@@ -1,5 +1,5 @@
 import { z } from 'zod';
-export * from './cms';
+export * from './cms.js';
 
 export const contentStatuses = ['draft', 'review', 'published', 'archived'] as const;
 export const contentStatusSchema = z.enum(contentStatuses);
@@ -111,4 +111,4 @@ export function normalizeVideoEmbed(value: string): { provider: 'youtube' | 'vim
   return null;
 }
 
-export * from './sections';
+export * from './sections.js';

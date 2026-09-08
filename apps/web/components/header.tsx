@@ -9,32 +9,35 @@ import { copy } from '@/lib/ui-copy';
 function fallbackLinks(locale: string): NavItem[] {
   const t = copy(locale);
   return [
-    { label: t.services, url: `/${locale}/services`, isExternal: false, isVisible: true },
-    { label: t.market, url: `/${locale}/saudi-market-entry`, isExternal: false, isVisible: true },
-    { label: t.industries, url: `/${locale}/industries`, isExternal: false, isVisible: true },
-    { label: t.cases, url: `/${locale}/case-studies`, isExternal: false, isVisible: true },
-    { label: t.insights, url: `/${locale}/insights`, isExternal: false, isVisible: true },
-    { label: t.about, url: `/${locale}/about`, isExternal: false, isVisible: true },
+    { id: '1', label: t.services, href: `/${locale}/services`, external: false },
+    { id: '2', label: t.market, href: `/${locale}/saudi-market-entry`, external: false },
+    { id: '3', label: t.industries, href: `/${locale}/industries`, external: false },
+    { id: '4', label: t.cases, href: `/${locale}/case-studies`, external: false },
+    { id: '5', label: t.insights, href: `/${locale}/insights`, external: false },
+    { id: '6', label: t.about, href: `/${locale}/about`, external: false },
   ];
 }
 
 function resolveUrl(item: NavItem, locale: string): string {
+  const href = item.href || '';
   // Absolute URLs (http/https) are returned as-is
-  if (/^https?:\/\//.test(item.url)) return item.url;
+  if (/^https?:\/\//.test(href)) return href;
   // Relative paths already starting with /locale segment
-  if (item.url.startsWith(`/${locale}`)) return item.url;
+  if (href.startsWith(`/${locale}`)) return href;
   // Prefix with locale
-  return `/${locale}${item.url.startsWith('/') ? '' : '/'}${item.url}`;
+  return `/${locale}${href.startsWith('/') ? '' : '/'}${href}`;
 }
 
 export function Header({
   locale,
   languages,
   navItems,
+  identity,
 }: {
   locale: string;
   languages: Language[];
   navItems: NavItem[];
+  identity: { name: string; logoUrl?: string };
 }) {
   const [open, setOpen] = useState(false);
   const t = copy(locale);
@@ -44,16 +47,16 @@ export function Header({
   return (
     <header className="site-header">
       <div className="container header-row">
-        <Link href={`/${locale}`} className="brand" aria-label="GATEVIA home">
-          <span className="brand-mark">▰</span> GATEVIA
+        <Link href={`/${locale}`} className="brand" aria-label={`${identity.name} home`}>
+          {identity.logoUrl ? <>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={identity.logoUrl} alt="" className="brand-mark" /></> : <span className="brand-mark">▰</span>} {identity.name}
         </Link>
 
         <nav className="desktop-nav" aria-label="Main navigation">
           {links.map((item) => (
             <Link
-              key={item.url}
+              key={item.id}
               href={resolveUrl(item, locale)}
-              {...(item.isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
             >
               {item.label}
             </Link>
@@ -92,10 +95,10 @@ export function Header({
         <nav className="mobile-panel" aria-label="Mobile navigation">
           {links.map((item) => (
             <Link
-              key={item.url}
+              key={item.id}
               onClick={() => setOpen(false)}
               href={resolveUrl(item, locale)}
-              {...(item.isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
             >
               {item.label}
             </Link>

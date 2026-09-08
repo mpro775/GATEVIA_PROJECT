@@ -74,13 +74,9 @@ export function ContentGrid({
 const SECTION_RESOURCE_MAP: Record<string, string> = {
   services_grid: 'services',
   industries_grid: 'industries',
-  case_studies_grid: 'case-studies',
-  insights_grid: 'insights',
+  case_studies: 'case-studies',
+  insights: 'insights',
   testimonials: 'testimonials',
-  trust_logos: 'clients',
-  partners_grid: 'partners',
-  brands_grid: 'brands',
-  team_grid: 'team-members',
 };
 
 // ─── Async section renderer (server component) ───────────────────────────────
@@ -131,14 +127,13 @@ export async function SectionRenderer({
           if (gridResource) {
             // Items may come pre-embedded from the backend in row.collections
             const collections = row.collections as Record<string, unknown[]> | undefined;
-            const embeddedKey = gridResource.replace('-', '_'); // e.g. case-studies -> case_studies
             let items: Record<string, unknown>[] =
-              (collections?.[embeddedKey] ?? collections?.[gridResource] ?? []) as Record<string, unknown>[];
+              (collections?.[gridResource] ?? []) as Record<string, unknown>[];
 
             // If backend didn't embed the items, fetch them
             if (items.length === 0) {
               items = await safe(
-                getList(gridResource, locale, '&status=published&pageSize=6') as Promise<Record<string, unknown>[]>,
+                getList(gridResource, locale, '&pageSize=6') as Promise<Record<string, unknown>[]>,
                 [],
               );
             }
@@ -167,14 +162,15 @@ export async function SectionRenderer({
 
           // ── CTA section ──────────────────────────────────────────────────
           if (type === 'cta') {
+            const primaryCta = content.primaryCta as Record<string, unknown> | undefined;
             return (
               <section className="section section--accent" key={String(row.id)}>
                 <div className="container" style={{ textAlign: 'center' }}>
                   {content.title && <h2>{text(content.title)}</h2>}
                   {content.body && <p>{text(content.body)}</p>}
-                  {content.ctaLabel && content.ctaUrl && (
-                    <Link className="gv-button" href={text(content.ctaUrl)}>
-                      {text(content.ctaLabel)}
+                  {primaryCta?.label && primaryCta.href && (
+                    <Link className="gv-button" href={text(primaryCta.href)}>
+                      {text(primaryCta.label)}
                     </Link>
                   )}
                 </div>
@@ -184,10 +180,8 @@ export async function SectionRenderer({
 
           // ── FAQ section ───────────────────────────────────────────────────
           if (type === 'faq') {
-            const faqs = await safe(
-              getList('faqs', locale, '&status=published&pageSize=10') as Promise<Record<string, unknown>[]>,
-              [],
-            );
+            const embedded = (row.collections as Record<string, unknown[]> | undefined)?.faqs as Record<string, unknown>[] | undefined;
+            const faqs = embedded?.length ? embedded : await safe(getList('faqs', locale, '&pageSize=10') as Promise<Record<string, unknown>[]>, []);
             if (faqs.length === 0) return null;
             return (
               <section className="section" key={String(row.id)}>
@@ -226,24 +220,45 @@ export async function SectionRenderer({
   );
 }
 
-function RichBlocks({ blocks }: { blocks: unknown }) {
+export function RichBlocks({ blocks, media = {} }: { blocks: unknown; media?: Record<string, { url?: string; translations?: Array<{ altText?: string }> }> }) {
   return (
     <>
       {list(blocks).map((raw, index) => {
         const block = raw as Record<string, unknown>;
         const type = text(block.type);
         if (type === 'heading') return <h2 key={index}>{text(block.text)}</h2>;
-        if (type === 'quote') return <blockquote key={index}>{text(block.text)}</blockquote>;
+        if (type === 'quote') return <blockquote key={index}>{text(block.text)}{block.attribution && <footer>{text(block.attribution)}</footer>}</blockquote>;
         if (type === 'list')
-          return (
-            <ul key={index}>
+          return block.ordered ? (
+            <ol key={index}>
               {list(block.items).map((item, i) => (
                 <li key={i}>{text(item)}</li>
               ))}
-            </ul>
-          );
+            </ol>
+          ) : <ul key={index}>{list(block.items).map((item, i) => <li key={i}>{text(item)}</li>)}</ul>;
+        if (type === 'link') return <p key={index}><Link href={text(block.href)}>{text(block.text)}</Link></p>;
+        if (type === 'image') {
+          const item = media[text(block.mediaId)];
+          return item?.url ? <figure key={index}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={item.url} alt={item.translations?.[0]?.altText ?? ''} /></figure> : null;
+        }
+        if (type === 'callout') return <aside key={index} className="panel">{text(block.text)}</aside>;
+        if (type === 'table') return <div key={index} className="table-wrap"><table><thead><tr>{list(block.headers).map((header, i) => <th key={i}>{text(header)}</th>)}</tr></thead><tbody>{list(block.rows).map((rawRow, i) => <tr key={i}>{list(rawRow).map((cell, j) => <td key={j}>{text(cell)}</td>)}</tr>)}</tbody></table></div>;
+        if (type === 'embed') {
+          const provider = text(block.provider);
+          const videoId = text(block.videoId);
+          const src = provider === 'youtube' ? `https://www.youtube-nocookie.com/embed/${videoId}` : provider === 'vimeo' ? `https://player.vimeo.com/video/${videoId}` : '';
+          return src ? <iframe key={index} src={src} title="Embedded video" loading="lazy" allowFullScreen /> : null;
+        }
         return <p key={index}>{text(block.text)}</p>;
       })}
     </>
   );
+}
+
+export function ContentItems({ items }: { items: unknown }) {
+  return <ul>{list(items).map((raw, index) => {
+    if (typeof raw === 'string') return <li key={index}>{raw}</li>;
+    const item = raw as Record<string, unknown>;
+    return <li key={index}>{item.title && <strong>{text(item.title)} </strong>}{text(item.body ?? item.label ?? item.value)}{text(item.suffix)}</li>;
+  })}</ul>;
 }

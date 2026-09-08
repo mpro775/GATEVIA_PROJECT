@@ -12,6 +12,8 @@ export interface SeoInput {
   canonical: string;
   locale: string;
   languages?: Language[];
+  localizedAlternates?: Record<string, string>;
+  siteName?: string;
   imageUrl?: string;
   imageAlt?: string;
   type?: 'website' | 'article';
@@ -21,13 +23,16 @@ export interface SeoInput {
 }
 
 export function buildMetadata(input: SeoInput): Metadata {
-  const title = input.title ? `${input.title} | ${BRAND}` : BRAND;
+  const brand = input.siteName ?? BRAND;
+  const title = input.title ? `${input.title} | ${brand}` : brand;
   const description = input.description ?? '';
-  const url = `${SITE}${input.canonical}`;
+  const url = new URL(input.canonical, SITE).toString();
 
   const alternates: Metadata['alternates'] = {
     canonical: url,
-    languages: input.languages
+    languages: input.localizedAlternates
+      ? Object.fromEntries(Object.entries(input.localizedAlternates).map(([locale, path]) => [locale, new URL(path, SITE).toString()]))
+      : input.languages
       ? Object.fromEntries(
           input.languages
             .filter((l) => l.isEnabled !== false)
@@ -46,7 +51,7 @@ export function buildMetadata(input: SeoInput): Metadata {
     title,
     description,
     url,
-    siteName: BRAND,
+    siteName: brand,
     locale: input.locale,
     images: input.imageUrl
       ? [{ url: input.imageUrl, alt: input.imageAlt ?? title, width: 1200, height: 630 }]
@@ -78,36 +83,37 @@ export function buildMetadata(input: SeoInput): Metadata {
 // ─── JSON-LD schemas ──────────────────────────────────────────────────────────
 
 /** Organization — goes on every page, injected at root layout level */
-export function organizationSchema() {
+export function organizationSchema(input: { name?: string; legalName?: string; logoUrl?: string; linkedInUrl?: string; address?: string; email?: string; phone?: string } = {}) {
+  const name = input.name ?? BRAND;
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     '@id': `${SITE}/#organization`,
-    name: BRAND,
+    name,
+    legalName: input.legalName,
     url: SITE,
     logo: {
       '@type': 'ImageObject',
-      url: `${SITE}/logo.png`,
+      url: input.logoUrl ?? `${SITE}/logo.png`,
     },
     sameAs: [
-      process.env.NEXT_PUBLIC_LINKEDIN_URL,
+      input.linkedInUrl ?? process.env.NEXT_PUBLIC_LINKEDIN_URL,
       process.env.NEXT_PUBLIC_TWITTER_URL,
     ].filter(Boolean),
-    address: {
-      '@type': 'PostalAddress',
-      addressCountry: 'SA',
-    },
+    address: input.address ? { '@type': 'PostalAddress', streetAddress: input.address } : undefined,
+    email: input.email || undefined,
+    telephone: input.phone || undefined,
   };
 }
 
 /** WebSite with SearchAction — goes on the home page */
-export function websiteSchema() {
+export function websiteSchema(name = BRAND) {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     '@id': `${SITE}/#website`,
     url: SITE,
-    name: BRAND,
+    name,
     publisher: { '@id': `${SITE}/#organization` },
     potentialAction: {
       '@type': 'SearchAction',

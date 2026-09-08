@@ -5,7 +5,7 @@ import { PublicContentService } from './public-content.service';
 export class PublicContentController {
  constructor(private readonly content:PublicContentService){}
  @Get('languages') async languages(){return{data:await this.content.languages()};}
- @Get('settings') async settings(){return{data:await this.content.settings()};}
+ @Get('settings') async settings(@Query('locale')locale?:string){return{data:await this.content.settings(locale)};}
  @Get('navigation/:key') async navigation(@Param('key')key:string,@Query('locale')locale:string){return{data:await this.content.navigation(locale,key)};}
  @Get('redirect') async redirect(@Query('path')path:string){return{data:await this.content.redirect(path)};}
  @Get(':resource') @ApiOperation({summary:'Published localized content with filters and pagination'}) @ApiQuery({name:'locale',required:true})

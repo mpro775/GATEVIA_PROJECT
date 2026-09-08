@@ -3,43 +3,66 @@ import { useEffect, useState } from 'react';
 import { Badge, Button, Field, Input } from '@gatevia/ui';
 import { api } from '@/lib/api';
 
-interface NavMenu { id: string; key: string; label: string; isActive: boolean; items: NavItem[] }
+interface Language { code: string; name: string; }
+interface NavMenu { id: string; key: string; location: string; status: 'draft' | 'review' | 'published' | 'archived'; items: NavItem[] }
 interface NavItem {
-  id?: string;
-  label: string;
-  url: string;
-  isExternal: boolean;
-  isVisible: boolean;
-  sortOrder: number;
-  children?: NavItem[];
+  id: string;
+  parentId: string | null;
+  itemType: 'internal' | 'external';
+  internalEntityType: string;
+  internalEntityId: string;
+  externalUrl: string;
+  visible: boolean;
+  translations: Record<string, { label: string }>;
   _expanded?: boolean;
 }
 
 const emptyItem = (): NavItem => ({
-  label: '',
-  url: '',
-  isExternal: false,
-  isVisible: true,
-  sortOrder: 0,
-  children: [],
+  id: crypto.randomUUID(),
+  parentId: null,
+  itemType: 'external',
+  internalEntityType: 'pages',
+  internalEntityId: '',
+  externalUrl: '',
+  visible: true,
+  translations: {},
   _expanded: true,
 });
 
 export function NavigationEditor() {
   const [menus, setMenus] = useState<NavMenu[]>([]);
   const [selected, setSelected] = useState<NavMenu | null>(null);
+  const [languages, setLanguages] = useState<Language[]>([]);
+  const [entities, setEntities] = useState<Record<string, { id: string, label: string }[]>>({});
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    void api<NavMenu[]>('/admin/navigation?pageSize=50').then((rows) => {
-      setMenus(Array.isArray(rows) ? rows : []);
-    });
+    void api<NavMenu[]>('/admin/navigation?pageSize=50').then((rows) => setMenus(rows || []));
+    void api<Language[]>('/public/languages').then(setLanguages);
+    // Fetch common entities for picker
+    const fetchEntities = async () => {
+      const types = ['pages', 'services', 'industries', 'case-studies', 'insights'];
+      const map: Record<string, { id: string, label: string }[]> = {};
+      await Promise.all(types.map(async (t) => {
+        try {
+          const res = await api<{ id: string, translations?: { title?: string, name?: string }[] }[]>(`/admin/${t}?pageSize=100`);
+          map[t] = (res || []).map(r => ({ id: r.id, label: r.translations?.[0]?.title || r.translations?.[0]?.name || r.id }));
+        } catch { map[t] = []; }
+      }));
+      setEntities(map);
+    };
+    void fetchEntities();
   }, []);
 
-  function selectMenu(menu: NavMenu) {
-    setSelected(JSON.parse(JSON.stringify(menu)) as NavMenu);
-    setMessage('');
+  async function selectMenu(menu: NavMenu) {
+    try {
+      const full = await api<NavMenu>(`/admin/navigation/${menu.id}`);
+      setSelected(full);
+      setMessage('');
+    } catch {
+      setMessage('Failed to load menu details.');
+    }
   }
 
   function updateItem(index: number, field: keyof NavItem, value: unknown) {
@@ -48,18 +71,23 @@ export function NavigationEditor() {
     items[index] = { ...items[index], [field]: value };
     setSelected({ ...selected, items });
   }
+  
+  function updateTranslation(index: number, locale: string, label: string) {
+    if (!selected) return;
+    const items = [...selected.items];
+    items[index] = { ...items[index], translations: { ...items[index].translations, [locale]: { label } } };
+    setSelected({ ...selected, items });
+  }
 
   function addItem() {
     if (!selected) return;
-    const items = [...selected.items, { ...emptyItem(), sortOrder: selected.items.length }];
+    const items = [...selected.items, emptyItem()];
     setSelected({ ...selected, items });
   }
 
   function removeItem(index: number) {
     if (!selected || !confirm('Remove this item?')) return;
-    const items = selected.items
-      .filter((_, i) => i !== index)
-      .map((item, i) => ({ ...item, sortOrder: i }));
+    const items = selected.items.filter((_, i) => i !== index);
     setSelected({ ...selected, items });
   }
 
@@ -69,7 +97,7 @@ export function NavigationEditor() {
     const target = index + dir;
     if (target < 0 || target >= items.length) return;
     [items[index], items[target]] = [items[target], items[index]];
-    setSelected({ ...selected, items: items.map((item, i) => ({ ...item, sortOrder: i })) });
+    setSelected({ ...selected, items });
   }
 
   async function save() {
@@ -77,12 +105,28 @@ export function NavigationEditor() {
     setBusy(true);
     setMessage('');
     try {
+      const payload = {
+        key: selected.key,
+        location: selected.location,
+        status: selected.status === 'published' ? 'review' : selected.status,
+        items: selected.items.map(item => ({
+          id: item.id || crypto.randomUUID(),
+          parentId: item.parentId || null,
+          itemType: item.itemType,
+          internalEntityType: item.itemType === 'internal' ? item.internalEntityType : null,
+          internalEntityId: item.itemType === 'internal' ? item.internalEntityId : null,
+          externalUrl: item.itemType === 'external' ? item.externalUrl : null,
+          visible: item.visible,
+          translations: item.translations,
+        }))
+      };
+      
       const saved = await api<NavMenu>(`/admin/navigation/${selected.id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ isActive: selected.isActive, items: selected.items }),
+        body: JSON.stringify(payload),
       });
       setMenus((prev) => prev.map((m) => (m.id === saved.id ? saved : m)));
-      setSelected(JSON.parse(JSON.stringify(saved)) as NavMenu);
+      setSelected(saved);
       setMessage('Navigation saved.');
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'Save failed.');
@@ -117,16 +161,16 @@ export function NavigationEditor() {
                   role="tab"
                   className="tab"
                   aria-selected={selected?.id === menu.id}
-                  onClick={() => selectMenu(menu)}
+                  onClick={() => void selectMenu(menu)}
                 >
                   {menu.key}{' '}
-                  <Badge tone={menu.isActive ? 'success' : 'neutral'}>
-                    {menu.isActive ? 'Active' : 'Inactive'}
+                  <Badge tone={menu.status === 'published' ? 'success' : 'neutral'}>
+                    {menu.status}
                   </Badge>
                 </button>
               ))}
               {menus.length === 0 && (
-                <span className="cell-meta">No navigation menus found. Create them via the API seed.</span>
+                <span className="cell-meta">No navigation menus found.</span>
               )}
             </div>
           </section>
@@ -136,14 +180,7 @@ export function NavigationEditor() {
             <section className="panel">
               <h2>Items — {selected.key}</h2>
               <div style={{ marginBlockEnd: '.8rem' }}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={selected.isActive}
-                    onChange={(e) => setSelected({ ...selected, isActive: e.target.checked })}
-                  />{' '}
-                  Menu active / published
-                </label>
+                <p className="cell-meta">Location: {selected.location}</p>
               </div>
 
               <div className="sections-editor">
@@ -151,13 +188,16 @@ export function NavigationEditor() {
                   <p className="cell-meta">No items yet.</p>
                 )}
                 {selected.items.map((item, i) => (
-                  <div key={i} className="section-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                  <div key={item.id} className="section-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
                       <span style={{ flex: 1, fontWeight: 600, fontSize: '.9rem' }}>
-                        {item.label || '(untitled)'}
+                        {item.translations[languages[0]?.code]?.label || '(untitled)'}
                       </span>
-                      <Badge tone={item.isVisible ? 'success' : 'neutral'}>
-                        {item.isVisible ? 'Visible' : 'Hidden'}
+                      <Badge tone={item.itemType === 'internal' ? 'primary' : 'neutral'}>
+                        {item.itemType}
+                      </Badge>
+                      <Badge tone={item.visible ? 'success' : 'neutral'}>
+                        {item.visible ? 'Visible' : 'Hidden'}
                       </Badge>
                       <div className="section-actions">
                         <button
@@ -195,37 +235,79 @@ export function NavigationEditor() {
 
                     {item._expanded && (
                       <div className="section-fields">
-                        <Field label="Label">
-                          <Input
-                            value={item.label}
-                            onChange={(e) => updateItem(i, 'label', e.target.value)}
-                            required
-                          />
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                          {languages.map((lang) => (
+                            <Field key={lang.code} label={`Label (${lang.code})`}>
+                              <Input
+                                value={item.translations[lang.code]?.label || ''}
+                                onChange={(e) => updateTranslation(i, lang.code, e.target.value)}
+                                required
+                              />
+                            </Field>
+                          ))}
+                        </div>
+                        
+                        <Field label="Link Type">
+                          <select 
+                            className="gv-input"
+                            value={item.itemType} 
+                            onChange={(e) => updateItem(i, 'itemType', e.target.value)}
+                          >
+                            <option value="internal">Internal Content</option>
+                            <option value="external">External URL</option>
+                          </select>
                         </Field>
-                        <Field label="URL / Path">
-                          <Input
-                            dir="ltr"
-                            value={item.url}
-                            onChange={(e) => updateItem(i, 'url', e.target.value)}
-                            required
-                          />
-                        </Field>
+
+                        {item.itemType === 'internal' ? (
+                          <div style={{ display: 'flex', gap: '1rem' }}>
+                            <Field label="Content Type" style={{ flex: 1 }}>
+                              <select
+                                className="gv-input"
+                                value={item.internalEntityType}
+                                onChange={(e) => {
+                                  updateItem(i, 'internalEntityType', e.target.value);
+                                  updateItem(i, 'internalEntityId', '');
+                                }}
+                              >
+                                <option value="pages">Pages</option>
+                                <option value="services">Services</option>
+                                <option value="industries">Industries</option>
+                                <option value="case-studies">Case Studies</option>
+                                <option value="insights">Insights</option>
+                              </select>
+                            </Field>
+                            <Field label="Target Item" style={{ flex: 2 }}>
+                              <select
+                                className="gv-input"
+                                value={item.internalEntityId}
+                                onChange={(e) => updateItem(i, 'internalEntityId', e.target.value)}
+                              >
+                                <option value="">-- Select Item --</option>
+                                {(entities[item.internalEntityType] || []).map(ent => (
+                                  <option key={ent.id} value={ent.id}>{ent.label}</option>
+                                ))}
+                              </select>
+                            </Field>
+                          </div>
+                        ) : (
+                          <Field label="External URL (must start with http:// or https://)">
+                            <Input
+                              dir="ltr"
+                              type="url"
+                              value={item.externalUrl || ''}
+                              onChange={(e) => updateItem(i, 'externalUrl', e.target.value)}
+                            />
+                          </Field>
+                        )}
+                        
                         <div style={{ display: 'flex', gap: '1rem' }}>
                           <label>
                             <input
                               type="checkbox"
-                              checked={item.isExternal}
-                              onChange={(e) => updateItem(i, 'isExternal', e.target.checked)}
+                              checked={item.visible}
+                              onChange={(e) => updateItem(i, 'visible', e.target.checked)}
                             />{' '}
-                            External link (opens in new tab)
-                          </label>
-                          <label>
-                            <input
-                              type="checkbox"
-                              checked={item.isVisible}
-                              onChange={(e) => updateItem(i, 'isVisible', e.target.checked)}
-                            />{' '}
-                            Visible
+                            Visible in menu
                           </label>
                         </div>
                       </div>
@@ -246,8 +328,8 @@ export function NavigationEditor() {
             <section className="panel">
               <h2>{selected.key}</h2>
               <p className="cell-meta">{selected.items.length} item(s)</p>
-              <Badge tone={selected.isActive ? 'success' : 'neutral'}>
-                {selected.isActive ? 'Active' : 'Inactive'}
+              <Badge tone={selected.status === 'published' ? 'success' : 'neutral'}>
+                {selected.status}
               </Badge>
             </section>
           )}

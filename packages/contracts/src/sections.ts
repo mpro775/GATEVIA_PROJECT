@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { safeHref, richContentSchema } from './cms';
+import { safeHref, richContentSchema } from './cms.js';
 
 const link = z.object({ label: z.string().max(120), href: safeHref });
 const base = z.object({ eyebrow: z.string().max(120).optional(), title: z.string().max(240).optional() });

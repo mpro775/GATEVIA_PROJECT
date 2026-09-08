@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { EmptyState } from '@gatevia/ui';
 import { PageHero, SectionRenderer } from '@/components/content';
-import { getLanguages, getPage, safe } from '@/lib/api';
-import { translation } from '@/lib/content';
+import { getLanguages, getPage, getSettings, safe } from '@/lib/api';
+import { localizedSetting, resolvedMediaUrl, translation } from '@/lib/content';
 import { buildMetadata, JsonLd, websiteSchema } from '@/lib/seo';
 
 export async function generateMetadata({
@@ -11,30 +11,39 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const [page, languages] = await Promise.all([
+  const [page, languages, settings] = await Promise.all([
     safe(getPage(locale, 'home'), {}),
     safe(getLanguages(), []),
+    safe(getSettings(locale), { values: {}, media: {} }),
   ]);
   const tr = translation(page);
+  const defaultOgId = settings.values['seo.default_og_media_id'];
+  const imageUrl = resolvedMediaUrl(page, tr.ogMediaId)
+    ?? (typeof defaultOgId === 'string' ? settings.media[defaultOgId]?.url : undefined);
+  const siteName = localizedSetting(settings.values, 'company.name', locale, 'GATEVIA');
   return buildMetadata({
-    title: String(tr.seoTitle ?? tr.title ?? 'GATEVIA'),
-    description: String(tr.seoDescription ?? tr.excerpt ?? 'Saudi market access, execution and growth.'),
-    canonical: `/${locale}`,
+    title: String(tr.seoTitle ?? tr.title ?? localizedSetting(settings.values, 'seo.default_title', locale, siteName)),
+    description: String(tr.seoDescription ?? tr.excerpt ?? localizedSetting(settings.values, 'seo.default_description', locale, 'Saudi market access, execution and growth.')),
+    canonical: String(tr.canonicalUrl ?? `/${locale}`),
     locale,
     languages,
-    imageUrl: tr.seoImageUrl ? String(tr.seoImageUrl) : undefined,
+    localizedAlternates: page.alternates as Record<string, string> | undefined,
+    imageUrl,
+    siteName,
+    noindex: tr.robotsIndex === false,
   });
 }
 
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
-  const page = await safe(getPage(locale, 'home'), {});
+  const [page, settings] = await Promise.all([safe(getPage(locale, 'home'), {}), safe(getSettings(locale), { values: {}, media: {} })]);
   const tr = translation(page);
+  const siteName = localizedSetting(settings.values, 'company.name', locale, 'GATEVIA');
 
   if (!page.id)
     return (
       <>
-        <JsonLd schema={websiteSchema()} />
+        <JsonLd schema={websiteSchema(siteName)} />
         <PageHero translation={{ title: 'GATEVIA' }} locale={locale} home />
         <section className="section">
           <div className="container">
@@ -46,7 +55,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
 
   return (
     <>
-      <JsonLd schema={websiteSchema()} />
+      <JsonLd schema={websiteSchema(siteName)} />
       <PageHero translation={tr} locale={locale} home />
       <SectionRenderer sections={page.sections} locale={locale} />
     </>

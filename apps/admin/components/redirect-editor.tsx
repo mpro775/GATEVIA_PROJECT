@@ -6,18 +6,18 @@ import { api } from '@/lib/api';
 
 interface Redirect {
   id: string;
-  source: string;
-  destination: string;
+  sourcePath: string;
+  destinationPath: string;
   statusCode: 301 | 302 | 307 | 308;
-  isActive: boolean;
-  note?: string;
+  active: boolean;
+  locale?: string;
 }
 
 export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: string }) {
   const router = useRouter();
   const [redirect, setRedirect] = useState<Partial<Redirect>>({
     statusCode: 301,
-    isActive: true,
+    active: true,
   });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -31,8 +31,7 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
   async function save() {
     setBusy(true);
     setMessage('');
-    // Basic loop / collision guard
-    if (redirect.source && redirect.destination && redirect.source === redirect.destination) {
+    if (redirect.sourcePath && redirect.destinationPath && redirect.sourcePath === redirect.destinationPath) {
       setMessage('Source and destination cannot be the same (redirect loop).');
       setBusy(false);
       return;
@@ -55,8 +54,8 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
 
   async function archive() {
     if (!id || !confirm('Archive this redirect?')) return;
-    await api(`/admin/redirects/${id}`, { method: 'PATCH', body: JSON.stringify({ isActive: false }) });
-    setRedirect((r) => ({ ...r, isActive: false }));
+    await api(`/admin/redirects/${id}/archive`, { method: 'POST' });
+    setRedirect((r) => ({ ...r, active: false }));
     setMessage('Redirect archived.');
   }
 
@@ -69,7 +68,7 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
         </div>
         <div className="toolbar">
           <Button disabled={busy} onClick={save}>Save redirect</Button>
-          {id && redirect.isActive && (
+          {id && redirect.active && (
             <button className="text-link" onClick={archive}>Archive</button>
           )}
         </div>
@@ -82,8 +81,8 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
               <Field label="Source path (e.g. /old-page)">
                 <Input
                   dir="ltr"
-                  value={redirect.source ?? ''}
-                  onChange={(e) => setRedirect((r) => ({ ...r, source: e.target.value }))}
+                  value={redirect.sourcePath ?? ''}
+                  onChange={(e) => setRedirect((r) => ({ ...r, sourcePath: e.target.value }))}
                   required
                   placeholder="/old-path"
                 />
@@ -91,8 +90,8 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
               <Field label="Destination URL or path">
                 <Input
                   dir="ltr"
-                  value={redirect.destination ?? ''}
-                  onChange={(e) => setRedirect((r) => ({ ...r, destination: e.target.value }))}
+                  value={redirect.destinationPath ?? ''}
+                  onChange={(e) => setRedirect((r) => ({ ...r, destinationPath: e.target.value }))}
                   required
                   placeholder="/new-path or https://..."
                 />
@@ -109,19 +108,20 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
                   <option value={308}>308 — Permanent Redirect</option>
                 </select>
               </Field>
-              <Field label="Internal note (optional)">
+              <Field label="Locale (optional)">
                 <Input
-                  value={redirect.note ?? ''}
-                  onChange={(e) => setRedirect((r) => ({ ...r, note: e.target.value }))}
-                  placeholder="Reason for this redirect"
+                  dir="ltr"
+                  value={redirect.locale ?? ''}
+                  onChange={(e) => setRedirect((r) => ({ ...r, locale: e.target.value || undefined }))}
+                  placeholder="e.g. en, ar-SA"
                 />
               </Field>
               <div>
                 <label>
                   <input
                     type="checkbox"
-                    checked={Boolean(redirect.isActive)}
-                    onChange={(e) => setRedirect((r) => ({ ...r, isActive: e.target.checked }))}
+                    checked={Boolean(redirect.active)}
+                    onChange={(e) => setRedirect((r) => ({ ...r, active: e.target.checked }))}
                   />{' '}
                   Active (redirect is applied on the public site)
                 </label>
@@ -133,8 +133,8 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
         <aside className="editor-side">
           <section className="panel">
             <h2>Status</h2>
-            <Badge tone={redirect.isActive ? 'success' : 'neutral'}>
-              {redirect.isActive ? 'Active' : 'Inactive'}
+            <Badge tone={redirect.active ? 'success' : 'neutral'}>
+              {redirect.active ? 'Active' : 'Inactive'}
             </Badge>
             {redirect.statusCode && (
               <p className="cell-meta" style={{ marginBlockStart: '.5rem' }}>

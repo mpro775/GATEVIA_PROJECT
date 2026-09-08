@@ -12,7 +12,7 @@ interface MediaRow {
   folderId?: string | null;
   folder?: { id: string; name: string } | null;
   translations?: Array<{ locale: string; title?: string; altText?: string; caption?: string; decorative?: boolean }>;
-  variants?: Array<{ variantType: string; url?: string; width?: number; height?: number }>;
+  variants?: Array<{ variantKey: string; url?: string; width?: number; height?: number }>;
   createdAt?: string;
   uploadedById?: string;
 }
@@ -44,7 +44,7 @@ function statusTone(status: string): 'success' | 'danger' | 'neutral' | 'info' {
 // ─── Media Tile ───────────────────────────────────────────────────────────────
 
 function MediaTile({ row, selected, onClick }: { row: MediaRow; selected: boolean; onClick: () => void }) {
-  const thumb = row.variants?.find((v) => v.variantType === 'thumbnail' || v.variantType === 'webp_thumb');
+  const thumb = row.variants?.find((v) => v.variantKey === 'thumbnail' || v.variantKey === 'webp_thumb');
   return (
     <article
       className="media-tile"
@@ -168,10 +168,10 @@ function MediaDrawer({
     setMessage('');
     try {
       const session = await api<{ url: string; headers: Record<string, string>; uploadToken: string }>(
-        '/admin/media/upload-session',
+        `/admin/media/${row.id}/replace-session`,
         {
           method: 'POST',
-          body: JSON.stringify({ filename: file.name, mimeType: file.type, sizeBytes: file.size, replaceMediaId: row.id }),
+          body: JSON.stringify({ filename: file.name, mimeType: file.type, sizeBytes: file.size }),
         },
       );
       const res = await fetch(session.url, { method: 'PUT', headers: session.headers, body: file });
@@ -201,7 +201,7 @@ function MediaDrawer({
     }
   }
 
-  const thumb = row.variants?.find((v) => v.variantType === 'thumbnail' || v.variantType === 'webp_thumb');
+  const thumb = row.variants?.find((v) => v.variantKey === 'thumbnail' || v.variantKey === 'webp_thumb');
   const LOCALES = ['en', 'ar-SA'];
 
   return (
@@ -343,7 +343,7 @@ function MediaDrawer({
             <div style={{ display: 'grid', gap: '.6rem' }}>
               {(row.variants ?? []).map((v, i) => (
                 <div key={i} className="section-row" style={{ fontSize: '.85rem' }}>
-                  <span style={{ fontWeight: 600 }}>{v.variantType}</span>
+                  <span style={{ fontWeight: 600 }}>{v.variantKey}</span>
                   {v.width && v.height && (
                     <span className="cell-meta">{v.width}×{v.height}</span>
                   )}
@@ -423,7 +423,7 @@ export function MediaLibrary({ selectMode = false, onSelect }: { selectMode?: bo
 
   async function loadFolders() {
     try {
-      const result = await api<Folder[]>('/admin/media/folders?pageSize=100');
+      const result = await api<Folder[]>('/admin/media-folders');
       setFolders(Array.isArray(result) ? result : []);
     } catch { /* ignore */ }
   }
@@ -472,7 +472,7 @@ export function MediaLibrary({ selectMode = false, onSelect }: { selectMode?: bo
   async function createFolder() {
     if (!newFolderName.trim()) return;
     try {
-      await api('/admin/media/folders', { method: 'POST', body: JSON.stringify({ name: newFolderName.trim(), parentId: folderId }) });
+      await api('/admin/media-folders', { method: 'POST', body: JSON.stringify({ name: newFolderName.trim(), parentId: folderId || undefined }) });
       setNewFolderName('');
       void loadFolders();
     } catch { setError('Failed to create folder.'); }

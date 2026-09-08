@@ -3,13 +3,13 @@ import { useEffect, useState } from 'react';
 import { Button, Field, Input, Textarea } from '@gatevia/ui';
 import { api } from '@/lib/api';
 
-interface Setting { id: string; key: string; value: string; group: string; description?: string; isLocalized: boolean }
+interface Setting { id: string; key: string; value: any; category: string; isPublic: boolean; description?: string }
 
 const SETTING_GROUPS = ['company', 'contact', 'seo', 'social', 'appearance', 'general'];
 
 export function SettingsEditor() {
   const [settings, setSettings] = useState<Setting[]>([]);
-  const [changes, setChanges] = useState<Record<string, string>>({});
+  const [changes, setChanges] = useState<Record<string, any>>({});
   const [activeGroup, setActiveGroup] = useState(SETTING_GROUPS[0]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -21,11 +21,18 @@ export function SettingsEditor() {
   }, []);
 
   function change(key: string, value: string) {
-    setChanges((prev) => ({ ...prev, [key]: value }));
+    let parsed = value;
+    try {
+      parsed = JSON.parse(value);
+    } catch {
+      // keep as string
+    }
+    setChanges((prev) => ({ ...prev, [key]: parsed }));
   }
 
-  function effectiveValue(setting: Setting) {
-    return changes[setting.key] ?? setting.value ?? '';
+  function effectiveValueString(setting: Setting) {
+    const val = changes[setting.key] !== undefined ? changes[setting.key] : setting.value;
+    return typeof val === 'object' && val !== null ? JSON.stringify(val) : String(val ?? '');
   }
 
   async function save() {
@@ -36,7 +43,7 @@ export function SettingsEditor() {
     try {
       await Promise.all(
         updates.map(([key, value]) =>
-          api('/admin/settings', { method: 'PATCH', body: JSON.stringify({ key, value }) }),
+          api(`/admin/settings/${encodeURIComponent(key)}`, { method: 'PATCH', body: JSON.stringify({ value }) }),
         ),
       );
       setSettings((prev) => prev.map((s) => (changes[s.key] !== undefined ? { ...s, value: changes[s.key] } : s)));
@@ -50,7 +57,7 @@ export function SettingsEditor() {
   }
 
   const grouped = settings.reduce<Record<string, Setting[]>>((acc, s) => {
-    const g = s.group ?? 'general';
+    const g = s.category ?? 'general';
     acc[g] = acc[g] ?? [];
     acc[g].push(s);
     return acc;
@@ -97,14 +104,14 @@ export function SettingsEditor() {
               )}
               {visibleSettings.map((setting) => (
                 <Field key={setting.key} label={`${setting.key}${setting.description ? ` — ${setting.description}` : ''}`}>
-                  {effectiveValue(setting).length > 80 ? (
+                  {effectiveValueString(setting).length > 80 ? (
                     <Textarea
-                      value={effectiveValue(setting)}
+                      value={effectiveValueString(setting)}
                       onChange={(e) => change(setting.key, e.target.value)}
                     />
                   ) : (
                     <Input
-                      value={effectiveValue(setting)}
+                      value={effectiveValueString(setting)}
                       onChange={(e) => change(setting.key, e.target.value)}
                     />
                   )}

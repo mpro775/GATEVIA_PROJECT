@@ -4,76 +4,54 @@ import { useRouter } from 'next/navigation';
 import { Badge, Button, Field, Input } from '@gatevia/ui';
 import { api } from '@/lib/api';
 
-// Representative set of system permissions aligned with API contract.
-// In production the full list is fetched from /admin/permissions.
-const PERMISSION_GROUPS: Array<{ group: string; permissions: string[] }> = [
-  {
-    group: 'Content',
-    permissions: [
-      'content:read', 'content:create', 'content:update', 'content:delete',
-      'content:publish', 'content:archive',
-    ],
-  },
-  {
-    group: 'Media',
-    permissions: ['media:read', 'media:upload', 'media:update', 'media:delete'],
-  },
-  {
-    group: 'Leads',
-    permissions: [
-      'leads:read', 'leads:assign', 'leads:update_status',
-      'leads:note', 'leads:export',
-    ],
-  },
-  {
-    group: 'Users',
-    permissions: ['users:read', 'users:create', 'users:update', 'users:deactivate'],
-  },
-  {
-    group: 'Roles',
-    permissions: ['roles:read', 'roles:create', 'roles:update', 'roles:delete'],
-  },
-  {
-    group: 'System',
-    permissions: [
-      'audit:read', 'languages:manage', 'navigation:manage',
-      'settings:read', 'settings:write', 'redirects:manage',
-    ],
-  },
-];
+interface Permission {
+  id: string;
+  key: string;
+  description?: string;
+}
 
-interface RoleData { id: string; name: string; description?: string; permissions?: string[] }
+interface RoleData {
+  id: string;
+  key: string;
+  name: string;
+  permissions?: Array<{ permission: Permission }>;
+}
 
 export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string }) {
   const router = useRouter();
   const [role, setRole] = useState<Partial<RoleData>>({});
+  const [permissions, setPermissions] = useState<Permission[]>([]);
   const [grants, setGrants] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
+    void api<Permission[]>('/admin/permissions').then(setPermissions).catch(() => {});
     if (id) {
-      void api<RoleData>(`/admin/roles/${id}`).then((data) => {
-        setRole(data);
-        setGrants(new Set(data.permissions ?? []));
-      });
+      void api<RoleData[]>('/admin/roles').then((roles) => {
+        const found = roles.find((r) => r.id === id);
+        if (found) {
+          setRole(found);
+          setGrants(new Set(found.permissions?.map((p) => p.permission.id) ?? []));
+        }
+      }).catch(() => {});
     }
   }, [id]);
 
-  const toggle = (perm: string) => {
+  const toggle = (permId: string) => {
     setGrants((prev) => {
       const next = new Set(prev);
-      if (next.has(perm)) next.delete(perm); else next.add(perm);
+      if (next.has(permId)) next.delete(permId); else next.add(permId);
       return next;
     });
   };
 
-  const toggleGroup = (perms: string[]) => {
-    const allGranted = perms.every((p) => grants.has(p));
+  const toggleGroup = (permIds: string[]) => {
+    const allGranted = permIds.every((p) => grants.has(p));
     setGrants((prev) => {
       const next = new Set(prev);
-      if (allGranted) perms.forEach((p) => next.delete(p));
-      else perms.forEach((p) => next.add(p));
+      if (allGranted) permIds.forEach((p) => next.delete(p));
+      else permIds.forEach((p) => next.add(p));
       return next;
     });
   };
@@ -81,7 +59,10 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
   async function save() {
     setBusy(true);
     setMessage('');
-    const payload = { name: role.name, description: role.description, permissions: [...grants] };
+    // Ensure key exists for creation
+    const payload: any = { name: role.name, permissionIds: [...grants] };
+    if (!id) payload.key = role.key;
+
     try {
       if (id) {
         await api(`/admin/roles/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
@@ -97,6 +78,14 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
       setBusy(false);
     }
   }
+
+  // Group permissions by their prefix (e.g. pages.read -> pages)
+  const groupedPermissions = permissions.reduce<Record<string, Permission[]>>((acc, p) => {
+    const group = p.key.split('.')[0] || 'other';
+    if (!acc[group]) acc[group] = [];
+    acc[group].push(p);
+    return acc;
+  }, {});
 
   return (
     <>
@@ -115,6 +104,16 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
           <section className="panel">
             <h2>Role details</h2>
             <div className="field-stack">
+              {!id && (
+                <Field label="Role key (system identifier)">
+                  <Input
+                    value={role.key ?? ''}
+                    onChange={(e) => setRole((r) => ({ ...r, key: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') }))}
+                    placeholder="e.g. content_editor"
+                    required
+                  />
+                </Field>
+              )}
               <Field label="Role name">
                 <Input
                   value={role.name ?? ''}
@@ -122,19 +121,15 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
                   required
                 />
               </Field>
-              <Field label="Description">
-                <Input
-                  value={role.description ?? ''}
-                  onChange={(e) => setRole((r) => ({ ...r, description: e.target.value }))}
-                />
-              </Field>
             </div>
           </section>
 
           <section className="panel">
             <h2>Permissions</h2>
-            {PERMISSION_GROUPS.map(({ group, permissions }) => {
-              const allGranted = permissions.every((p) => grants.has(p));
+            {permissions.length === 0 && <p className="cell-meta">Loading permissions...</p>}
+            {Object.entries(groupedPermissions).map(([group, perms]) => {
+              const permIds = perms.map(p => p.id);
+              const allGranted = permIds.every((p) => grants.has(p));
               return (
                 <div key={group} style={{ marginBlockEnd: '1.2rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginBlockEnd: '.4rem' }}>
@@ -145,21 +140,21 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
                       type="button"
                       className="text-link"
                       style={{ padding: '.2rem .5rem', minHeight: 'unset', fontSize: '.8rem' }}
-                      onClick={() => toggleGroup(permissions)}
+                      onClick={() => toggleGroup(permIds)}
                     >
                       {allGranted ? 'Remove all' : 'Grant all'}
                     </button>
                   </div>
                   <div className="relation-chips">
-                    {permissions.map((perm) => (
-                      <label key={perm} className="relation-chip" style={{ cursor: 'pointer' }}>
+                    {perms.map((perm) => (
+                      <label key={perm.id} className="relation-chip" style={{ cursor: 'pointer' }} title={perm.description}>
                         <input
                           type="checkbox"
-                          checked={grants.has(perm)}
-                          onChange={() => toggle(perm)}
+                          checked={grants.has(perm.id)}
+                          onChange={() => toggle(perm.id)}
                           style={{ display: 'none' }}
                         />
-                        <Badge tone={grants.has(perm) ? 'success' : 'neutral'}>{perm}</Badge>
+                        <Badge tone={grants.has(perm.id) ? 'success' : 'neutral'}>{perm.key.split('.')[1] || perm.key}</Badge>
                       </label>
                     ))}
                   </div>

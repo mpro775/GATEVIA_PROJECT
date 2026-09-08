@@ -3,9 +3,10 @@ import type { NavItem } from '@/lib/api';
 import { copy } from '@/lib/ui-copy';
 
 function resolveUrl(item: NavItem, locale: string): string {
-  if (/^https?:\/\//.test(item.url)) return item.url;
-  if (item.url.startsWith(`/${locale}`)) return item.url;
-  return `/${locale}${item.url.startsWith('/') ? '' : '/'}${item.url}`;
+  const href = item.href || '';
+  if (/^https?:\/\//.test(href)) return href;
+  if (href.startsWith(`/${locale}`)) return href;
+  return `/${locale}${href.startsWith('/') ? '' : '/'}${href}`;
 }
 
 // Fallback structure used only if CMS footer navigation is empty.
@@ -37,7 +38,7 @@ function FallbackFooter({ locale }: { locale: string }) {
   );
 }
 
-export function Footer({ locale, navItems }: { locale: string; navItems: NavItem[] }) {
+export function Footer({ locale, navItems, identity }: { locale: string; navItems: NavItem[]; identity: { name: string; email?: string; phone?: string; linkedInUrl?: string } }) {
   const t = copy(locale);
 
   // Group CMS footer items by their top-level label (items with children become columns,
@@ -50,20 +51,23 @@ export function Footer({ locale, navItems }: { locale: string; navItems: NavItem
         {hasNav ? (
           <div className="footer-grid">
             <div>
-              <div className="footer-title">{t.footer}</div>
+              <div className="footer-title">{identity.name}</div>
               <p>Saudi market access, execution and growth.</p>
+              {identity.email && <p><a href={`mailto:${identity.email}`}>{identity.email}</a></p>}
+              {identity.phone && <p><a href={`tel:${identity.phone}`}>{identity.phone}</a></p>}
+              {identity.linkedInUrl && <p><a href={identity.linkedInUrl} target="_blank" rel="noopener noreferrer">LinkedIn</a></p>}
             </div>
             {/* Render CMS top-level items as columns if they have children,
                 otherwise render them as a flat list of links */}
             {navItems.some((item) => item.children && item.children.length > 0) ? (
               navItems.map((item) => (
-                <div key={item.url} className="footer-links">
+                <div key={item.id} className="footer-links">
                   <strong>{item.label}</strong>
-                  {(item.children ?? []).filter((c) => c.isVisible !== false).map((child) => (
+                  {(item.children ?? []).map((child) => (
                     <Link
-                      key={child.url}
+                      key={child.id}
                       href={resolveUrl(child, locale)}
-                      {...(child.isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                      {...(child.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                     >
                       {child.label}
                     </Link>
@@ -72,11 +76,11 @@ export function Footer({ locale, navItems }: { locale: string; navItems: NavItem
               ))
             ) : (
               <div className="footer-links">
-                {navItems.filter((item) => item.isVisible !== false).map((item) => (
+                {navItems.map((item) => (
                   <Link
-                    key={item.url}
+                    key={item.id}
                     href={resolveUrl(item, locale)}
-                    {...(item.isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                    {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                   >
                     {item.label}
                   </Link>
@@ -89,7 +93,7 @@ export function Footer({ locale, navItems }: { locale: string; navItems: NavItem
         )}
 
         <div className="legal-row">
-          <span>© {new Date().getFullYear()} GATEVIA</span>
+          <span>© {new Date().getFullYear()} {identity.name}</span>
           <span>
             <Link href={`/${locale}/privacy`}>Privacy</Link>
             {' · '}

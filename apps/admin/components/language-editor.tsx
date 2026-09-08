@@ -11,7 +11,7 @@ interface LangData {
   nativeName: string;
   direction: 'ltr' | 'rtl';
   isDefault: boolean;
-  isEnabled: boolean;
+  isActive: boolean;
   sortOrder: number;
 }
 
@@ -20,7 +20,7 @@ export function LanguageEditor({ id, returnPath }: { id?: string; returnPath: st
   const [lang, setLang] = useState<Partial<LangData>>({
     direction: 'ltr',
     isDefault: false,
-    isEnabled: true,
+    isActive: true,
     sortOrder: 0,
   });
   const [busy, setBusy] = useState(false);
@@ -28,7 +28,11 @@ export function LanguageEditor({ id, returnPath }: { id?: string; returnPath: st
 
   useEffect(() => {
     if (id) {
-      void api<LangData>(`/admin/languages/${id}`).then(setLang);
+      void api<LangData[]>('/admin/languages').then((rows) => {
+        const selected = rows.find((row) => row.id === id);
+        if (selected) setLang(selected);
+        else setMessage('Language was not found.');
+      });
     }
   }, [id]);
 
@@ -37,10 +41,31 @@ export function LanguageEditor({ id, returnPath }: { id?: string; returnPath: st
     setMessage('');
     try {
       if (id) {
-        await api(`/admin/languages/${id}`, { method: 'PATCH', body: JSON.stringify(lang) });
+        await api(`/admin/languages/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            name: lang.name,
+            nativeName: lang.nativeName,
+            direction: lang.direction,
+            sortOrder: lang.sortOrder,
+          }),
+        });
+        await api(`/admin/languages/${id}/${lang.isActive ? 'activate' : 'deactivate'}`, { method: 'POST' });
+        if (lang.isDefault) await api(`/admin/languages/${id}/set-default`, { method: 'POST' });
         setMessage('Language updated.');
       } else {
-        const saved = await api<LangData>('/admin/languages', { method: 'POST', body: JSON.stringify(lang) });
+        const saved = await api<LangData>('/admin/languages', {
+          method: 'POST',
+          body: JSON.stringify({
+            code: lang.code,
+            name: lang.name,
+            nativeName: lang.nativeName,
+            direction: lang.direction,
+            sortOrder: lang.sortOrder,
+          }),
+        });
+        if (!lang.isActive) await api(`/admin/languages/${saved.id}/deactivate`, { method: 'POST' });
+        if (lang.isDefault) await api(`/admin/languages/${saved.id}/set-default`, { method: 'POST' });
         setMessage('Language created.');
         router.replace(`${returnPath}/${saved.id}`);
       }
@@ -110,8 +135,8 @@ export function LanguageEditor({ id, returnPath }: { id?: string; returnPath: st
                 <label>
                   <input
                     type="checkbox"
-                    checked={Boolean(lang.isEnabled)}
-                    onChange={(e) => setLang((l) => ({ ...l, isEnabled: e.target.checked }))}
+                    checked={Boolean(lang.isActive)}
+                    onChange={(e) => setLang((l) => ({ ...l, isActive: e.target.checked, ...(e.target.checked ? {} : { isDefault: false }) }))}
                   />{' '}
                   Enabled (visible on public site)
                 </label>
@@ -121,6 +146,7 @@ export function LanguageEditor({ id, returnPath }: { id?: string; returnPath: st
                   <input
                     type="checkbox"
                     checked={Boolean(lang.isDefault)}
+                    disabled={!lang.isActive}
                     onChange={(e) => setLang((l) => ({ ...l, isDefault: e.target.checked }))}
                   />{' '}
                   Default language{' '}
@@ -134,8 +160,8 @@ export function LanguageEditor({ id, returnPath }: { id?: string; returnPath: st
         <aside className="editor-side">
           <section className="panel">
             <h2>Status</h2>
-            <Badge tone={lang.isEnabled ? 'success' : 'neutral'}>
-              {lang.isEnabled ? 'Enabled' : 'Disabled'}
+            <Badge tone={lang.isActive ? 'success' : 'neutral'}>
+              {lang.isActive ? 'Active' : 'Inactive'}
             </Badge>
             {lang.isDefault && (
               <div style={{ marginBlockStart: '.5rem' }}>

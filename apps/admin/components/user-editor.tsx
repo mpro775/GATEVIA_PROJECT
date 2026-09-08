@@ -20,7 +20,6 @@ export function UserEditor({ id, returnPath }: { id?: string; returnPath: string
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
-  const [password, setPassword] = useState('');
 
   useEffect(() => {
     void api<Role[]>('/admin/roles?pageSize=100').then((rows) => setAllRoles(rows)).catch(() => {});
@@ -36,19 +35,22 @@ export function UserEditor({ id, returnPath }: { id?: string; returnPath: string
     setBusy(true);
     setMessage('');
     const payload: Record<string, unknown> = {
-      email: user.email,
       displayName: user.displayName,
-      status: user.status,
       roleIds: selectedRoles,
     };
-    if (password) payload.password = password;
+    if (id) {
+      payload.status = user.status;
+    } else {
+      payload.email = user.email; // Only sent on creation
+    }
+    
     try {
       if (id) {
         await api(`/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
         setMessage('User updated.');
       } else {
         const saved = await api<User>('/admin/users', { method: 'POST', body: JSON.stringify(payload) });
-        setMessage('User created.');
+        setMessage('User invited successfully.');
         router.replace(`${returnPath}/${saved.id}`);
       }
     } catch (e) {
@@ -83,11 +85,11 @@ export function UserEditor({ id, returnPath }: { id?: string; returnPath: string
       <div className="page-title">
         <div>
           <h1>{id ? 'Edit User' : 'Invite User'}</h1>
-          <p>Manage account details, roles and access status.</p>
+          <p>{id ? 'Manage account details, roles and access status.' : 'Send an invitation email to a new team member.'}</p>
         </div>
         <div className="toolbar">
           <Button disabled={busy} onClick={save}>
-            {id ? 'Save changes' : 'Create user'}
+            {id ? 'Save changes' : 'Send invitation'}
           </Button>
           {id && user.status !== 'suspended' && (
             <button className="text-link" onClick={deactivate}>Deactivate</button>
@@ -109,6 +111,7 @@ export function UserEditor({ id, returnPath }: { id?: string; returnPath: string
                   value={user.email ?? ''}
                   onChange={(e) => setUser((u) => ({ ...u, email: e.target.value }))}
                   required
+                  disabled={!!id} // Email cannot be changed after creation
                 />
               </Field>
               <Field label="Display name">
@@ -116,14 +119,6 @@ export function UserEditor({ id, returnPath }: { id?: string; returnPath: string
                   value={user.displayName ?? ''}
                   onChange={(e) => setUser((u) => ({ ...u, displayName: e.target.value }))}
                   required
-                />
-              </Field>
-              <Field label={id ? 'New password (leave blank to keep current)' : 'Temporary password'}>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="new-password"
                 />
               </Field>
             </div>
@@ -151,17 +146,21 @@ export function UserEditor({ id, returnPath }: { id?: string; returnPath: string
         <aside className="editor-side">
           <section className="panel">
             <h2>Status</h2>
-            <Field label="Account status">
-              <select
-                className="gv-input"
-                value={user.status ?? 'active'}
-                onChange={(e) => setUser((u) => ({ ...u, status: e.target.value }))}
-              >
-                <option value="active">Active</option>
-                <option value="pending">Pending</option>
-                <option value="suspended">Suspended</option>
-              </select>
-            </Field>
+            {id ? (
+              <Field label="Account status">
+                <select
+                  className="gv-input"
+                  value={user.status ?? 'active'}
+                  onChange={(e) => setUser((u) => ({ ...u, status: e.target.value }))}
+                >
+                  <option value="active">Active</option>
+                  <option value="invited">Invited</option>
+                  <option value="suspended">Suspended</option>
+                </select>
+              </Field>
+            ) : (
+              <p className="cell-meta">Status will be set to <strong>invited</strong> upon creation.</p>
+            )}
           </section>
           {message && <div className="form-status" role="status">{message}</div>}
         </aside>

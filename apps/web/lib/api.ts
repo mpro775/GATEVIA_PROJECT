@@ -1,8 +1,10 @@
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3002/api/v1';
 
 export interface Language { code: string; name: string; nativeName: string; direction: 'ltr' | 'rtl'; isDefault: boolean }
-export interface NavItem { label: string; url: string; isExternal: boolean; isVisible: boolean; children?: NavItem[] }
+export interface NavItem { id: string; label: string; href: string | null; external: boolean; children?: NavItem[] }
 export interface NavMenu { key: string; items: NavItem[] }
+export interface PublicMedia { id: string; url: string; translations?: Array<{ altText?: string; title?: string }>; variants?: Array<{ key: string; url: string }> }
+export interface PublicSettings { values: Record<string, unknown>; media: Record<string, PublicMedia> }
 
 async function request<T>(path: string, revalidate = 60): Promise<T> {
   const response = await fetch(`${API}${path}`, {
@@ -15,6 +17,7 @@ async function request<T>(path: string, revalidate = 60): Promise<T> {
 }
 
 export const getLanguages = () => request<Language[]>('/public/languages', 300);
+export const getSettings = (locale?: string) => request<PublicSettings>(`/public/settings${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`, 300);
 export const getPage = (locale: string, slug: string) =>
   request<Record<string, unknown>>(`/public/pages/${encodeURIComponent(slug)}?locale=${encodeURIComponent(locale)}`);
 export const getList = (resource: string, locale: string, params = '') =>
@@ -26,7 +29,7 @@ export const getDetail = (resource: string, locale: string, slug: string) =>
 export const getNavigation = async (key: string, locale: string): Promise<NavItem[]> => {
   try {
     const menu = await request<NavMenu>(`/public/navigation/${encodeURIComponent(key)}?locale=${encodeURIComponent(locale)}`, 120);
-    return (menu.items ?? []).filter((item) => item.isVisible !== false);
+    return menu.items ?? [];
   } catch {
     return [];
   }

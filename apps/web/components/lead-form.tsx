@@ -35,7 +35,7 @@ function captureUtm(): UtmParams {
     if (Object.keys(utm).length > 0) {
       sessionStorage.setItem('gatevia_utm', JSON.stringify(merged));
     }
-    return stored;
+    return merged;
   } catch {
     return utm;
   }
@@ -310,9 +310,8 @@ function AssessmentForm({ locale }: { locale: string }) {
               ['company_formation', 'Company formation & legal setup'],
               ['local_partner', 'Local partner identification'],
               ['licensing', 'Licensing & regulatory compliance'],
-              ['talent', 'Talent & HR setup'],
-              ['government_relations', 'Government relations & approvals'],
-              ['marketing', 'Marketing & brand localisation'],
+              ['gtm', 'Go-to-market strategy & execution'],
+              ['other', 'Other support'],
             ].map(([value, label]) => (
               <label key={value} style={{ display: 'block', marginBlock: '.3rem' }}>
                 <input

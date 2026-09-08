@@ -2,12 +2,12 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Card } from '@gatevia/ui';
-import { ContentGrid, PageHero, SectionRenderer } from '@/components/content';
+import { ContentGrid, ContentItems, PageHero, RichBlocks, SectionRenderer } from '@/components/content';
 import { LeadForm } from '@/components/lead-form';
-import { getDetail, getList, getPage, getLanguages, safe } from '@/lib/api';
-import { list, text, translation } from '@/lib/content';
+import { getDetail, getList, getPage, getLanguages, getSettings, safe } from '@/lib/api';
+import { list, localizedSetting, resolvedMediaUrl, text, translation } from '@/lib/content';
 import { copy } from '@/lib/ui-copy';
-import { buildMetadata, JsonLd, serviceSchema, caseStudySchema, articleSchema, faqSchema } from '@/lib/seo';
+import { breadcrumbSchema, buildMetadata, JsonLd, serviceSchema, caseStudySchema, articleSchema, faqSchema } from '@/lib/seo';
 
 const listResources = new Set([
   'services', 'industries', 'case-studies', 'insights',
@@ -40,25 +40,32 @@ export async function generateMetadata({
   params: Promise<{ locale: string; segments: string[] }>;
 }): Promise<Metadata> {
   const { locale, segments } = await params;
-  const [result, languages] = await Promise.all([
+  const [result, languages, settings] = await Promise.all([
     resolve(locale, segments),
     safe(getLanguages(), []),
+    safe(getSettings(locale), { values: {}, media: {} }),
   ]);
   const entity = Array.isArray(result.data) ? {} : result.data;
   const tr = translation(entity);
   const title = text(tr.seoTitle ?? tr.title ?? tr.name, segments.at(-1)?.replaceAll('-', ' ') ?? 'GATEVIA');
+  const defaultOgId = settings.values['seo.default_og_media_id'];
+  const imageUrl = resolvedMediaUrl(entity, tr.ogMediaId)
+    ?? (typeof defaultOgId === 'string' ? settings.media[defaultOgId]?.url : undefined);
+  const siteName = localizedSetting(settings.values, 'company.name', locale, 'GATEVIA');
   
   return buildMetadata({
     title,
-    description: text(tr.seoDescription ?? tr.excerpt ?? tr.shortDescription),
-    canonical: `/${locale}/${segments.join('/')}`,
+    description: text(tr.seoDescription ?? tr.excerpt ?? tr.shortDescription, localizedSetting(settings.values, 'seo.default_description', locale)),
+    canonical: text(tr.canonicalUrl, `/${locale}/${segments.join('/')}`),
     locale,
     languages,
-    imageUrl: tr.seoImageUrl ? String(tr.seoImageUrl) : undefined,
+    localizedAlternates: entity.alternates as Record<string, string> | undefined,
+    imageUrl,
+    siteName,
     type: result.resource === 'insights' && result.kind === 'detail' ? 'article' : 'website',
     publishedAt: entity.publishedAt ? String(entity.publishedAt) : undefined,
     updatedAt: entity.updatedAt ? String(entity.updatedAt) : undefined,
-    noindex: !entity.id && result.kind !== 'list',
+    noindex: tr.robotsIndex === false || (!entity.id && result.kind !== 'list'),
   });
 }
 
@@ -114,37 +121,37 @@ async function ServiceDetail({ entity, locale }: { entity: Record<string, unknow
       {tr.whoFor && (
         <Section className="section--surface">
           <h2>Who is this for</h2>
-          <p>{text(tr.whoFor as string)}</p>
+          <ContentItems items={tr.whoFor} />
         </Section>
       )}
       {tr.problems && (
         <Section>
           <h2>Problems we solve</h2>
-          <p>{text(tr.problems as string)}</p>
+          <ContentItems items={tr.problems} />
         </Section>
       )}
       {tr.deliverables && (
         <Section className="section--surface">
           <h2>What you get</h2>
-          <p>{text(tr.deliverables as string)}</p>
+          <ContentItems items={tr.deliverables} />
         </Section>
       )}
       {tr.process && (
         <Section>
           <h2>How we work</h2>
-          <p>{text(tr.process as string)}</p>
+          <ContentItems items={tr.process} />
         </Section>
       )}
       {tr.benefits && (
         <Section className="section--surface">
           <h2>Benefits</h2>
-          <p>{text(tr.benefits as string)}</p>
+          <ContentItems items={tr.benefits} />
         </Section>
       )}
-      {tr.timeline && (
+      {tr.timelineText && (
         <Section>
           <h2>Timeline</h2>
-          <p>{text(tr.timeline as string)}</p>
+          <p>{text(tr.timelineText)}</p>
         </Section>
       )}
       <RelatedGrid items={industries as Record<string, unknown>[]} locale={locale} resource="industries" heading="Related industries" />
@@ -215,24 +222,28 @@ async function CaseStudyDetail({ entity, locale }: { entity: Record<string, unkn
 
   return (
     <>
+      {tr.context && <Section><h2>Context</h2><p>{text(tr.context)}</p></Section>}
       {tr.challenge && (
         <Section>
           <h2>The challenge</h2>
           <p>{text(tr.challenge as string)}</p>
         </Section>
       )}
-      {tr.approach && (
+      {tr.objectives && <Section className="section--surface"><h2>Objectives</h2><ContentItems items={tr.objectives} /></Section>}
+      {tr.solution && (
         <Section className="section--surface">
-          <h2>Our approach</h2>
-          <p>{text(tr.approach as string)}</p>
+          <h2>Solution</h2>
+          <p>{text(tr.solution)}</p>
         </Section>
       )}
+      {tr.process && <Section><h2>Process</h2><ContentItems items={tr.process} /></Section>}
       {tr.results && (
         <Section>
           <h2>Results</h2>
-          <p>{text(tr.results as string)}</p>
+          <ContentItems items={tr.results} />
         </Section>
       )}
+      {tr.metrics && <Section className="section--surface"><h2>Metrics</h2><ContentItems items={tr.metrics} /></Section>}
       {gallery.length > 0 && (
         <section className="section">
           <div className="container">
@@ -282,7 +293,7 @@ async function InsightDetail({ entity, locale }: { entity: Record<string, unknow
           </p>
         )}
         {tr.content ? (
-          <div dangerouslySetInnerHTML={{ __html: String(tr.content) }} />
+          <RichBlocks blocks={tr.content} media={entity.media as Record<string, { url?: string; translations?: Array<{ altText?: string }> }> | undefined} />
         ) : (
           <p>{text(tr.overview ?? tr.excerpt)}</p>
         )}
@@ -306,7 +317,7 @@ function BrandOrProductDetail({ entity, locale }: { entity: Record<string, unkno
     <>
       <Section>
         <p>{text(tr.overview ?? tr.excerpt ?? tr.shortDescription)}</p>
-        {tr.description && <p>{text(tr.description as string)}</p>}
+        {tr.fullDescription && <p>{text(tr.fullDescription)}</p>}
         {entity.website && (
           <p>
             <a
@@ -395,10 +406,19 @@ export default async function DynamicPage({
 
   const tr = translation(entity);
   const heroTr = tr.title || tr.name ? tr : { title: pageKey.replaceAll('-', ' ') };
+  const imageUrl = resolvedMediaUrl(entity, tr.ogMediaId);
 
   return (
     <>
       <PageHero translation={heroTr} locale={locale} />
+
+      <JsonLd schema={breadcrumbSchema([
+        { name: 'Home', url: `/${locale}` },
+        ...segments.map((segment, index) => ({
+          name: index === segments.length - 1 ? text(tr.title ?? tr.name, segment.replaceAll('-', ' ')) : segment.replaceAll('-', ' '),
+          url: `/${locale}/${segments.slice(0, index + 1).join('/')}`,
+        })),
+      ])} />
 
       {/* JSON-LD Schemas */}
       {result.kind === 'detail' && result.resource === 'services' && (
@@ -414,6 +434,7 @@ export default async function DynamicPage({
           headline: text(tr.title ?? tr.name),
           description: text(tr.seoDescription ?? tr.excerpt ?? tr.shortDescription),
           url: `/${locale}/${segments.join('/')}`,
+          imageUrl,
           publishedAt: entity.publishedAt ? String(entity.publishedAt) : undefined,
           locale,
         })} />
@@ -423,6 +444,7 @@ export default async function DynamicPage({
           headline: text(tr.title ?? tr.name),
           description: text(tr.seoDescription ?? tr.excerpt ?? tr.shortDescription),
           url: `/${locale}/${segments.join('/')}`,
+          imageUrl,
           publishedAt: entity.publishedAt ? String(entity.publishedAt) : new Date().toISOString(),
           updatedAt: entity.updatedAt ? String(entity.updatedAt) : undefined,
           locale,
