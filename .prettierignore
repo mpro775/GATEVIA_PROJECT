@@ -4,3 +4,6 @@ dist
 coverage
 gatevia-docs
 pnpm-lock.yaml
+apps/api/openapi.json
+packages/api-client/src/generated.ts
+*.tsbuildinfo

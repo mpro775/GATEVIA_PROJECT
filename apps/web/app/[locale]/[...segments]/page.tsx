@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { Card } from '@gatevia/ui';
 import {
   ContentGrid,
   ContentItems,
@@ -111,8 +110,8 @@ export async function generateMetadata({
     imageUrl,
     siteName,
     type: result.resource === 'insights' && result.kind === 'detail' ? 'article' : 'website',
-    publishedAt: entity.publishedAt ? String(entity.publishedAt) : undefined,
-    updatedAt: entity.updatedAt ? String(entity.updatedAt) : undefined,
+    publishedAt: typeof entity.publishedAt === 'string' ? entity.publishedAt : undefined,
+    updatedAt: typeof entity.updatedAt === 'string' ? entity.updatedAt : undefined,
     noindex: tr.robotsIndex === false || (!entity.id && result.kind !== 'list'),
   });
 }
@@ -173,7 +172,7 @@ async function ServiceDetail({
   const insights = inline.insights?.length
     ? inline.insights
     : (relInsights as Record<string, unknown>[]);
-  const faqs = (inline.faqs ?? []) as Record<string, unknown>[];
+  const faqs = inline.faqs ?? [];
 
   return (
     <>
@@ -219,19 +218,19 @@ async function ServiceDetail({
         </Section>
       )}
       <RelatedGrid
-        items={industries as Record<string, unknown>[]}
+        items={industries}
         locale={locale}
         resource="industries"
         heading={t.relatedIndustries}
       />
       <RelatedGrid
-        items={caseStudies as Record<string, unknown>[]}
+        items={caseStudies}
         locale={locale}
         resource="case-studies"
         heading={t.relatedCases}
       />
       <RelatedGrid
-        items={insights as Record<string, unknown>[]}
+        items={insights}
         locale={locale}
         resource="insights"
         heading={t.relatedInsights}
@@ -297,19 +296,14 @@ async function IndustryDetail({
         </Section>
       )}
       <RelatedGrid
-        items={services as Record<string, unknown>[]}
+        items={services}
         locale={locale}
         resource="services"
         heading={t.industryServices}
       />
+      <RelatedGrid items={caseStudies} locale={locale} resource="case-studies" heading={t.cases} />
       <RelatedGrid
-        items={caseStudies as Record<string, unknown>[]}
-        locale={locale}
-        resource="case-studies"
-        heading={t.cases}
-      />
-      <RelatedGrid
-        items={insights as Record<string, unknown>[]}
+        items={insights}
         locale={locale}
         resource="insights"
         heading={t.industryInsights}
@@ -326,19 +320,13 @@ async function IndustryDetail({
   );
 }
 
-async function CaseStudyDetail({
-  entity,
-  locale,
-}: {
-  entity: Record<string, unknown>;
-  locale: string;
-}) {
+function CaseStudyDetail({ entity, locale }: { entity: Record<string, unknown>; locale: string }) {
   const tr = translation(entity);
   const t = copy(locale);
   const gallery = list((entity as { gallery?: unknown }).gallery) as Record<string, unknown>[];
   const inline = entity as Record<string, Record<string, unknown>[]>;
-  const services = (inline.services ?? []) as Record<string, unknown>[];
-  const industries = (inline.industries ?? []) as Record<string, unknown>[];
+  const services = inline.services ?? [];
+  const industries = inline.industries ?? [];
 
   return (
     <>
@@ -351,7 +339,7 @@ async function CaseStudyDetail({
       {tr.challenge && (
         <Section>
           <h2>{t.challenge}</h2>
-          <p>{text(tr.challenge as string)}</p>
+          <p>{text(tr.challenge)}</p>
         </Section>
       )}
       {tr.objectives && (
@@ -390,11 +378,11 @@ async function CaseStudyDetail({
             <div className="grid">
               {gallery.map((media, i) => (
                 <div key={i} className="content-card">
-                  {text((media as Record<string, unknown>).url) && (
+                  {text(media.url) && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={text((media as Record<string, unknown>).url)}
-                      alt={text((media as Record<string, unknown>).alt)}
+                      src={text(media.url)}
+                      alt={text(media.alt)}
                       loading="lazy"
                       style={{ width: '100%', borderRadius: '.5rem' }}
                     />
@@ -429,18 +417,12 @@ async function CaseStudyDetail({
   );
 }
 
-async function InsightDetail({
-  entity,
-  locale,
-}: {
-  entity: Record<string, unknown>;
-  locale: string;
-}) {
+function InsightDetail({ entity, locale }: { entity: Record<string, unknown>; locale: string }) {
   const tr = translation(entity);
   const t = copy(locale);
   const inline = entity as Record<string, Record<string, unknown>[]>;
-  const services = (inline.services ?? []) as Record<string, unknown>[];
-  const industries = (inline.industries ?? []) as Record<string, unknown>[];
+  const services = inline.services ?? [];
+  const industries = inline.industries ?? [];
 
   return (
     <>
@@ -577,11 +559,7 @@ export default async function DynamicPage({
                 </button>
               </form>
             )}
-            <ContentGrid
-              items={result.data as Record<string, unknown>[]}
-              locale={locale}
-              resource={result.resource}
-            />
+            <ContentGrid items={result.data} locale={locale} resource={result.resource} />
           </div>
         </section>
       </>
@@ -602,7 +580,7 @@ export default async function DynamicPage({
         </section>
         <section className="section">
           <div className="container">
-            <LeadForm kind={formMap[pageKey]!} locale={locale} />
+            <LeadForm kind={formMap[pageKey]} locale={locale} />
           </div>
         </section>
       </>
@@ -654,7 +632,7 @@ export default async function DynamicPage({
             description: text(tr.seoDescription ?? tr.excerpt ?? tr.shortDescription),
             url: `/${locale}/${segments.join('/')}`,
             imageUrl,
-            publishedAt: entity.publishedAt ? String(entity.publishedAt) : undefined,
+            publishedAt: typeof entity.publishedAt === 'string' ? entity.publishedAt : undefined,
             locale,
           })}
         />
@@ -666,8 +644,11 @@ export default async function DynamicPage({
             description: text(tr.seoDescription ?? tr.excerpt ?? tr.shortDescription),
             url: `/${locale}/${segments.join('/')}`,
             imageUrl,
-            publishedAt: entity.publishedAt ? String(entity.publishedAt) : new Date().toISOString(),
-            updatedAt: entity.updatedAt ? String(entity.updatedAt) : undefined,
+            publishedAt:
+              typeof entity.publishedAt === 'string'
+                ? entity.publishedAt
+                : new Date().toISOString(),
+            updatedAt: typeof entity.updatedAt === 'string' ? entity.updatedAt : undefined,
             locale,
           })}
         />
@@ -687,7 +668,7 @@ export default async function DynamicPage({
       {formMap[pageKey] && (
         <section className="section">
           <div className="container">
-            <LeadForm kind={formMap[pageKey]!} locale={locale} />
+            <LeadForm kind={formMap[pageKey]} locale={locale} />
           </div>
         </section>
       )}

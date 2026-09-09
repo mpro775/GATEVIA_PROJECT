@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import type { ContentRecord, Language, SubmissionReceipt } from '@gatevia/api-client';
+import type { ContentRecord, Language } from '@gatevia/api-client';
 import { Button, Field, Input, Textarea } from '@gatevia/ui';
 import { apiClient, getLanguages, getList } from '@/lib/api';
 import { copy } from '@/lib/ui-copy';
@@ -380,14 +380,14 @@ function AssessmentForm({ locale }: { locale: string }) {
     };
 
     try {
-      const { error } = await apiClient.POST(
-        '/api/v1/public/forms/market-entry-assessment',
-        {
-          params: { header: { 'Idempotency-Key': crypto.randomUUID() } },
-          body: payload as never,
-        },
-      );
-      if (error) throw error;
+      const { error } = await apiClient.POST('/api/v1/public/forms/market-entry-assessment', {
+        params: { header: { 'Idempotency-Key': crypto.randomUUID() } },
+        body: payload as never,
+      });
+      if (error) {
+        const message = (error as { detail?: string }).detail ?? 'Submission failed';
+        throw new Error(message);
+      }
       setSubmitState('success');
       track('assessment_complete', { locale });
     } catch {
@@ -714,7 +714,7 @@ function SimpleForm({ kind, locale }: { kind: 'contact' | 'consultation'; locale
       sourceUrl: location.href,
       referrer: document.referrer || undefined,
       landingPage: sessionStorage.getItem('gatevia_landing') ?? location.href,
-      website: String(data.get('website') || ''),
+      website: typeof data.get('website') === 'string' ? (data.get('website') as string) : '',
       ...mapUtm(utm),
     };
     const body =
@@ -730,17 +730,17 @@ function SimpleForm({ kind, locale }: { kind: 'contact' | 'consultation'; locale
         kind === 'consultation'
           ? '/api/v1/public/forms/consultation'
           : '/api/v1/public/forms/contact';
-      const { error } = await apiClient.POST(
-        endpoint as '/api/v1/public/forms/contact',
-        {
-          params: { header: { 'Idempotency-Key': crypto.randomUUID() } },
-          body: body as never,
-        },
-      );
-      if (error) throw error;
+      const { error } = await apiClient.POST(endpoint as '/api/v1/public/forms/contact', {
+        params: { header: { 'Idempotency-Key': crypto.randomUUID() } },
+        body: body as never,
+      });
+      if (error) {
+        const message = (error as { detail?: string }).detail ?? 'Submission failed';
+        throw new Error(message);
+      }
       setState('success');
       track(`${kind}_submit`, { locale });
-      (event.currentTarget as HTMLFormElement).reset();
+      event.currentTarget.reset();
     } catch {
       setState('error');
     }

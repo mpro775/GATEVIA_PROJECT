@@ -129,11 +129,15 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
                     dir="ltr"
                     value={redirect.locale ?? ''}
                     onChange={(e) =>
-                      setRedirect((r) =>
-                        e.target.value
-                          ? { ...r, locale: e.target.value }
-                          : (({ locale: _locale, ...rest }) => rest)(r),
-                      )
+                      setRedirect((r) => {
+                        const next = { ...r };
+                        if (e.target.value) {
+                          next.locale = e.target.value;
+                        } else {
+                          delete next.locale;
+                        }
+                        return next;
+                      })
                     }
                     placeholder="e.g. en, ar-SA"
                   />

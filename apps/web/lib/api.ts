@@ -36,11 +36,7 @@ export type NavItem = NavigationItem;
  * Uses apiClient.GET and forwards Next.js cache options.
  * @internal
  */
-async function request<T>(
-  path: string,
-  revalidate = 60,
-  additionalParams?: Record<string, string>,
-): Promise<T> {
+async function request<T>(path: string, revalidate = 60): Promise<T> {
   // Build the full path with /api/v1 prefix for openapi-fetch
   const apiPath = resolveApiPath(path);
   const fullUrl = `${apiOrigin}${apiPath}`;

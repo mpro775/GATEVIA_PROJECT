@@ -1,7 +1,7 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { User } from '@gatevia/api-client';
-import { Badge, Button, EmptyState, ErrorState, Field, Input, Textarea } from '@gatevia/ui';
+import { Badge, Button, EmptyState, ErrorState, Field, Textarea } from '@gatevia/ui';
 import { api } from '@/lib/api';
 import { useAdminAuth } from './auth-context';
 
@@ -13,7 +13,7 @@ function Readable({ value, label }: { value: unknown; label?: string }) {
       <div>
         {label && <strong>{label}</strong>}
         <ul>
-          {value.map((item, index) => (
+          {(value as unknown[]).map((item: unknown, index) => (
             <li key={index}>
               <Readable value={item} />
             </li>
@@ -24,7 +24,7 @@ function Readable({ value, label }: { value: unknown; label?: string }) {
   if (value && typeof value === 'object')
     return (
       <dl>
-        {Object.entries(value).map(([key, child]) => (
+        {Object.entries(value as Record<string, unknown>).map(([key, child]: [string, unknown]) => (
           <div key={key}>
             <dt style={{ fontWeight: 600, color: 'var(--color-text-muted)', fontSize: '.8rem' }}>
               {key.replace(/([A-Z_])/g, ' $1').trim()}
@@ -88,13 +88,13 @@ export function LeadDetail({ id }: { id: string }) {
     'details',
   );
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       setLead(await api(`/admin/leads/${id}`));
     } catch {
       setError(true);
     }
-  }
+  }, [id]);
 
   useEffect(() => {
     void load();
@@ -102,7 +102,7 @@ export function LeadDetail({ id }: { id: string }) {
     void api<User[]>('/admin/users?pageSize=100&status=active')
       .then(setUsers)
       .catch(() => {});
-  }, [id]);
+  }, [load]);
 
   if (error)
     return (
@@ -150,7 +150,7 @@ export function LeadDetail({ id }: { id: string }) {
     }
     try {
       await api(`/admin/leads/${id}/notes`, { method: 'POST', body: JSON.stringify({ body }) });
-      (event.currentTarget as HTMLFormElement).reset();
+      event.currentTarget.reset();
       void load();
     } catch (e) {
       setNoteError(e instanceof Error ? e.message : 'Failed to save note.');

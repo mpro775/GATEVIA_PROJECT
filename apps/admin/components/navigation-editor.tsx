@@ -43,7 +43,7 @@ function normalizeItems(value: unknown): NavItem[] {
       : item.translations && typeof item.translations === 'object'
         ? (item.translations as Record<string, { label: string }>)
         : {};
-    return { ...item, translations, _expanded: false } as NavItem;
+    return { ...item, translations, _expanded: false };
   });
 }
 

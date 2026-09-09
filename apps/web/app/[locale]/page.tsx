@@ -38,7 +38,8 @@ export async function generateMetadata({
           'Saudi market access, execution and growth.',
         ),
     ),
-    canonical: String(tr.canonicalUrl ?? `/${locale}`),
+    canonical:
+      typeof tr.canonicalUrl === 'string' && tr.canonicalUrl ? tr.canonicalUrl : `/${locale}`,
     locale,
     languages,
     localizedAlternates: page.alternates as Record<string, string> | undefined,

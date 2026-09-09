@@ -42,16 +42,11 @@ const resourceMap: Record<string, string> = {
 // Resources that use the ContentEditor (domain-aware).
 const CONTENT_MODULES = new Set(['content', 'trust']);
 
-// Resources that use standalone specialized editors (no generic fallback).
-type SpecialEditorKey = 'users' | 'roles' | 'languages' | 'navigation' | 'settings' | 'redirects';
-
-const SPECIALIZED_LIST_ONLY = new Set<string>(['navigation', 'settings']);
-
 export default async function Workspace({ params }: { params: Promise<{ segments: string[] }> }) {
   const { segments } = await params;
-  const module = segments[0] ?? '';
+  const moduleName = segments[0] ?? '';
   const key = segments[1] ?? segments[0] ?? '';
-  const id = segments[2] ?? (module === 'media' ? segments[1] : undefined);
+  const id = segments[2] ?? (moduleName === 'media' ? segments[1] : undefined);
   const resource = resourceMap[key] ?? key;
   const basePath = `/${segments.slice(0, id ? 2 : segments.length).join('/')}`;
   const isNew = id === 'new';
@@ -94,7 +89,7 @@ export default async function Workspace({ params }: { params: Promise<{ segments
   }
 
   // ── Users: list or editor ─────────────────────────────────────────────────
-  if (module === 'system' && key === 'users') {
+  if (moduleName === 'system' && key === 'users') {
     if (isNew || recordId) {
       return (
         <main className="admin-content">
@@ -110,7 +105,7 @@ export default async function Workspace({ params }: { params: Promise<{ segments
   }
 
   // ── Roles: list or editor ─────────────────────────────────────────────────
-  if (module === 'system' && key === 'roles') {
+  if (moduleName === 'system' && key === 'roles') {
     if (isNew || recordId) {
       return (
         <main className="admin-content">
@@ -126,7 +121,7 @@ export default async function Workspace({ params }: { params: Promise<{ segments
   }
 
   // ── Languages: list or editor ─────────────────────────────────────────────
-  if (module === 'website' && key === 'languages') {
+  if (moduleName === 'website' && key === 'languages') {
     if (isNew || recordId) {
       return (
         <main className="admin-content">
@@ -142,7 +137,7 @@ export default async function Workspace({ params }: { params: Promise<{ segments
   }
 
   // ── Redirects: list or editor ─────────────────────────────────────────────
-  if (module === 'website' && key === 'redirects') {
+  if (moduleName === 'website' && key === 'redirects') {
     if (isNew || recordId) {
       return (
         <main className="admin-content">
@@ -158,7 +153,7 @@ export default async function Workspace({ params }: { params: Promise<{ segments
   }
 
   // ── ContentEditor for CMS/Trust resources ─────────────────────────────────
-  if (isNew || (recordId && CONTENT_MODULES.has(module))) {
+  if (isNew || (recordId && CONTENT_MODULES.has(moduleName))) {
     return (
       <main className="admin-content">
         <ContentEditor

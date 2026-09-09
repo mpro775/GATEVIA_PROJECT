@@ -52,8 +52,6 @@ export function Footer({
     linkedInUrl?: string | undefined;
   };
 }) {
-  const t = copy(locale);
-
   // Group CMS footer items by their top-level label (items with children become columns,
   // items without children go into a flat list).
   const hasNav = navItems.length > 0;

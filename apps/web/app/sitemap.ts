@@ -44,7 +44,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         if (slug)
           routes.push({
             url: `${base}/${locale}/${resource}/${slug}`,
-            lastModified: item.updatedAt ? new Date(String(item.updatedAt)) : undefined,
+            lastModified:
+              typeof item.updatedAt === 'string' || typeof item.updatedAt === 'number'
+                ? new Date(item.updatedAt)
+                : undefined,
             changeFrequency: 'weekly',
             priority: 0.7,
           });
@@ -56,7 +59,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       if (slug && slug !== 'home')
         routes.push({
           url: `${base}/${locale}/${slug}`,
-          lastModified: page.updatedAt ? new Date(String(page.updatedAt)) : undefined,
+          lastModified:
+            typeof page.updatedAt === 'string' || typeof page.updatedAt === 'number'
+              ? new Date(page.updatedAt)
+              : undefined,
           changeFrequency: 'weekly',
           priority: 0.8,
         });

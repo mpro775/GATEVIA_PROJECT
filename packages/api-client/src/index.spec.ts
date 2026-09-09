@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  API_BASE_PATH,
-  createApiClient,
-  resolveApiOrigin,
-  resolveApiPath,
-  resolveApiUrl,
-} from './index.js';
+import { createApiClient, resolveApiOrigin, resolveApiPath, resolveApiUrl } from './index.js';
 
 describe('API URL resolution and normalization', () => {
   it('correctly resolves API origin by stripping /api/v1 and trailing slashes', () => {
@@ -32,18 +26,21 @@ describe('API URL resolution and normalization', () => {
 
   it('createApiClient never duplicates /api/v1 in requests', async () => {
     let capturedUrl = '';
-    const mockFetch = async (input: RequestInfo | URL) => {
-      capturedUrl = input instanceof Request ? input.url : typeof input === 'string' ? input : input.toString();
-      return new Response(JSON.stringify({ data: [] }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    const mockFetch: typeof fetch = (input: RequestInfo | URL) => {
+      capturedUrl =
+        input instanceof Request ? input.url : typeof input === 'string' ? input : input.toString();
+      return Promise.resolve(
+        new Response(JSON.stringify({ data: [] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
     };
 
     // Client created with baseUrl ending in /api/v1 (e.g. from NEXT_PUBLIC_API_URL)
     const client = createApiClient({
       baseUrl: 'https://api.gatevia.sa/api/v1',
-      fetcher: mockFetch as unknown as typeof fetch,
+      fetcher: mockFetch,
     });
 
     await client.GET('/api/v1/public/languages');
@@ -53,7 +50,7 @@ describe('API URL resolution and normalization', () => {
     // Client created with plain origin
     const client2 = createApiClient({
       baseUrl: 'http://localhost:3002',
-      fetcher: mockFetch as unknown as typeof fetch,
+      fetcher: mockFetch,
     });
 
     await client2.GET('/api/v1/admin/leads');

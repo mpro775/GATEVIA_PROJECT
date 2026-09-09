@@ -126,12 +126,18 @@ export function DataTable({ title, resource, basePath, kind = 'content', source 
           const rows = await apiEnvelope<Record<string, unknown>>(
             `/admin/${filter.resource}?page=1&pageSize=100&sort=-updatedAt`,
           );
-          return [filter.key, rows.data] as const;
+          return [filter.key, rows.data] as [typeof filter.key, Record<string, unknown>[]];
         } catch {
-          return [filter.key, []] as const;
+          return [filter.key, []] as [typeof filter.key, Record<string, unknown>[]];
         }
       }),
-    ).then((entries) => setDomainOptions(Object.fromEntries(entries)));
+    ).then((entries) => {
+      const optionsMap: Record<string, Record<string, unknown>[]> = {};
+      for (const [filterKey, data] of entries) {
+        optionsMap[filterKey] = data;
+      }
+      setDomainOptions(optionsMap);
+    });
   }, [domainFilters]);
 
   useEffect(() => {

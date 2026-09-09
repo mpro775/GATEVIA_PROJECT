@@ -116,7 +116,9 @@ export async function sendLeadNotification(prisma: PrismaClient, leadId: string)
       data: {
         leadId,
         type: 'notification_failed',
-        payload: { reason: 'No lead notification recipients configured in database or environment.' },
+        payload: {
+          reason: 'No lead notification recipients configured in database or environment.',
+        },
       },
     });
     return;

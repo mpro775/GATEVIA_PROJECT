@@ -6,9 +6,10 @@ describe('resolveLeadNotificationRecipients', () => {
   it('returns recipients from forms.notification_recipients setting in database when configured', async () => {
     const mockPrisma = {
       globalSetting: {
-        findUnique: async () => ({
-          value: ['lead-team@gatevia.sa', 'sales@gatevia.sa'],
-        }),
+        findUnique: () =>
+          Promise.resolve({
+            value: ['lead-team@gatevia.sa', 'sales@gatevia.sa'],
+          }),
       },
     } as unknown as PrismaClient;
 
@@ -19,9 +20,10 @@ describe('resolveLeadNotificationRecipients', () => {
   it('falls back to environment recipients when database setting is empty array', async () => {
     const mockPrisma = {
       globalSetting: {
-        findUnique: async () => ({
-          value: [],
-        }),
+        findUnique: () =>
+          Promise.resolve({
+            value: [],
+          }),
       },
     } as unknown as PrismaClient;
 
@@ -33,7 +35,7 @@ describe('resolveLeadNotificationRecipients', () => {
   it('falls back to environment recipients when database setting is not found', async () => {
     const mockPrisma = {
       globalSetting: {
-        findUnique: async () => null,
+        findUnique: () => Promise.resolve(null),
       },
     } as unknown as PrismaClient;
 

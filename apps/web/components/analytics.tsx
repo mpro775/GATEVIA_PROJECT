@@ -41,8 +41,12 @@ export function Analytics({
 
     // 3. Theme switch tracking
     const onTheme = (e: Event) => {
-      const next = (e as CustomEvent).detail;
-      track('theme_switch', { theme: next });
+      const customEvent = e as CustomEvent<{ theme?: string } | string>;
+      const theme =
+        typeof customEvent.detail === 'string'
+          ? customEvent.detail
+          : (customEvent.detail?.theme ?? 'unknown');
+      track('theme_switch', { theme });
     };
 
     document.addEventListener('click', onClick);

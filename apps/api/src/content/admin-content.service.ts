@@ -247,8 +247,7 @@ export class AdminContentService {
           })),
         };
     for (const [key, f] of Object.entries(def.fields))
-      if (f.kind === 'date' && typeof data[key] === 'string')
-        data[key] = new Date(data[key]);
+      if (f.kind === 'date' && typeof data[key] === 'string') data[key] = new Date(data[key]);
     return data;
   }
   async create(resource: string, raw: Record<string, unknown>, actor: string, requestId: string) {
@@ -371,7 +370,7 @@ export class AdminContentService {
   ) {
     if (!cmsDefinitions[resource])
       return this.website.transition(resource, id, status, actorUserId, requestId);
-    const row = (await this.detail(resource, id));
+    const row = await this.detail(resource, id);
     if (resource === 'tags') throw new BadRequestException('Tags have no publishing lifecycle.');
     if (status === 'published') await this.assertPublish(resource, row);
     const result = await contentDelegate(this.prisma, this.definition(resource).model).update({

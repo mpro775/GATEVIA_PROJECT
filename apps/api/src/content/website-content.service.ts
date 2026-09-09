@@ -186,7 +186,8 @@ export class WebsiteContentService {
       if (
         id.endsWith('_media_id') &&
         value &&
-        !(await this.prisma.media.findFirst({ where: { id: String(value), status: 'ready' } }))
+        (typeof value !== 'string' ||
+          !(await this.prisma.media.findFirst({ where: { id: value, status: 'ready' } })))
       )
         throw new BadRequestException('Choose ready media.');
       const row = await this.prisma.globalSetting.update({

@@ -12,8 +12,8 @@ const config: NextConfig = {
     };
     return value;
   },
-  async headers() {
-    return [
+  headers() {
+    return Promise.resolve([
       {
         source: '/:path*',
         headers: [
@@ -27,7 +27,7 @@ const config: NextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
         ],
       },
-    ];
+    ]);
   },
 };
 export default config;

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { ThemeToggle } from '@gatevia/ui';
 import { apiClient, type Language, type NavItem } from '@/lib/api';
 import { copy } from '@/lib/ui-copy';
+import { track } from './analytics';
 
 // Hardcoded fallback nav used ONLY when CMS returns no items.
 function fallbackLinks(locale: string): NavItem[] {
@@ -181,9 +182,7 @@ export function Header({
                 onChange={(event) => {
                   const language = languages.find((item) => item.code === event.target.value);
                   if (!language) return;
-                  // @ts-expect-error optional analytics global
-                  window.dataLayer?.push({
-                    event: 'language_switch',
+                  track('language_switch', {
                     to: language.code.toLowerCase(),
                   });
                   void switchLanguage(language);

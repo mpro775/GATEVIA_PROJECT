@@ -13,8 +13,8 @@ const nextConfig: NextConfig = {
     return config;
   },
   images: { remotePatterns: [{ protocol: 'https', hostname: '**' }] },
-  async headers() {
-    return [
+  headers() {
+    return Promise.resolve([
       {
         source: '/:path*',
         headers: [
@@ -28,7 +28,7 @@ const nextConfig: NextConfig = {
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
         ],
       },
-    ];
+    ]);
   },
 };
 export default nextConfig;

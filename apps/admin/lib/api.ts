@@ -51,7 +51,6 @@ export const client = createApiClient({
 // Use these in all new code. The legacy api() / apiEnvelope() below are preserved
 // for existing callers but also delegate to client internally.
 
-
 /**
  * Unwraps the openapi-fetch result, throwing ApiError on failures.
  * @internal
@@ -75,14 +74,20 @@ function unwrapClientResult<T>(result: { data?: T; error?: unknown; response: Re
 
 /** GET /api/v1/auth/me — returns the authenticated admin user */
 export const getMe = () =>
-  client.GET('/api/v1/auth/me').then(unwrapClientResult).then((d) => d.data);
+  client
+    .GET('/api/v1/auth/me')
+    .then(unwrapClientResult)
+    .then((d) => d.data);
 
 /** POST /api/v1/auth/logout */
 export const postLogout = () => client.POST('/api/v1/auth/logout').then(unwrapClientResult);
 
 /** GET /api/v1/admin/languages */
 export const getLanguages = () =>
-  client.GET('/api/v1/admin/languages').then(unwrapClientResult).then((d) => d.data);
+  client
+    .GET('/api/v1/admin/languages')
+    .then(unwrapClientResult)
+    .then((d) => d.data);
 
 /** GET /api/v1/admin/leads — use apiEnvelope('/admin/leads?...') for paginated results */
 // Note: typed helper omitted here because /api/v1/admin/leads has a query-param

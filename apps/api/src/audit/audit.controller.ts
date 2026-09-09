@@ -12,10 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 @Controller('admin/audit-logs')
 export class AuditController {
   constructor(private readonly prisma: PrismaService) {}
-  @Get() async list(
-    @Query('page') pageRaw = '1',
-    @Query('pageSize') sizeRaw = '20',
-  ) {
+  @Get() async list(@Query('page') pageRaw = '1', @Query('pageSize') sizeRaw = '20') {
     const page = Math.max(1, Number(pageRaw) || 1);
     const pageSize = Math.min(100, Math.max(1, Number(sizeRaw) || 20));
     const [data, total] = await this.prisma.$transaction([

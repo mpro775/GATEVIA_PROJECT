@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { resolveApiUrl, type Language, type RedirectMatch } from '@gatevia/api-client';
 
 // ─── Why fetch() and not client.GET() here? ───────────────────────────────────
