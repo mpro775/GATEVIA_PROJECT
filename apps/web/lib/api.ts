@@ -3,6 +3,7 @@ import {
   resolveApiOrigin,
   resolveApiPath,
   resolveApiUrl,
+  ApiError,
   type ContentRecord,
   type Language,
   type NavigationItem,
@@ -11,6 +12,30 @@ import {
 } from '@gatevia/api-client';
 
 export type { Language } from '@gatevia/api-client';
+export { ApiError } from '@gatevia/api-client';
+
+/**
+ * Normalizes a route slug to Unicode NFC and safely decodes any existing percent-encoding
+ * to prevent double-encoding (e.g. %D8%A3... -> %25D8%25A3...).
+ */
+export function normalizeRouteSlug(value: string): string {
+  try {
+    return decodeURIComponent(value).normalize('NFC');
+  } catch {
+    return value.normalize('NFC');
+  }
+}
+
+/**
+ * Checks if an error represents an HTTP 404 Not Found response.
+ */
+export function isNotFoundError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  if ('status' in error && (error as { status: unknown }).status === 404) return true;
+  if ('statusCode' in error && (error as { statusCode: unknown }).statusCode === 404) return true;
+  if (error instanceof Error && error.message.includes('404')) return true;
+  return false;
+}
 
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3002/api/v1';
 
@@ -34,6 +59,7 @@ export type NavItem = NavigationItem;
 /**
  * Typed GET wrapper for public content endpoints.
  * Uses apiClient.GET and forwards Next.js cache options.
+ * Throws an ApiError preserving status and detail when response is not ok.
  * @internal
  */
 async function request<T>(path: string, revalidate = 60): Promise<T> {
@@ -49,7 +75,28 @@ async function request<T>(path: string, revalidate = 60): Promise<T> {
     headers: { Accept: 'application/json' },
     next: { revalidate, tags: ['gatevia-content'] },
   });
-  if (!response.ok) throw new Error(`CMS request failed: ${response.status}`);
+  if (!response.ok) {
+    let detail = `CMS request failed: ${response.status}`;
+    let title = response.statusText || 'CMS Request Failed';
+    let type = 'about:blank';
+    try {
+      const errBody = (await response.json()) as Record<string, unknown>;
+      if (errBody && typeof errBody === 'object') {
+        if (typeof errBody.detail === 'string') detail = errBody.detail;
+        else if (typeof errBody.message === 'string') detail = errBody.message;
+        if (typeof errBody.title === 'string') title = errBody.title;
+        if (typeof errBody.type === 'string') type = errBody.type;
+      }
+    } catch {
+      // Response body was not JSON
+    }
+    throw new ApiError({
+      status: response.status,
+      title,
+      detail,
+      type,
+    });
+  }
   const body = (await response.json()) as { data: T };
   return body.data;
 }
@@ -64,18 +111,22 @@ export const getSettings = (locale?: string) =>
     `/public/settings${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`,
     300,
   );
-export const getPage = (locale: string, slug: string, preview?: string) =>
-  request<ContentRecord>(
-    `/public/pages/${encodeURIComponent(slug)}?locale=${encodeURIComponent(locale)}${preview ? `&preview=${encodeURIComponent(preview)}` : ''}`,
+export const getPage = (locale: string, slug: string, preview?: string) => {
+  const normalizedSlug = normalizeRouteSlug(slug);
+  return request<ContentRecord>(
+    `/public/pages/${encodeURIComponent(normalizedSlug)}?locale=${encodeURIComponent(locale)}${preview ? `&preview=${encodeURIComponent(preview)}` : ''}`,
     preview ? 0 : 60,
   );
+};
 export const getList = (resource: string, locale: string, params = '') =>
   request<ContentRecord[]>(`/public/${resource}?locale=${encodeURIComponent(locale)}${params}`);
-export const getDetail = (resource: string, locale: string, slug: string, preview?: string) =>
-  request<ContentRecord>(
-    `/public/${resource}/${encodeURIComponent(slug)}?locale=${encodeURIComponent(locale)}${preview ? `&preview=${encodeURIComponent(preview)}` : ''}`,
+export const getDetail = (resource: string, locale: string, slug: string, preview?: string) => {
+  const normalizedSlug = normalizeRouteSlug(slug);
+  return request<ContentRecord>(
+    `/public/${resource}/${encodeURIComponent(normalizedSlug)}?locale=${encodeURIComponent(locale)}${preview ? `&preview=${encodeURIComponent(preview)}` : ''}`,
     preview ? 0 : 60,
   );
+};
 
 /** Fetch a CMS navigation menu by its key. Falls back to an empty items array. */
 export const getNavigation = async (key: string, locale: string): Promise<NavItem[]> => {

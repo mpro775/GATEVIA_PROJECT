@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import type { ContentRecord } from '@gatevia/api-client';
 import { Icon } from '@gatevia/ui';
 import {
   ContentGrid,
@@ -10,7 +11,15 @@ import {
   SectionRenderer,
 } from '@/components/content';
 import { LeadForm } from '@/components/lead-form';
-import { getDetail, getList, getPage, getLanguages, getSettings, safe } from '@/lib/api';
+import {
+  getDetail,
+  getList,
+  getPage,
+  getLanguages,
+  getSettings,
+  isNotFoundError,
+  safe,
+} from '@/lib/api';
 import { list, localizedSetting, resolvedMediaUrl, text, translation } from '@/lib/content';
 import { copy } from '@/lib/ui-copy';
 import {
@@ -55,24 +64,48 @@ const formMap: Record<string, 'contact' | 'consultation' | 'market-entry-assessm
 async function resolve(locale: string, segments: string[], q?: string, preview?: string) {
   const [root, slug] = segments;
   if (root && listResources.has(root)) {
-    return slug && detailResources.has(root)
-      ? {
+    if (slug && detailResources.has(root)) {
+      try {
+        const data = await getDetail(root, locale, slug, preview);
+        return {
           kind: 'detail' as const,
           resource: root,
-          data: await safe(getDetail(root, locale, slug, preview), {}),
-        }
-      : {
-          kind: 'list' as const,
-          resource: root,
-          data: await safe(getList(root, locale, q ? `&q=${encodeURIComponent(q)}` : ''), []),
+          data,
         };
+      } catch (error) {
+        if (isNotFoundError(error)) {
+          notFound();
+        }
+        throw error;
+      }
+    }
+    return {
+      kind: 'list' as const,
+      resource: root,
+      data: await safe(getList(root, locale, q ? `&q=${encodeURIComponent(q)}` : ''), []),
+    };
   }
   const pageSlug = segments.join('/');
-  return {
-    kind: 'page' as const,
-    resource: pageSlug,
-    data: await safe(getPage(locale, pageSlug, preview), {}),
-  };
+  if (formMap[pageSlug]) {
+    return {
+      kind: 'page' as const,
+      resource: pageSlug,
+      data: (await safe(getPage(locale, pageSlug, preview), {})) as ContentRecord,
+    };
+  }
+  try {
+    const data = await getPage(locale, pageSlug, preview);
+    return {
+      kind: 'page' as const,
+      resource: pageSlug,
+      data,
+    };
+  } catch (error) {
+    if (isNotFoundError(error)) {
+      notFound();
+    }
+    throw error;
+  }
 }
 
 export async function generateMetadata({
