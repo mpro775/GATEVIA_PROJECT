@@ -1,5 +1,6 @@
 'use client';
 import { ErrorState } from '@gatevia/ui';
+import { Button } from '@gatevia/ui';
 export default function Error({
   reset,
 }: {
@@ -10,9 +11,7 @@ export default function Error({
     <main className="error-boundary">
       <div>
         <ErrorState title="Something went wrong" description="The page could not be loaded." />
-        <button className="gv-button" onClick={reset}>
-          Try again
-        </button>
+        <Button onClick={reset}>Try again</Button>
       </div>
     </main>
   );

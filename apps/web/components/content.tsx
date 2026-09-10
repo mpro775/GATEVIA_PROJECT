@@ -1,9 +1,15 @@
 import Link from 'next/link';
-import { Card, EmptyState } from '@gatevia/ui';
+import { EmptyState, Icon } from '@gatevia/ui';
 import { getList, safe } from '@/lib/api';
 import { list, text, translation } from '@/lib/content';
 import { copy } from '@/lib/ui-copy';
 import { LeadForm } from './lead-form';
+import { GatewayVisual } from './brand/gateway-visual';
+import { MediaFrame } from './brand/media-frame';
+import { SectionHeading } from './brand/section-heading';
+import { ResourceGrid } from './cards/resource-cards';
+import { RichBlocks } from './editorial/content-blocks';
+export { RichBlocks, ContentItems } from './editorial/content-blocks';
 
 // ─── Basic card grid ────────────────────────────────────────────────────────
 
@@ -32,7 +38,7 @@ export function PageHero({
             </Link>
           </div>
         </div>
-        <div className="portal" aria-hidden="true" />
+        <GatewayVisual />
       </div>
     </section>
   );
@@ -49,28 +55,7 @@ export function ContentGrid({
 }) {
   const t = copy(locale);
   if (!items.length) return <EmptyState title={t.emptyTitle} description={t.emptyBody} />;
-  return (
-    <div className="grid">
-      {items.map((item) => {
-        const tr = translation(item);
-        return (
-          <Card className="content-card" key={String(item.id)}>
-            <span className="eyebrow">{resource.replace('-', ' ')}</span>
-            <h3>{text(tr.title ?? tr.name)}</h3>
-            <p>{text(tr.excerpt ?? tr.shortDescription)}</p>
-            {tr.slug && (
-              <Link
-                className="content-card__link"
-                href={`/${locale}/${resource}/${String(tr.slug)}`}
-              >
-                {t.readMore} →
-              </Link>
-            )}
-          </Card>
-        );
-      })}
-    </div>
-  );
+  return <ResourceGrid items={items} locale={locale} resource={resource} />;
 }
 
 // ─── Section-type → resource mapping ────────────────────────────────────────
@@ -129,12 +114,13 @@ export async function SectionRenderer({ sections, locale }: { sections: unknown;
                     </div>
                   </div>
                   {mediaItem?.url ? (
-                    <figure>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={mediaItem.url} alt={mediaItem.translations?.[0]?.altText ?? ''} />
-                    </figure>
+                    <MediaFrame
+                      src={mediaItem.url}
+                      alt={mediaItem.translations?.[0]?.altText ?? ''}
+                      priority
+                    />
                   ) : (
-                    <div className="portal" aria-hidden="true" />
+                    <GatewayVisual />
                   )}
                 </div>
               </section>
@@ -143,10 +129,7 @@ export async function SectionRenderer({ sections, locale }: { sections: unknown;
 
           if (type === 'text_image') {
             const image = mediaItem?.url ? (
-              <figure>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={mediaItem.url} alt={mediaItem.translations?.[0]?.altText ?? ''} />
-              </figure>
+              <MediaFrame src={mediaItem.url} alt={mediaItem.translations?.[0]?.altText ?? ''} />
             ) : null;
             return (
               <section className="section section--surface" key={String(row.id)}>
@@ -234,15 +217,11 @@ export async function SectionRenderer({ sections, locale }: { sections: unknown;
             return (
               <section className="section" key={String(row.id)}>
                 <div className="container">
-                  {Boolean(content.title || content.body) && (
-                    <div className="section-header">
-                      <div>
-                        <span className="eyebrow">GATEVIA</span>
-                        {Boolean(content.title) && <h2>{text(content.title)}</h2>}
-                      </div>
-                      {Boolean(content.body) && <p>{text(content.body)}</p>}
-                    </div>
-                  )}
+                  <SectionHeading
+                    eyebrow={text(content.eyebrow, 'GATEVIA')}
+                    title={text(content.title)}
+                    body={text(content.body)}
+                  />
                   {items.length > 0 && (
                     <ContentGrid items={items} locale={locale} resource={gridResource} />
                   )}
@@ -319,7 +298,7 @@ export async function SectionRenderer({ sections, locale }: { sections: unknown;
             const primaryCta = content.primaryCta as Record<string, unknown> | undefined;
             return (
               <section className="section section--accent" key={String(row.id)}>
-                <div className="container" style={{ textAlign: 'center' }}>
+                <div className="container cta-panel">
                   {Boolean(content.title) && <h2>{text(content.title)}</h2>}
                   {Boolean(content.body) && <p>{text(content.body)}</p>}
                   {primaryCta && Boolean(primaryCta.label) && Boolean(primaryCta.href) && (
@@ -352,7 +331,10 @@ export async function SectionRenderer({ sections, locale }: { sections: unknown;
                       const ft = translation(faq);
                       return (
                         <details key={String(faq.id)} className="faq-item">
-                          <summary>{text(ft.title ?? ft.question)}</summary>
+                          <summary>
+                            <span>{text(ft.title ?? ft.question)}</span>
+                            <Icon name="plus" />
+                          </summary>
                           <p>{text(ft.answer ?? ft.content)}</p>
                         </details>
                       );
@@ -379,120 +361,5 @@ export async function SectionRenderer({ sections, locale }: { sections: unknown;
         }),
       )}
     </>
-  );
-}
-
-export function RichBlocks({
-  blocks,
-  media = {},
-}: {
-  blocks: unknown;
-  media?: Record<string, { url?: string; translations?: Array<{ altText?: string }> }>;
-}) {
-  return (
-    <>
-      {list(blocks).map((raw, index) => {
-        const block = raw as Record<string, unknown>;
-        const type = text(block.type);
-        if (type === 'heading') return <h2 key={index}>{text(block.text)}</h2>;
-        if (type === 'quote')
-          return (
-            <blockquote key={index}>
-              {text(block.text)}
-              {Boolean(block.attribution) && <footer>{text(block.attribution)}</footer>}
-            </blockquote>
-          );
-        if (type === 'list')
-          return block.ordered ? (
-            <ol key={index}>
-              {list(block.items).map((item, i) => (
-                <li key={i}>{text(item)}</li>
-              ))}
-            </ol>
-          ) : (
-            <ul key={index}>
-              {list(block.items).map((item, i) => (
-                <li key={i}>{text(item)}</li>
-              ))}
-            </ul>
-          );
-        if (type === 'link')
-          return (
-            <p key={index}>
-              <Link href={text(block.href)}>{text(block.text)}</Link>
-            </p>
-          );
-        if (type === 'image') {
-          const item = media[text(block.mediaId)];
-          return item?.url ? (
-            <figure key={index}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={item.url} alt={item.translations?.[0]?.altText ?? ''} />
-            </figure>
-          ) : null;
-        }
-        if (type === 'callout')
-          return (
-            <aside key={index} className="panel">
-              {text(block.text)}
-            </aside>
-          );
-        if (type === 'table')
-          return (
-            <div key={index} className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    {list(block.headers).map((header, i) => (
-                      <th key={i}>{text(header)}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {list(block.rows).map((rawRow, i) => (
-                    <tr key={i}>
-                      {list(rawRow).map((cell, j) => (
-                        <td key={j}>{text(cell)}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          );
-        if (type === 'embed') {
-          const provider = text(block.provider);
-          const videoId = text(block.videoId);
-          const src =
-            provider === 'youtube'
-              ? `https://www.youtube-nocookie.com/embed/${videoId}`
-              : provider === 'vimeo'
-                ? `https://player.vimeo.com/video/${videoId}`
-                : '';
-          return src ? (
-            <iframe key={index} src={src} title="Embedded video" loading="lazy" allowFullScreen />
-          ) : null;
-        }
-        return <p key={index}>{text(block.text)}</p>;
-      })}
-    </>
-  );
-}
-
-export function ContentItems({ items }: { items: unknown }) {
-  return (
-    <ul>
-      {list(items).map((raw, index) => {
-        if (typeof raw === 'string') return <li key={index}>{raw}</li>;
-        const item = raw as Record<string, unknown>;
-        return (
-          <li key={index}>
-            {Boolean(item.title) && <strong>{text(item.title)} </strong>}
-            {text(item.body ?? item.label ?? item.value)}
-            {text(item.suffix)}
-          </li>
-        );
-      })}
-    </ul>
   );
 }

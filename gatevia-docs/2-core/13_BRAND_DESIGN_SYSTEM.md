@@ -466,3 +466,15 @@ No final UI implementation is visually approved until these reference screens ar
 7. Admin Content Form — Light/Dark.
 8. Arabic RTL — Light/Dark.
 9. English LTR — Light/Dark.
+
+## 28. Implemented Public-Web Convention — Premium Rebuild
+
+The approved public presentation layer uses a restrained architectural **Gateway System** made from frames, offset planes, perspective paths, market points, and numeric markers. The device may be varied by context; it must not become a repeated decorative logo.
+
+The implemented typography is centralized through `--font-latin`, `--font-arabic`, `--font-display`, and `--font-body`. The current production-safe system stacks are temporary until official licensed brand fonts are supplied. Arabic uses independent metrics and never inherits Latin tracking.
+
+The semantic theme now includes canvas-subtle, surface-hover, accent-subtle, text-accent, subtle/inverse borders, active accent, overlay, and five shadow levels. Public components consume semantic roles only. Responsive composition follows 12-column desktop, 8-column-equivalent tablet, and 4-column mobile logic with explicit large desktop, compact desktop, tablet, and phone adaptations.
+
+Public UI icons use the internal tree-shakeable geometric SVG `Icon` component. Directional icons are mirrored only in RTL contexts where direction carries meaning. Motion is CSS-first, subtle, and disabled through `prefers-reduced-motion`.
+
+Resource families have distinct visual grammar: services are structured strategic tiles, industries are image-led split cards, case studies prioritize evidence and outcomes, insights use editorial metadata and covers, and ecosystem/people use compact identity-led cards.

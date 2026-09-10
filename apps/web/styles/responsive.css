@@ -1,0 +1,226 @@
+@media (max-width: 78rem) {
+  .desktop-nav {
+    gap: 0;
+  }
+  .nav-item > a,
+  .nav-item > button {
+    padding-inline: 0.5rem;
+    font-size: 0.84rem;
+  }
+  .header-cta {
+    display: none;
+  }
+  .resource-grid--insights .insight-card {
+    grid-column: span 6;
+  }
+  .ecosystem-card,
+  .person-card {
+    grid-column: span 4;
+  }
+}
+@media (max-width: 64rem) {
+  :root {
+    --header-height: 4.75rem;
+  }
+  .desktop-nav,
+  .locale-picker {
+    display: none;
+  }
+  .header-tools {
+    margin-inline-start: auto;
+  }
+  .mobile-menu {
+    display: inline-flex;
+  }
+  .hero-grid {
+    grid-template-columns: minmax(0, 1.15fr) minmax(17rem, 0.85fr);
+    gap: 3rem;
+  }
+  .section-heading {
+    grid-template-columns: 1fr 1fr;
+  }
+  .section-heading > :last-child:nth-child(3) {
+    grid-column: 1/-1;
+  }
+  .service-card,
+  .service-card:nth-child(1),
+  .service-card:nth-child(5) {
+    grid-column: span 6;
+  }
+  .industry-card {
+    grid-column: span 12;
+  }
+  .process-grid,
+  .timeline {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .footer-grid {
+    grid-template-columns: 1.5fr repeat(2, 1fr);
+  }
+}
+@media (max-width: 52.125rem) {
+  .hero {
+    min-height: auto;
+  }
+  .hero-grid {
+    grid-template-columns: 1fr;
+  }
+  .gateway-visual {
+    max-width: 25rem;
+    width: 70%;
+    margin-inline: auto;
+    aspect-ratio: 5/4;
+  }
+  .text-image {
+    grid-template-columns: 1fr;
+  }
+  .text-image > .rich-text,
+  .text-image > .media-frame {
+    grid-column: 1;
+  }
+  .text-image > .media-frame {
+    order: -1;
+  }
+  .section-heading {
+    grid-template-columns: 1fr;
+  }
+  .resource-grid--case-studies .case-card,
+  .case-card:first-child:nth-last-child(n + 3) {
+    grid-column: span 12;
+  }
+  .resource-grid--insights .insight-card {
+    grid-column: span 6;
+  }
+  .ecosystem-card,
+  .person-card {
+    grid-column: span 6;
+  }
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .footer-brand {
+    grid-column: 1/-1;
+  }
+}
+@media (max-width: 48rem) {
+  .container-wide,
+  .container,
+  .container-reading,
+  .container-narrow {
+    width: calc(100% - 2rem);
+  }
+  h1 {
+    font-size: clamp(2.7rem, 13vw, 4.4rem);
+  }
+  .header-row {
+    gap: 0.7rem;
+  }
+  .header-tools > .gv-theme-toggle {
+    display: none;
+  }
+  .brand {
+    font-size: 0.86rem;
+  }
+  .hero {
+    padding-block: 4.5rem;
+  }
+  .hero-grid {
+    gap: 2.5rem;
+  }
+  .gateway-visual {
+    width: 100%;
+    max-width: 21rem;
+  }
+  .service-card,
+  .service-card:nth-child(1),
+  .service-card:nth-child(5),
+  .resource-grid--insights .insight-card,
+  .ecosystem-card,
+  .person-card {
+    grid-column: span 12;
+  }
+  .industry-card {
+    grid-template-columns: 1fr;
+  }
+  .industry-card .resource-card__media {
+    aspect-ratio: 16/9;
+  }
+  .process-grid,
+  .timeline {
+    grid-template-columns: 1fr;
+  }
+  .process-grid li,
+  .timeline li {
+    border-inline-end: 0;
+  }
+  .stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .stat {
+    padding: 1.5rem 1rem;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .form-shell {
+    padding: 1.25rem;
+  }
+  .filter-bar {
+    flex-direction: column;
+  }
+  .search-input {
+    max-width: none;
+  }
+  .footer-grid {
+    grid-template-columns: 1fr;
+  }
+  .footer-brand {
+    grid-column: auto;
+  }
+  .legal-row {
+    display: grid;
+  }
+  .mobile-drawer__footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .mobile-locales {
+    justify-content: center;
+  }
+}
+@media (max-width: 26.875rem) {
+  .container-wide,
+  .container,
+  .container-reading,
+  .container-narrow {
+    width: calc(100% - 1.5rem);
+  }
+  .site-header .brand span:last-child {
+    display: none;
+  }
+  .section {
+    padding-block: 4rem;
+  }
+  .hero-actions > * {
+    width: 100%;
+  }
+  .stats {
+    grid-template-columns: 1fr;
+  }
+  .stat {
+    border-block-end: 1px solid var(--color-border-default);
+  }
+  .footer-title {
+    font-size: 2rem;
+  }
+  .mobile-drawer {
+    padding: 1rem;
+  }
+  .mobile-nav > a,
+  .mobile-nav summary {
+    font-size: 1.25rem;
+  }
+}

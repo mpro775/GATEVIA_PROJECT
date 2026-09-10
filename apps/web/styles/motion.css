@@ -1,0 +1,29 @@
+@media (prefers-reduced-motion: no-preference) {
+  .hero-grid > div:first-child {
+    animation: enter-up 0.65s ease both;
+  }
+  .gateway-visual,
+  .hero .media-frame {
+    animation: enter-fade 0.8s 0.12s ease both;
+  }
+  .gateway-visual__path span {
+    animation: path-pulse 2.8s ease-in-out infinite;
+  }
+}
+@keyframes enter-up {
+  from {
+    opacity: 0;
+    transform: translateY(1.3rem);
+  }
+}
+@keyframes enter-fade {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+@keyframes path-pulse {
+  50% {
+    box-shadow: 0 0 0 1rem color-mix(in srgb, var(--color-accent) 2%, transparent);
+  }
+}

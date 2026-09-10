@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { Theme } from '@gatevia/contracts';
+import { Icon } from './icons';
 
 const COOKIE = 'gatevia_theme';
 
@@ -31,7 +32,7 @@ export function ThemeToggle({
       aria-label={labels[theme === 'dark' ? 'light' : 'dark']}
       aria-pressed={theme === 'light'}
     >
-      <span aria-hidden="true">{theme === 'dark' ? '☼' : '◐'}</span>
+      <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
     </button>
   );
 }

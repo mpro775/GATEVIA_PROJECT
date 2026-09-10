@@ -469,3 +469,15 @@ Both apps additionally:
 - Light/Dark toggle smoke test.
 - no theme-driven hydration mismatch in browser console.
 - representative component states visually verified in both themes.
+
+---
+
+## 28. Implemented Public Presentation Architecture
+
+`apps/web/app/globals.css` is an import-only entry point. Public presentation responsibilities are separated under `apps/web/styles/` into foundations, typography, layout, utilities, shell, brand, sections, cards, forms, motion, and responsive layers.
+
+Public business presentation remains in `apps/web/components/brand`, `cards`, and `editorial`. `packages/ui` contains only generic primitives, theme tokens, theme behavior, and the internal SVG icon wrapper. CMS section and API contracts are unchanged.
+
+CMS media is rendered through `next/image` in heroes, text/media sections, resource cards, and rich editorial blocks. Hero media is priority-loaded; card and below-fold media retain normal lazy behavior and responsive `sizes` hints.
+
+The public navigation uses a controlled desktop menu and a focus-contained mobile dialog. Both support Escape dismissal, visible focus, logical-direction CSS, locale continuity, and the existing CMS navigation contract.

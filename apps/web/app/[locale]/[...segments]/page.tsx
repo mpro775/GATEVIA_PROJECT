@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { Icon } from '@gatevia/ui';
 import {
   ContentGrid,
   ContentItems,
@@ -141,7 +142,12 @@ function RelatedGrid({
   return (
     <section className="section">
       <div className="container">
-        <h2 style={{ marginBlockEnd: '1.2rem' }}>{heading}</h2>
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">GATEVIA</span>
+            <h2>{heading}</h2>
+          </div>
+        </div>
         <ContentGrid items={items} locale={locale} resource={resource} />
       </div>
     </section>
@@ -252,7 +258,7 @@ async function ServiceDetail({
         </Section>
       )}
       <section className="section section--accent">
-        <div className="container" style={{ textAlign: 'center' }}>
+        <div className="container cta-panel">
           <h2>{t.readyMarket}</h2>
           <Link className="gv-button" href={`/${locale}/book-consultation`}>
             {t.consultation}
@@ -309,7 +315,7 @@ async function IndustryDetail({
         heading={t.industryInsights}
       />
       <section className="section section--accent">
-        <div className="container" style={{ textAlign: 'center' }}>
+        <div className="container cta-panel">
           <h2>{t.interestedMarket}</h2>
           <Link className="gv-button" href={`/${locale}/book-consultation`}>
             {t.consultation}
@@ -384,7 +390,7 @@ function CaseStudyDetail({ entity, locale }: { entity: Record<string, unknown>; 
                       src={text(media.url)}
                       alt={text(media.alt)}
                       loading="lazy"
-                      style={{ width: '100%', borderRadius: '.5rem' }}
+                      className="gallery-image"
                     />
                   )}
                 </div>
@@ -406,7 +412,7 @@ function CaseStudyDetail({ entity, locale }: { entity: Record<string, unknown>; 
         heading={t.industries}
       />
       <section className="section section--accent">
-        <div className="container" style={{ textAlign: 'center' }}>
+        <div className="container cta-panel">
           <h2>{t.similarResults}</h2>
           <Link className="gv-button" href={`/${locale}/book-consultation`}>
             {t.consultation}
@@ -428,7 +434,7 @@ function InsightDetail({ entity, locale }: { entity: Record<string, unknown>; lo
     <>
       <Section>
         {Boolean(entity.publishedAt) && (
-          <p className="cell-meta" style={{ marginBlockEnd: '1rem' }}>
+          <p className="cell-meta">
             {new Intl.DateTimeFormat('en', { dateStyle: 'long' }).format(
               new Date(String(entity.publishedAt)),
             )}
@@ -455,7 +461,7 @@ function InsightDetail({ entity, locale }: { entity: Record<string, unknown>; lo
         heading={t.relatedIndustries}
       />
       <section className="section section--accent">
-        <div className="container" style={{ textAlign: 'center' }}>
+        <div className="container cta-panel">
           <h2>{t.actInsights}</h2>
           <Link className="gv-button" href={`/${locale}/book-consultation`}>
             {t.consultation}
@@ -488,13 +494,13 @@ function BrandOrProductDetail({
               rel="noopener noreferrer"
               className="text-link"
             >
-              {t.visitWebsite} →
+              {t.visitWebsite} <Icon name="external" />
             </a>
           </p>
         )}
       </Section>
       <section className="section section--accent">
-        <div className="container" style={{ textAlign: 'center' }}>
+        <div className="container cta-panel">
           <h2>{t.interestedPartnering}</h2>
           <Link className="gv-button" href={`/${locale}/book-consultation`}>
             {t.consultation}
@@ -537,10 +543,26 @@ export default async function DynamicPage({
     return (
       <>
         {faqJsonLd && <JsonLd schema={faqJsonLd} />}
-        <section className="page-head">
+        <section className={`page-head page-head--${result.resource}`}>
           <div className="container">
             <span className="eyebrow">GATEVIA</span>
-            <h1>{segments[0]!.replaceAll('-', ' ')}</h1>
+            <h1>
+              {(
+                {
+                  services: t.services,
+                  industries: t.industries,
+                  'case-studies': t.cases,
+                  insights: t.insights,
+                  team: locale.startsWith('ar') ? 'الفريق' : 'Team',
+                  partners: locale.startsWith('ar') ? 'الشركاء' : 'Partners',
+                  clients: locale.startsWith('ar') ? 'العملاء' : 'Clients',
+                  brands: locale.startsWith('ar') ? 'العلامات' : 'Brands',
+                  products: locale.startsWith('ar') ? 'المنتجات والمشاريع' : 'Products & Ventures',
+                  faqs: t.faqs,
+                  testimonials: locale.startsWith('ar') ? 'الشهادات' : 'Testimonials',
+                } as Record<string, string>
+              )[result.resource] ?? segments[0]!.replaceAll('-', ' ')}
+            </h1>
           </div>
         </section>
         <section className="section">
@@ -572,14 +594,24 @@ export default async function DynamicPage({
   if (formMap[pageKey]) {
     return (
       <>
-        <section className="page-head">
+        <section className="page-head page-head--form">
           <div className="container">
             <span className="eyebrow">GATEVIA</span>
-            <h1>{pageKey.replaceAll('-', ' ')}</h1>
+            <h1>
+              {pageKey === 'contact'
+                ? locale.startsWith('ar')
+                  ? 'تواصل معنا'
+                  : 'Contact us'
+                : pageKey === 'book-consultation'
+                  ? t.consultation
+                  : locale.startsWith('ar')
+                    ? 'تقييم دخول السوق'
+                    : 'Market entry assessment'}
+            </h1>
           </div>
         </section>
-        <section className="section">
-          <div className="container">
+        <section className="section conversion-section">
+          <div className="container-narrow">
             <LeadForm kind={formMap[pageKey]} locale={locale} />
           </div>
         </section>

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Icon } from '@gatevia/ui';
 import type { NavItem } from '@/lib/api';
 import { copy } from '@/lib/ui-copy';
 
@@ -14,9 +15,14 @@ function FallbackFooter({ locale }: { locale: string }) {
   const t = copy(locale);
   return (
     <div className="footer-grid">
-      <div>
+      <div className="footer-brand">
         <div className="footer-title">{t.footer}</div>
-        <p>Saudi market access, execution and growth.</p>
+        <p>
+          {locale.startsWith('ar')
+            ? 'دخول السوق السعودي، التنفيذ، والنمو.'
+            : 'Saudi market access, execution and growth.'}
+        </p>
+        <span className="footer-path" aria-hidden="true" />
       </div>
       <div className="footer-links">
         <strong>{t.services}</strong>
@@ -61,9 +67,14 @@ export function Footer({
       <div className="container">
         {hasNav ? (
           <div className="footer-grid">
-            <div>
+            <div className="footer-brand">
               <div className="footer-title">{identity.name}</div>
-              <p>Saudi market access, execution and growth.</p>
+              <p>
+                {locale.startsWith('ar')
+                  ? 'دخول السوق السعودي، التنفيذ، والنمو.'
+                  : 'Saudi market access, execution and growth.'}
+              </p>
+              <span className="footer-path" aria-hidden="true" />
               {identity.email && (
                 <p>
                   <a href={`mailto:${identity.email}`}>{identity.email}</a>
@@ -77,7 +88,7 @@ export function Footer({
               {identity.linkedInUrl && (
                 <p>
                   <a href={identity.linkedInUrl} target="_blank" rel="noopener noreferrer">
-                    LinkedIn
+                    <Icon name="linkedin" /> LinkedIn
                   </a>
                 </p>
               )}
@@ -123,9 +134,9 @@ export function Footer({
           </span>
           <span>
             <Link href={`/${locale}/privacy`}>Privacy</Link>
-            {' · '}
+            <span aria-hidden="true"> / </span>
             <Link href={`/${locale}/terms`}>Terms</Link>
-            {' · '}
+            <span aria-hidden="true"> / </span>
             <Link href={`/${locale}/cookie-policy`}>Cookies</Link>
           </span>
         </div>

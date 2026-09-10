@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import type { ContentRecord, Language } from '@gatevia/api-client';
-import { Button, Field, Input, Textarea } from '@gatevia/ui';
+import { Button, Checkbox, Field, Icon, Input, Textarea } from '@gatevia/ui';
 import { apiClient, getLanguages, getList } from '@/lib/api';
 import { copy } from '@/lib/ui-copy';
 import { track } from './analytics';
@@ -397,10 +397,8 @@ function AssessmentForm({ locale }: { locale: string }) {
 
   if (submitState === 'success') {
     return (
-      <div className="form-status" role="status" style={{ padding: '2rem', textAlign: 'center' }}>
-        <strong style={{ display: 'block', marginBlockEnd: '.5rem', fontSize: '1.2rem' }}>
-          {labels.received}
-        </strong>
+      <div className="form-status form-success" role="status">
+        <strong>{labels.received}</strong>
         <p>{labels.receivedBody}</p>
       </div>
     );
@@ -409,7 +407,7 @@ function AssessmentForm({ locale }: { locale: string }) {
   return (
     <div ref={topRef}>
       <StepProgress current={step} total={totalSteps} />
-      <p className="cell-meta" style={{ marginBlockEnd: '1rem' }}>
+      <p className="cell-meta">
         {labels.step} {step} {labels.of} {totalSteps} — {labels.steps[step - 1]}
       </p>
 
@@ -524,7 +522,7 @@ function AssessmentForm({ locale }: { locale: string }) {
                 ['other', labels.supportOptions[5]],
               ] as const
             ).map(([value, label]) => (
-              <label key={value} style={{ display: 'block', marginBlock: '.3rem' }}>
+              <label key={value} className="assessment-choice">
                 <input
                   type="checkbox"
                   checked={data.needs.includes(value)}
@@ -604,9 +602,9 @@ function AssessmentForm({ locale }: { locale: string }) {
 
       {/* Step 6: Review */}
       {step === 6 && (
-        <div className="panel" style={{ fontSize: '.9rem' }}>
-          <h3 style={{ marginBlockStart: 0 }}>{labels.review}</h3>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="panel assessment-review">
+          <h3>{labels.review}</h3>
+          <table>
             <tbody>
               {[
                 [labels.reviewLabels[0], data.companyName],
@@ -625,16 +623,8 @@ function AssessmentForm({ locale }: { locale: string }) {
                 [labels.reviewLabels[9], data.phone || '—'],
               ].map(([label, value]) => (
                 <tr key={label}>
-                  <td
-                    style={{
-                      padding: '.4rem .6rem .4rem 0',
-                      color: 'var(--color-text-muted)',
-                      width: '40%',
-                    }}
-                  >
-                    {label}
-                  </td>
-                  <td style={{ padding: '.4rem 0' }}>{value}</td>
+                  <td className="assessment-review__label">{label}</td>
+                  <td>{value}</td>
                 </tr>
               ))}
             </tbody>
@@ -643,21 +633,13 @@ function AssessmentForm({ locale }: { locale: string }) {
       )}
 
       {error && (
-        <div
-          className="form-status form-status--error"
-          role="alert"
-          style={{ marginBlockStart: '1rem' }}
-        >
+        <div className="form-status form-status--error form-status--spaced" role="alert">
           {error}
         </div>
       )}
 
       {submitState === 'error' && (
-        <div
-          className="form-status form-status--error"
-          role="alert"
-          style={{ marginBlockStart: '1rem' }}
-        >
+        <div className="form-status form-status--error form-status--spaced" role="alert">
           {copy(locale).error}
         </div>
       )}
@@ -666,7 +648,8 @@ function AssessmentForm({ locale }: { locale: string }) {
         <div>
           {step > 1 && (
             <button type="button" className="text-link" onClick={back}>
-              {ar ? '→' : ''} {labels.back} {!ar ? '←' : ''}
+              <Icon name="arrow" className="icon-back" />
+              {labels.back}
             </button>
           )}
         </div>
@@ -676,7 +659,8 @@ function AssessmentForm({ locale }: { locale: string }) {
           </Button>
         ) : (
           <Button onClick={next}>
-            {labels.next} {ar ? '←' : '→'}
+            {labels.next}
+            <Icon name="arrow" />
           </Button>
         )}
       </div>
@@ -778,9 +762,7 @@ function SimpleForm({ kind, locale }: { kind: 'contact' | 'consultation'; locale
       <Field label={locale.startsWith('ar') ? 'الرسالة' : 'Message'}>
         <Textarea name="message" required minLength={10} maxLength={5000} />
       </Field>
-      <label>
-        <input type="checkbox" name="consent" required /> {t.privacy}
-      </label>
+      <Checkbox name="consent" required label={t.privacy} />
       <Button disabled={state === 'sending'} type="submit">
         {state === 'sending' ? t.sending : t.submit}
       </Button>

@@ -1,9 +1,11 @@
 import type { NextConfig } from 'next';
+import path from 'node:path';
 const api = process.env.NEXT_PUBLIC_API_URL
   ? new URL(process.env.NEXT_PUBLIC_API_URL).origin
   : "'self'";
 const config: NextConfig = {
   output: 'standalone',
+  outputFileTracingRoot: path.resolve(__dirname, '../..'),
   transpilePackages: ['@gatevia/ui', '@gatevia/contracts', '@gatevia/api-client'],
   webpack(value) {
     value.resolve.extensionAlias = {

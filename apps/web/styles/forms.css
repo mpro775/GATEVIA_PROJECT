@@ -1,0 +1,113 @@
+.form-shell {
+  display: grid;
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 48rem;
+  margin-inline: auto;
+  padding: clamp(1.25rem, 4vw, 3rem);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  box-shadow: var(--shadow-md);
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.1rem;
+}
+.form-status {
+  padding: 1rem 1.2rem;
+  border-inline-start: 3px solid var(--color-info);
+  background: var(--color-bg-elevated);
+}
+.form-status--success {
+  border-color: var(--color-success);
+}
+.form-status--error {
+  border-color: var(--color-danger);
+}
+.form-status--spaced {
+  margin-block-start: 1rem;
+}
+.form-success {
+  text-align: center;
+  padding: 2rem;
+}
+.form-success strong {
+  display: block;
+  margin-block-end: 0.5rem;
+  font-size: 1.2rem;
+}
+.step-progress {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.35rem;
+  margin-block-end: 2rem;
+}
+.step-dot {
+  height: 0.25rem;
+  background: var(--color-border-default);
+}
+.step-dot--active,
+.step-dot--done {
+  background: var(--color-accent);
+}
+.step-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-block-start: 1.5rem;
+}
+.step-nav .gv-icon {
+  transition: transform 0.2s;
+}
+.step-nav .icon-back {
+  transform: scaleX(-1);
+}
+html[dir='rtl'] .step-nav .gv-icon {
+  transform: scaleX(-1);
+}
+html[dir='rtl'] .step-nav .icon-back {
+  transform: none;
+}
+.assessment-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-block: 0.45rem;
+  color: var(--color-text-secondary);
+}
+.assessment-choice input {
+  accent-color: var(--color-accent);
+}
+.assessment-review {
+  font-size: 0.9rem;
+}
+.assessment-review h3 {
+  margin-block-start: 0;
+}
+.assessment-review table {
+  min-width: 0;
+}
+.assessment-review td {
+  padding: 0.45rem;
+}
+.assessment-review__label {
+  color: var(--color-text-muted);
+  width: 40%;
+}
+.review-list {
+  display: grid;
+  gap: 0.75rem;
+}
+.filter-bar {
+  display: flex;
+  gap: 0.7rem;
+  margin-block-end: 2rem;
+  padding: 1rem;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+}
+.search-input {
+  max-width: 30rem;
+}
