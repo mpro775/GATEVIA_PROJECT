@@ -19,6 +19,15 @@ RUN addgroup -S nodejs && adduser -S api -G nodejs
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=builder /app/packages/contracts ./packages/contracts
+# Runtime workspace packages must resolve their compiled output, not TS source.
+RUN node -e "\
+const fs=require('fs'); \
+const path='/app/packages/contracts/package.json'; \
+const pkg=JSON.parse(fs.readFileSync(path,'utf8')); \
+pkg.main='./dist/index.js'; \
+pkg.types='./dist/index.d.ts'; \
+pkg.exports={'.':'./dist/index.js'}; \
+fs.writeFileSync(path, JSON.stringify(pkg,null,2));"
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
