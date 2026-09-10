@@ -9,6 +9,7 @@
     "lint": "eslint src test",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "seed:content": "tsx prisma/seed/content.ts",
     "openapi": "tsx src/openapi.ts"
   },
   "dependencies": {
