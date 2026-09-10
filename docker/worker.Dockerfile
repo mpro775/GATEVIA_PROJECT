@@ -18,4 +18,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/apps/worker/dist ./apps/worker/dist
 COPY --from=builder /app/apps/worker/package.json ./apps/worker/package.json
 USER worker
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD node -e "const fs=require('fs');const c=fs.readFileSync('/proc/1/cmdline','utf8');process.exit(c.includes('apps/worker/dist/main.js')?0:1)"
 CMD ["node","apps/worker/dist/main.js"]
+

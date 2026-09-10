@@ -14,11 +14,17 @@ FROM deps AS builder
 COPY . .
 RUN pnpm turbo build --filter=@gatevia/admin
 FROM node:22-alpine AS runner
-ENV NODE_ENV=production PORT=3001
+RUN apk add --no-cache curl
+ENV NODE_ENV=production \
+    PORT=3001 \
+    HOSTNAME=0.0.0.0
 WORKDIR /app
 RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
 COPY --from=builder --chown=nextjs:nodejs /app/apps/admin/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/admin/.next/static ./apps/admin/.next/static
 USER nextjs
 EXPOSE 3001
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD curl -fsS http://127.0.0.1:3001/api/health || exit 1
 CMD ["node","apps/admin/server.js"]
+

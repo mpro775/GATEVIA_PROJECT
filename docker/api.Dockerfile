@@ -13,6 +13,7 @@ FROM deps AS builder
 COPY . .
 RUN pnpm turbo build --filter=@gatevia/api
 FROM base AS runner
+RUN apk add --no-cache curl
 ENV NODE_ENV=production PORT=3002
 RUN addgroup -S nodejs && adduser -S api -G nodejs
 COPY --from=deps /app/node_modules ./node_modules
@@ -21,4 +22,7 @@ COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
 COPY --from=builder /app/prisma ./prisma
 USER api
 EXPOSE 3002
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -fsS http://127.0.0.1:3002/api/v1/health/ready || exit 1
 CMD ["node","apps/api/dist/main.js"]
+
