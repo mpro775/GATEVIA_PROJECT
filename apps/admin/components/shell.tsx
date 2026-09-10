@@ -6,7 +6,9 @@ import { ThemeToggle } from '@gatevia/ui';
 import { api } from '@/lib/api';
 import { useAdminAuth } from './auth-context';
 
-const groups = [
+const groups: ReadonlyArray<
+  readonly [string, ReadonlyArray<readonly [string, string]>]
+> = [
   [
     'Content',
     [
@@ -40,7 +42,7 @@ const groups = [
       ['Assessments', 'sales/assessments'],
     ],
   ],
-  [['Media', [['Media Library', 'media']]]],
+  ['Media', [['Media Library', 'media']]],
   [
     'Website',
     [
@@ -101,7 +103,7 @@ function SidebarContent({ pathname, onNavClick }: { pathname: string; onNavClick
         <span>▰</span> GATEVIA
       </Link>
       {groups.map(([label, items]) => {
-        const visibleItems = (items as ReadonlyArray<readonly [string, string]>).filter(
+        const visibleItems = items.filter(
           ([, path]) => can(pathPermission[path]!),
         );
         if (!visibleItems.length) return null;
