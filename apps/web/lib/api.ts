@@ -51,6 +51,13 @@ export const apiClient = createApiClient({ baseUrl: apiOrigin });
 
 export type NavItem = NavigationItem;
 
+export interface FooterNavigation {
+  services: NavItem[];
+  company: NavItem[];
+  resources: NavItem[];
+  legal: NavItem[];
+}
+
 // ─── Typed content helpers via client.GET ────────────────────────────────────
 // The web app consumes read-only public endpoints; all requests use apiClient.GET
 // which routes through openapi-fetch with the Accept header set by createApiClient.
@@ -140,6 +147,17 @@ export const getNavigation = async (key: string, locale: string): Promise<NavIte
   } catch {
     return [];
   }
+};
+
+/** Fetch the four canonical CMS footer menus without making one missing group fatal. */
+export const getFooterNavigation = async (locale: string): Promise<FooterNavigation> => {
+  const [services, company, resources, legal] = await Promise.all([
+    getNavigation('footer-services', locale),
+    getNavigation('footer-company', locale),
+    getNavigation('footer-resources', locale),
+    getNavigation('footer-legal', locale),
+  ]);
+  return { services, company, resources, legal };
 };
 
 export async function safe<T>(promise: Promise<T>, fallback: T): Promise<T> {

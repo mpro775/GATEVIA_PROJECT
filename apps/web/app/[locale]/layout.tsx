@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { Footer } from '@/components/footer';
 import { Header } from '@/components/header';
 import { MotionObserver } from '@/components/motion/motion-observer';
-import { getLanguages, getNavigation, getSettings, safe } from '@/lib/api';
+import { getFooterNavigation, getLanguages, getNavigation, getSettings, safe } from '@/lib/api';
 import { localizedSetting } from '@/lib/content';
 import { copy } from '@/lib/ui-copy';
 
@@ -42,9 +42,9 @@ export default async function LocaleLayout({
   const lc = language.code.toLowerCase();
 
   // Fetch navigation from CMS; empty arrays are safe fallbacks
-  const [mainNav, footerNav, settings] = await Promise.all([
+  const [mainNav, footerNavigation, settings] = await Promise.all([
     getNavigation('main', lc),
-    getNavigation('footer', lc),
+    getFooterNavigation(lc),
     safe(getSettings(language.code), { values: {}, media: {} }),
   ]);
   const logoId = settings.values['company.logo_media_id'];
@@ -72,7 +72,7 @@ export default async function LocaleLayout({
       </a>
       <Header locale={lc} languages={languages} navItems={mainNav} identity={identity} />
       <main id="main">{children}</main>
-      <Footer locale={lc} navItems={footerNav} identity={identity} />
+      <Footer locale={lc} navigation={footerNavigation} identity={identity} />
       <MotionObserver />
     </div>
   );

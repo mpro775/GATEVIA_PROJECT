@@ -26,7 +26,8 @@ const detailResources = new Set([
 ]);
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
-  const languages = await safe(getLanguages(), []);
+  const languageResult = await safe(getLanguages(), []);
+  const languages = Array.isArray(languageResult) ? languageResult : [];
   const routes: MetadataRoute.Sitemap = [];
   for (const language of languages) {
     const locale = language.code.toLowerCase();
@@ -38,7 +39,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.8,
       });
       if (!detailResources.has(resource)) continue;
-      const items = await safe(getList(resource, language.code, '&pageSize=100'), []);
+      const itemResult = await safe(getList(resource, language.code, '&pageSize=100'), []);
+      const items = Array.isArray(itemResult) ? itemResult : [];
       for (const item of items) {
         const slug = translation(item).slug;
         if (slug)
@@ -53,7 +55,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           });
       }
     }
-    const pages = await safe(getList('pages', language.code, '&pageSize=100'), []);
+    const pageResult = await safe(getList('pages', language.code, '&pageSize=100'), []);
+    const pages = Array.isArray(pageResult) ? pageResult : [];
     for (const page of pages) {
       const slug = translation(page).slug;
       if (slug && slug !== 'home')

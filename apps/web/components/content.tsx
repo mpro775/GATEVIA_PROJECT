@@ -13,6 +13,14 @@ import { HomeHero } from './home/home-hero';
 import { HomeFaq } from './home/home-faq';
 import { HomeJourney } from './home/home-journey';
 import { HomeServicesShowcase } from './home/home-services-showcase';
+import { HomeEvidenceLedger } from './home/home-evidence-ledger';
+import { HomeSectorExplorer } from './home/home-sector-explorer';
+import { HomeConsultationGateway } from './home/home-consultation-gateway';
+import { HomeCaseStudies } from './home/home-case-studies';
+import { HomeTestimonials } from './home/home-testimonials';
+import { HomeNetworkRegistry } from './home/home-network-registry';
+import { HomeEcosystemAtlas } from './home/home-ecosystem-atlas';
+import { HomeInsights } from './home/home-insights';
 import { StrategicPillars } from './home/strategic-pillars';
 export { RichBlocks, ContentItems } from './editorial/content-blocks';
 
@@ -31,10 +39,22 @@ export function PageHero({
     <section className={`hero ${home ? 'hero--home' : 'hero--inner'}`}>
       <div className="container hero-grid">
         <div className="hero-copy">
-          <div className="eyebrow" data-reveal="fade">GATEVIA · SAUDI ARABIA</div>
-          <h1 data-reveal="up" style={{ '--reveal-delay': '55ms' } as React.CSSProperties}>{text(tr.title, home ? 'GATEVIA' : '')}</h1>
-          {Boolean(tr.excerpt) && <p data-reveal="up" style={{ '--reveal-delay': '105ms' } as React.CSSProperties}>{text(tr.excerpt)}</p>}
-          <div className="hero-actions" data-reveal="up" style={{ '--reveal-delay': '155ms' } as React.CSSProperties}>
+          <div className="eyebrow" data-reveal="fade">
+            GATEVIA · SAUDI ARABIA
+          </div>
+          <h1 data-reveal="up" style={{ '--reveal-delay': '55ms' } as React.CSSProperties}>
+            {text(tr.title, home ? 'GATEVIA' : '')}
+          </h1>
+          {Boolean(tr.excerpt) && (
+            <p data-reveal="up" style={{ '--reveal-delay': '105ms' } as React.CSSProperties}>
+              {text(tr.excerpt)}
+            </p>
+          )}
+          <div
+            className="hero-actions"
+            data-reveal="up"
+            style={{ '--reveal-delay': '155ms' } as React.CSSProperties}
+          >
             <Link className="gv-button" href={`/${locale}/book-consultation`}>
               {copy(locale).consultation}
             </Link>
@@ -103,6 +123,8 @@ export async function SectionRenderer({
             : undefined;
           const content = tr?.content ?? {};
           const type = text(row.sectionType);
+          const settings = row.settings as Record<string, unknown> | undefined;
+          const demo = settings?.demo === true;
           const media = row.media as
             | Record<string, { url?: string; translations?: Array<{ altText?: string }> }>
             | undefined;
@@ -128,11 +150,29 @@ export async function SectionRenderer({
                 <div className="container hero-grid">
                   <div className="hero-copy">
                     {Boolean(content.eyebrow) && (
-                      <div className="eyebrow" data-reveal="fade">{text(content.eyebrow)}</div>
+                      <div className="eyebrow" data-reveal="fade">
+                        {text(content.eyebrow)}
+                      </div>
                     )}
-                    <h1 data-reveal="up" style={{ '--reveal-delay': '55ms' } as React.CSSProperties}>{text(content.title)}</h1>
-                    {Boolean(content.body) && <p data-reveal="up" style={{ '--reveal-delay': '105ms' } as React.CSSProperties}>{text(content.body)}</p>}
-                    <div className="hero-actions" data-reveal="up" style={{ '--reveal-delay': '155ms' } as React.CSSProperties}>
+                    <h1
+                      data-reveal="up"
+                      style={{ '--reveal-delay': '55ms' } as React.CSSProperties}
+                    >
+                      {text(content.title)}
+                    </h1>
+                    {Boolean(content.body) && (
+                      <p
+                        data-reveal="up"
+                        style={{ '--reveal-delay': '105ms' } as React.CSSProperties}
+                      >
+                        {text(content.body)}
+                      </p>
+                    )}
+                    <div
+                      className="hero-actions"
+                      data-reveal="up"
+                      style={{ '--reveal-delay': '155ms' } as React.CSSProperties}
+                    >
                       {Boolean(primary?.label) && Boolean(primary?.href) && (
                         <Link className="gv-button" href={text(primary?.href)}>
                           {text(primary?.label)}
@@ -185,13 +225,7 @@ export async function SectionRenderer({
           }
 
           if (variant === 'home' && type === 'timeline') {
-            return (
-              <HomeJourney
-                key={String(row.id)}
-                content={content}
-                locale={locale}
-              />
-            );
+            return <HomeJourney key={String(row.id)} content={content} locale={locale} />;
           }
 
           if (type === 'process' || type === 'timeline') {
@@ -206,11 +240,22 @@ export async function SectionRenderer({
                     title={text(content.title)}
                     body={text(content.body)}
                   />
-                  <ol className={type === 'timeline' ? 'timeline' : 'process-grid'} data-reveal="line">
+                  <ol
+                    className={type === 'timeline' ? 'timeline' : 'process-grid'}
+                    data-reveal="line"
+                  >
                     {list(content.steps).map((rawStep, index) => {
                       const step = rawStep as Record<string, unknown>;
                       return (
-                        <li key={index} data-reveal="up" style={{ '--reveal-delay': `${Math.min(index, 6) * 60}ms` } as React.CSSProperties}>
+                        <li
+                          key={index}
+                          data-reveal="up"
+                          style={
+                            {
+                              '--reveal-delay': `${Math.min(index, 6) * 60}ms`,
+                            } as React.CSSProperties
+                          }
+                        >
                           <span className="eyebrow">
                             {text(step.marker, String(index + 1).padStart(2, '0'))}
                           </span>
@@ -227,13 +272,25 @@ export async function SectionRenderer({
 
           // ── Stats section ────────────────────────────────────────────────
           if (type === 'stats') {
+            if (variant === 'home') {
+              return <HomeEvidenceLedger key={String(row.id)} content={content} />;
+            }
             return (
               <section className="section" key={String(row.id)}>
                 <div className="container stats">
                   {list(content.items).map((raw, index) => {
                     const item = raw as Record<string, unknown>;
                     return (
-                      <div className="stat" key={index} data-reveal="up" style={{ '--reveal-delay': `${Math.min(index, 5) * 55}ms` } as React.CSSProperties}>
+                      <div
+                        className="stat"
+                        key={index}
+                        data-reveal="up"
+                        style={
+                          {
+                            '--reveal-delay': `${Math.min(index, 5) * 55}ms`,
+                          } as React.CSSProperties
+                        }
+                      >
                         <strong>
                           {text(item.value)}
                           {text(item.suffix)}
@@ -278,6 +335,53 @@ export async function SectionRenderer({
               );
             }
 
+            if (variant === 'home' && type === 'industries_grid') {
+              return (
+                <HomeSectorExplorer
+                  key={String(row.id)}
+                  content={content}
+                  items={items}
+                  locale={locale}
+                />
+              );
+            }
+
+            if (variant === 'home' && type === 'case_studies') {
+              return (
+                <HomeCaseStudies
+                  key={String(row.id)}
+                  content={content}
+                  items={items}
+                  locale={locale}
+                  demo={demo}
+                />
+              );
+            }
+
+            if (variant === 'home' && type === 'testimonials') {
+              return (
+                <HomeTestimonials
+                  key={String(row.id)}
+                  content={content}
+                  items={items}
+                  locale={locale}
+                  demo={demo}
+                />
+              );
+            }
+
+            if (variant === 'home' && type === 'insights') {
+              return (
+                <HomeInsights
+                  key={String(row.id)}
+                  content={content}
+                  items={items}
+                  locale={locale}
+                  demo={demo}
+                />
+              );
+            }
+
             return (
               <section className="section" key={String(row.id)}>
                 <div className="container">
@@ -296,6 +400,30 @@ export async function SectionRenderer({
 
           if (type === 'logo_cloud' || type === 'ecosystem') {
             const collections = row.collections as Record<string, unknown[]> | undefined;
+            if (variant === 'home' && type === 'logo_cloud') {
+              return (
+                <HomeNetworkRegistry
+                  key={String(row.id)}
+                  content={content}
+                  clients={(collections?.clients ?? []) as Record<string, unknown>[]}
+                  partners={(collections?.partners ?? []) as Record<string, unknown>[]}
+                  locale={locale}
+                  demo={demo}
+                />
+              );
+            }
+            if (variant === 'home' && type === 'ecosystem') {
+              return (
+                <HomeEcosystemAtlas
+                  key={String(row.id)}
+                  content={content}
+                  brands={(collections?.brands ?? []) as Record<string, unknown>[]}
+                  products={(collections?.products ?? []) as Record<string, unknown>[]}
+                  locale={locale}
+                  demo={demo}
+                />
+              );
+            }
             const resources =
               type === 'logo_cloud' ? ['clients', 'partners'] : ['brands', 'products'];
             const items = resources.flatMap(
@@ -359,6 +487,11 @@ export async function SectionRenderer({
 
           // ── CTA section ──────────────────────────────────────────────────
           if (type === 'cta') {
+            if (variant === 'home') {
+              return (
+                <HomeConsultationGateway key={String(row.id)} content={content} locale={locale} />
+              );
+            }
             const primaryCta = content.primaryCta as Record<string, unknown> | undefined;
             return (
               <section className="section section--accent" key={String(row.id)}>
@@ -387,14 +520,7 @@ export async function SectionRenderer({
                 );
             if (faqs.length === 0) return null;
             if (variant === 'home') {
-              return (
-                <HomeFaq
-                  key={String(row.id)}
-                  content={content}
-                  faqs={faqs}
-                  locale={locale}
-                />
-              );
+              return <HomeFaq key={String(row.id)} content={content} faqs={faqs} locale={locale} />;
             }
             return (
               <section className="section" key={String(row.id)}>

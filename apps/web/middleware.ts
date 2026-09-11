@@ -34,7 +34,7 @@ export async function middleware(request: NextRequest) {
       .catch(() => [] as Language[]),
   ]);
 
-  if (redirect) {
+  if (redirect && typeof redirect.destinationPath === 'string' && redirect.destinationPath) {
     const destination = request.nextUrl.clone();
     destination.pathname = redirect.destinationPath;
     return NextResponse.redirect(destination, redirect.statusCode);

@@ -1,163 +1,169 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Icon } from '@gatevia/ui';
-import type { NavItem } from '@/lib/api';
+import type { FooterNavigation, NavItem } from '@/lib/api';
 import { copy } from '@/lib/ui-copy';
 
-function resolveUrl(item: NavItem, locale: string): string {
-  const href = item.href || '';
+type FooterLink = { id: string; label: string; href: string; external?: boolean };
+
+function resolveUrl(href: string, locale: string): string {
   if (/^https?:\/\//.test(href)) return href;
   if (href.startsWith(`/${locale}`)) return href;
   return `/${locale}${href.startsWith('/') ? '' : '/'}${href}`;
 }
 
-// Fallback structure used only if CMS footer navigation is empty.
-function FallbackFooter({ locale }: { locale: string }) {
-  const t = copy(locale);
+function menuLinks(items: NavItem[], fallback: FooterLink[]): FooterLink[] {
+  if (items.length === 0) return fallback;
+  const links = items.flatMap((item) => {
+    const children = item.children ?? [];
+    if (children.length > 0) {
+      return children
+        .filter((child) => Boolean(child.href))
+        .map((child) => ({
+          id: child.id,
+          label: child.label,
+          href: child.href!,
+          external: child.external,
+        }));
+    }
+    return item.href
+      ? [{ id: item.id, label: item.label, href: item.href, external: item.external }]
+      : [];
+  });
+  return links.length > 0 ? links : fallback;
+}
+
+function FooterNav({
+  title,
+  links,
+  locale,
+}: {
+  title: string;
+  links: FooterLink[];
+  locale: string;
+}) {
   return (
-    <div className="footer-grid">
-      <div className="footer-brand">
-        <div className="footer-title">
-          <Image
-            src="/brand/gatevia-logo-dark.svg"
-            alt={t.footer}
-            width={160}
-            height={48}
-            className="footer-logo"
-            unoptimized
-          />
-        </div>
-        <p>
-          {locale.startsWith('ar')
-            ? 'دخول السوق السعودي، التنفيذ، والنمو.'
-            : 'Saudi market access, execution and growth.'}
-        </p>
-        <span className="footer-path" aria-hidden="true" />
-      </div>
-      <div className="footer-links">
-        <strong>{t.services}</strong>
-        <Link href={`/${locale}/services`}>{t.services}</Link>
-        <Link href={`/${locale}/industries`}>{t.industries}</Link>
-      </div>
-      <div className="footer-links">
-        <strong>{t.about}</strong>
-        <Link href={`/${locale}/about`}>{t.about}</Link>
-        <Link href={`/${locale}/team`}>Team</Link>
-        <Link href={`/${locale}/partners`}>Partners</Link>
-      </div>
-      <div className="footer-links">
-        <strong>Contact</strong>
-        <Link href={`/${locale}/contact`}>Contact</Link>
-        <Link href={`/${locale}/book-consultation`}>{t.consultation}</Link>
-      </div>
-    </div>
+    <nav className="footer-nav" aria-label={title} data-reveal="up">
+      <h2>{title}</h2>
+      <ul>
+        {links.map((item) => {
+          const href = resolveUrl(item.href, locale);
+          const external = item.external || /^https?:\/\//.test(item.href);
+          return (
+            <li key={item.id}>
+              <Link
+                href={href}
+                {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              >
+                {item.label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }
 
 export function Footer({
   locale,
-  navItems,
+  navigation,
   identity,
 }: {
   locale: string;
-  navItems: NavItem[];
+  navigation: FooterNavigation;
   identity: {
     name: string;
+    logoUrl?: string | undefined;
     email?: string | undefined;
     phone?: string | undefined;
     linkedInUrl?: string | undefined;
   };
 }) {
-  // Group CMS footer items by their top-level label (items with children become columns,
-  // items without children go into a flat list).
-  const hasNav = navItems.length > 0;
+  const t = copy(locale);
+  const fallbacks = {
+    services: [
+      { id: 'fallback-services', label: t.services, href: '/services' },
+      { id: 'fallback-industries', label: t.industries, href: '/industries' },
+    ],
+    company: [
+      { id: 'fallback-about', label: t.about, href: '/about' },
+      { id: 'fallback-team', label: t.team, href: '/team' },
+      { id: 'fallback-partners', label: t.partners, href: '/partners' },
+    ],
+    resources: [
+      { id: 'fallback-insights', label: t.insights, href: '/insights' },
+      { id: 'fallback-cases', label: t.cases, href: '/case-studies' },
+    ],
+    legal: [
+      { id: 'fallback-privacy', label: t.privacyPolicy, href: '/privacy-policy' },
+      { id: 'fallback-terms', label: t.terms, href: '/terms' },
+      { id: 'fallback-cookies', label: t.cookies, href: '/cookie-policy' },
+    ],
+  } satisfies Record<keyof FooterNavigation, FooterLink[]>;
+  const groups = {
+    services: menuLinks(navigation.services, fallbacks.services),
+    company: menuLinks(navigation.company, fallbacks.company),
+    resources: menuLinks(navigation.resources, fallbacks.resources),
+    legal: menuLinks(navigation.legal, fallbacks.legal),
+  };
+  const hasContact = Boolean(identity.email || identity.phone || identity.linkedInUrl);
 
   return (
     <footer className="site-footer">
-      <div className="container">
-        {hasNav ? (
-          <div className="footer-grid">
-            <div className="footer-brand">
-              <div className="footer-title">
-                <Image
-                  src="/brand/gatevia-logo-dark.svg"
-                  alt={identity.name}
-                  width={160}
-                  height={48}
-                  className="footer-logo"
-                  unoptimized
-                />
-              </div>
-              <p>
-                {locale.startsWith('ar')
-                  ? 'دخول السوق السعودي، التنفيذ، والنمو.'
-                  : 'Saudi market access, execution and growth.'}
-              </p>
-              <span className="footer-path" aria-hidden="true" />
-              {identity.email && (
-                <p>
-                  <a href={`mailto:${identity.email}`}>{identity.email}</a>
-                </p>
-              )}
-              {identity.phone && (
-                <p>
-                  <a href={`tel:${identity.phone}`}>{identity.phone}</a>
-                </p>
-              )}
+      <div className="container-wide">
+        <div className="footer-gateway" aria-hidden="true" data-reveal="footer-path">
+          <span />
+          <span />
+          <span />
+        </div>
+
+        <div className="footer-layout">
+          <div className="footer-brand" data-reveal="up">
+            <div
+              className={`footer-logo-surface${identity.logoUrl ? ' footer-logo-surface--cms' : ''}`}
+            >
+              <Image
+                src={identity.logoUrl ?? '/brand/gatevia-logo-dark.svg'}
+                alt={identity.name}
+                width={190}
+                height={58}
+                className="footer-logo"
+                unoptimized
+              />
+            </div>
+            <p>
+              {locale.startsWith('ar')
+                ? 'دخول السوق السعودي، التنفيذ، والنمو.'
+                : 'Saudi market access, execution and growth.'}
+            </p>
+          </div>
+
+          {hasContact && (
+            <div className="footer-contact" data-reveal="up">
+              <h2>{t.contact}</h2>
+              {identity.email && <a href={`mailto:${identity.email}`}>{identity.email}</a>}
+              {identity.phone && <a href={`tel:${identity.phone}`}>{identity.phone}</a>}
               {identity.linkedInUrl && (
-                <p>
-                  <a href={identity.linkedInUrl} target="_blank" rel="noopener noreferrer">
-                    <Icon name="linkedin" /> LinkedIn
-                  </a>
-                </p>
+                <a href={identity.linkedInUrl} target="_blank" rel="noopener noreferrer">
+                  <Icon name="linkedin" />
+                  <span>LinkedIn</span>
+                </a>
               )}
             </div>
-            {/* Render CMS top-level items as columns if they have children,
-                otherwise render them as a flat list of links */}
-            {navItems.some((item) => item.children && item.children.length > 0) ? (
-              navItems.map((item) => (
-                <div key={item.id} className="footer-links">
-                  <strong>{item.label}</strong>
-                  {(item.children ?? []).map((child) => (
-                    <Link
-                      key={child.id}
-                      href={resolveUrl(child, locale)}
-                      {...(child.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                    >
-                      {child.label}
-                    </Link>
-                  ))}
-                </div>
-              ))
-            ) : (
-              <div className="footer-links">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={resolveUrl(item, locale)}
-                    {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          <FallbackFooter locale={locale} />
-        )}
+          )}
 
-        <div className="legal-row">
+          <FooterNav title={t.services} links={groups.services} locale={locale} />
+          <FooterNav title={t.company} links={groups.company} locale={locale} />
+          <FooterNav title={t.resources} links={groups.resources} locale={locale} />
+          <FooterNav title={t.legal} links={groups.legal} locale={locale} />
+        </div>
+
+        <div className="footer-legal-row">
           <span>
             © {new Date().getFullYear()} {identity.name}
           </span>
-          <span>
-            <Link href={`/${locale}/privacy`}>Privacy</Link>
-            <span aria-hidden="true"> / </span>
-            <Link href={`/${locale}/terms`}>Terms</Link>
-            <span aria-hidden="true"> / </span>
-            <Link href={`/${locale}/cookie-policy`}>Cookies</Link>
-          </span>
+          <span>GATEVIA / SAUDI ARABIA</span>
         </div>
       </div>
     </footer>

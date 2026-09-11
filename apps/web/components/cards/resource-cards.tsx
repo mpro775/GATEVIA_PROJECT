@@ -93,7 +93,9 @@ function CardLink({
       {children}
     </Link>
   ) : (
-    <article className={className} data-reveal="up">{children}</article>
+    <article className={className} data-reveal="up">
+      {children}
+    </article>
   );
 }
 
@@ -138,7 +140,7 @@ export function ServiceCard({
       <div>
         <span className="eyebrow">{copy(locale).services}</span>
         <h3>{text(tr.title ?? tr.name)}</h3>
-        <p>{text(tr.shortDescription ?? tr.excerpt)}</p>
+        <p>{text(tr.context ?? tr.challenge)}</p>
       </div>
       <Icon name="arrow" className="resource-card__arrow" />
     </CardLink>
@@ -270,9 +272,26 @@ export function PersonCard({ item }: { item: Record<string, unknown> }) {
       <Media item={item} resource="team" />
       <div className="resource-card__body">
         <h3>{text(tr.name ?? tr.title)}</h3>
-        <p>{text(tr.role ?? tr.jobTitle ?? tr.shortDescription)}</p>
+        <p>{text(tr.position ?? tr.role ?? tr.jobTitle ?? tr.shortDescription)}</p>
       </div>
     </article>
+  );
+}
+
+export function TestimonialCard({ item }: { item: Record<string, unknown> }) {
+  const tr = translation(item);
+  const attribution = [text(item.personRole), text(item.companyName)].filter(Boolean).join(' · ');
+  return (
+    <blockquote className="resource-card testimonial-card" data-reveal="up">
+      <span className="testimonial-card__mark" aria-hidden="true">
+        “
+      </span>
+      <p>{text(tr.quote)}</p>
+      <footer>
+        <strong>{text(item.personName)}</strong>
+        {attribution && <span>{attribution}</span>}
+      </footer>
+    </blockquote>
   );
 }
 
@@ -297,8 +316,8 @@ export function ResourceGrid({
         if (resource === 'case-studies')
           return <CaseStudyCard key={key} item={item} locale={locale} />;
         if (resource === 'insights') return <InsightCard key={key} item={item} locale={locale} />;
-        if (resource === 'team' || resource === 'testimonials')
-          return <PersonCard key={key} item={item} />;
+        if (resource === 'team') return <PersonCard key={key} item={item} />;
+        if (resource === 'testimonials') return <TestimonialCard key={key} item={item} />;
         return <EcosystemCard key={key} item={item} locale={locale} resource={resource} />;
       })}
     </div>
