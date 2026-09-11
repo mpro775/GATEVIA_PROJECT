@@ -38,6 +38,24 @@
   .strategic-pillars__connector[data-reveal='line'].is-revealed {
     transform: scaleX(1);
   }
+  .home-journey__path-active {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  .home-journey__path.is-revealed .home-journey__path-active {
+    animation: home-gateway-route 900ms var(--motion-ease-enter) 90ms forwards;
+  }
+  .motion-ready [data-reveal='journey-node']:not(.is-revealed) {
+    opacity: 0;
+    transform: translateY(.7rem);
+  }
+  .motion-ready [data-reveal='service-row']:not(.is-revealed) {
+    opacity: 0;
+    transform: translateX(-.55rem);
+  }
+  html[dir='rtl'] .motion-ready [data-reveal='service-row']:not(.is-revealed) {
+    transform: translateX(.55rem);
+  }
   .gateway-visual.is-revealed .gateway-visual__frame--outer {
     animation: gateway-frame var(--motion-duration-slow) var(--motion-ease-enter) 90ms both;
   }
@@ -114,6 +132,11 @@
   .home-gateway__route-line,
   .pillar-visual__route,
   .pillar-visual__accent {
+    stroke-dashoffset: 0 !important;
+    stroke-dasharray: none !important;
+    animation: none !important;
+  }
+  .home-journey__path-active {
     stroke-dashoffset: 0 !important;
     stroke-dasharray: none !important;
     animation: none !important;

@@ -10,6 +10,9 @@ import { SectionHeading } from './brand/section-heading';
 import { ResourceGrid } from './cards/resource-cards';
 import { RichBlocks } from './editorial/content-blocks';
 import { HomeHero } from './home/home-hero';
+import { HomeFaq } from './home/home-faq';
+import { HomeJourney } from './home/home-journey';
+import { HomeServicesShowcase } from './home/home-services-showcase';
 import { StrategicPillars } from './home/strategic-pillars';
 export { RichBlocks, ContentItems } from './editorial/content-blocks';
 
@@ -181,6 +184,16 @@ export async function SectionRenderer({
             return <StrategicPillars key={String(row.id)} content={content} />;
           }
 
+          if (variant === 'home' && type === 'timeline') {
+            return (
+              <HomeJourney
+                key={String(row.id)}
+                content={content}
+                locale={locale}
+              />
+            );
+          }
+
           if (type === 'process' || type === 'timeline') {
             return (
               <section
@@ -253,6 +266,17 @@ export async function SectionRenderer({
             }
 
             if (items.length === 0 && !content.title) return null; // hide empty optional section
+
+            if (variant === 'home' && type === 'services_grid') {
+              return (
+                <HomeServicesShowcase
+                  key={String(row.id)}
+                  content={content}
+                  items={items}
+                  locale={locale}
+                />
+              );
+            }
 
             return (
               <section className="section" key={String(row.id)}>
@@ -362,6 +386,16 @@ export async function SectionRenderer({
                   [],
                 );
             if (faqs.length === 0) return null;
+            if (variant === 'home') {
+              return (
+                <HomeFaq
+                  key={String(row.id)}
+                  content={content}
+                  faqs={faqs}
+                  locale={locale}
+                />
+              );
+            }
             return (
               <section className="section" key={String(row.id)}>
                 <div className="container">
