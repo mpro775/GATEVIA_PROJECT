@@ -23,6 +23,7 @@
     "prisma:validate": "prisma validate --schema prisma/schema.prisma",
     "prisma:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
     "seed:content": "tsx prisma/seed/content.ts",
+    "seed:demo": "tsx prisma/seed/demo.ts",
     "seed": "tsx prisma/seed/index.ts",
     "bootstrap:admin": "tsx prisma/seed/bootstrap-admin.ts"
   },
