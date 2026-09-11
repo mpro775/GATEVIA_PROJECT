@@ -6,6 +6,7 @@ import { getSettings, safe } from '@/lib/api';
 import { localizedSetting } from '@/lib/content';
 import { JsonLd, organizationSchema } from '@/lib/seo';
 import './globals.css';
+import { expoArabic } from './fonts';
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
@@ -71,7 +72,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const saved = store.get('gatevia_theme')?.value;
   const theme = saved === 'light' ? 'light' : 'dark';
   return (
-    <html lang={locale} dir={direction} data-theme={theme} suppressHydrationWarning>
+    <html
+      lang={locale}
+      dir={direction}
+      data-theme={theme}
+      className={locale.startsWith('ar') ? expoArabic.variable : undefined}
+      suppressHydrationWarning
+    >
       <body>
         {children}
         <Analytics

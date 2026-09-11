@@ -30,7 +30,9 @@ h3 {
 }
 html[lang^='ar'] h1,
 html[lang^='ar'] h2,
-html[lang^='ar'] h3 {
+html[lang^='ar'] h3,
+html[lang^='ar'] h4 {
+  font-weight: 700;
   letter-spacing: 0;
   line-height: 1.28;
 }
@@ -51,8 +53,10 @@ html[lang^='ar'] h3 {
   block-size: 1px;
   background: currentColor;
 }
+html[lang^='ar'] .eyebrow,
 html[dir='rtl'] .eyebrow {
-  letter-spacing: 0.04em;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 .cell-meta {
   color: var(--color-text-muted);
@@ -66,4 +70,7 @@ html[dir='rtl'] .eyebrow {
   font-size: 0.9rem;
   font-weight: 750;
   color: var(--color-text-accent);
+}
+html[lang^='ar'] .card-action {
+  font-weight: 600;
 }

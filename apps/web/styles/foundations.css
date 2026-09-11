@@ -1,6 +1,10 @@
 :root {
   --font-latin: 'Aptos', 'Segoe UI', Arial, sans-serif;
-  --font-arabic: 'Noto Sans Arabic', 'Tahoma', Arial, sans-serif;
+  --font-arabic:
+    var(--font-expo-arabic),
+    'Tahoma',
+    Arial,
+    sans-serif;
   --font-display: var(--font-latin);
   --font-body: var(--font-latin);
   --space-1: 0.25rem;
