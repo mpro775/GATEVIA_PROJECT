@@ -9,6 +9,8 @@ import { MediaFrame } from './brand/media-frame';
 import { SectionHeading } from './brand/section-heading';
 import { ResourceGrid } from './cards/resource-cards';
 import { RichBlocks } from './editorial/content-blocks';
+import { HomeHero } from './home/home-hero';
+import { StrategicPillars } from './home/strategic-pillars';
 export { RichBlocks, ContentItems } from './editorial/content-blocks';
 
 // ─── Basic card grid ────────────────────────────────────────────────────────
@@ -70,8 +72,24 @@ const SECTION_RESOURCE_MAP: Record<string, string> = {
 
 // ─── Async section renderer (server component) ───────────────────────────────
 
-export async function SectionRenderer({ sections, locale }: { sections: unknown; locale: string }) {
+export type SectionRendererVariant = 'default' | 'home';
+
+export async function SectionRenderer({
+  sections,
+  locale,
+  variant = 'default',
+}: {
+  sections: unknown;
+  locale: string;
+  variant?: SectionRendererVariant;
+}) {
   const rows = list(sections) as Record<string, unknown>[];
+  const homePillarRow =
+    variant === 'home' ? rows.find((row) => text(row.sectionType) === 'process') : undefined;
+  const homePillarTranslation = Array.isArray(homePillarRow?.translations)
+    ? (homePillarRow.translations[0] as { content?: Record<string, unknown> } | undefined)
+    : undefined;
+  const homePillarSteps = list(homePillarTranslation?.content?.steps) as Record<string, unknown>[];
 
   return (
     <>
@@ -89,6 +107,17 @@ export async function SectionRenderer({ sections, locale }: { sections: unknown;
             typeof content.mediaId === 'string' ? media?.[content.mediaId] : undefined;
 
           if (type === 'hero') {
+            if (variant === 'home') {
+              return (
+                <HomeHero
+                  key={String(row.id)}
+                  content={content}
+                  locale={locale}
+                  mediaItem={mediaItem}
+                  railSteps={homePillarSteps}
+                />
+              );
+            }
             const primary = content.primaryCta as Record<string, unknown> | undefined;
             const secondary = content.secondaryCta as Record<string, unknown> | undefined;
             return (
@@ -148,11 +177,22 @@ export async function SectionRenderer({ sections, locale }: { sections: unknown;
             );
           }
 
+          if (variant === 'home' && type === 'process') {
+            return <StrategicPillars key={String(row.id)} content={content} />;
+          }
+
           if (type === 'process' || type === 'timeline') {
             return (
-              <section className="section" key={String(row.id)}>
+              <section
+                className={`section ${type === 'timeline' ? 'timeline-section' : 'process-section'}`}
+                key={String(row.id)}
+              >
                 <div className="container">
-                  {Boolean(content.title) && <h2 data-reveal="up">{text(content.title)}</h2>}
+                  <SectionHeading
+                    eyebrow={text(content.eyebrow)}
+                    title={text(content.title)}
+                    body={text(content.body)}
+                  />
                   <ol className={type === 'timeline' ? 'timeline' : 'process-grid'} data-reveal="line">
                     {list(content.steps).map((rawStep, index) => {
                       const step = rawStep as Record<string, unknown>;

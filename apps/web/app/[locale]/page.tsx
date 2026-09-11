@@ -85,7 +85,7 @@ export default async function Home({
     <>
       <JsonLd schema={websiteSchema(siteName)} />
       {!hasSectionHero && <PageHero translation={tr} locale={locale} home />}
-      <SectionRenderer sections={page.sections} locale={locale} />
+      <SectionRenderer sections={page.sections} locale={locale} variant="home" />
     </>
   );
 }
