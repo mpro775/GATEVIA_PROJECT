@@ -22,8 +22,7 @@
   :root {
     --header-height: 4.75rem;
   }
-  .desktop-nav,
-  .locale-picker {
+  .desktop-nav {
     display: none;
   }
   .header-tools {
@@ -121,6 +120,9 @@
   .header-tools > .gv-theme-toggle {
     display: none;
   }
+  .language-menu { display: none; }
+  .mobile-navigation { grid-template-columns: 1fr; }
+  .mobile-drawer { grid-column: 1; inline-size: 100%; border-inline-start: 0; }
   .brand {
     font-size: 0.86rem;
   }
@@ -184,9 +186,10 @@
     display: grid;
   }
   .mobile-drawer__footer {
+    grid-template-columns: 1fr;
     align-items: stretch;
-    flex-direction: column;
   }
+  .mobile-drawer__preferences { justify-content: space-between; }
   .mobile-locales {
     justify-content: center;
   }

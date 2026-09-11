@@ -14,10 +14,10 @@ export function RichBlocks({
       {list(blocks).map((raw, index) => {
         const block = raw as Record<string, unknown>;
         const type = text(block.type);
-        if (type === 'heading') return <h2 key={index}>{text(block.text)}</h2>;
+        if (type === 'heading') return <h2 key={index} data-reveal="up">{text(block.text)}</h2>;
         if (type === 'quote')
           return (
-            <blockquote key={index}>
+            <blockquote key={index} data-reveal="up">
               {text(block.text)}
               {Boolean(block.attribution) && <footer>{text(block.attribution)}</footer>}
             </blockquote>
@@ -45,7 +45,7 @@ export function RichBlocks({
         if (type === 'image') {
           const item = media[text(block.mediaId)];
           return item?.url ? (
-            <figure className="editorial-media" key={index}>
+            <figure className="editorial-media" key={index} data-reveal="media">
               <Image
                 src={item.url}
                 alt={item.translations?.[0]?.altText ?? ''}
@@ -58,7 +58,7 @@ export function RichBlocks({
         }
         if (type === 'callout')
           return (
-            <aside key={index} className="panel">
+            <aside key={index} className="panel" data-reveal="fade">
               {text(block.text)}
             </aside>
           );

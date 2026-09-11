@@ -24,6 +24,14 @@
   --radius-md: 0.65rem;
   --radius-lg: 1rem;
   --header-height: 5.25rem;
+  --motion-duration-instant: 120ms;
+  --motion-duration-fast: 180ms;
+  --motion-duration-base: 260ms;
+  --motion-duration-slow: 420ms;
+  --motion-duration-reveal: 620ms;
+  --motion-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
 }
 * {
   box-sizing: border-box;

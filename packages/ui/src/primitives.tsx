@@ -6,6 +6,7 @@ import type {
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from 'react';
+import { forwardRef } from 'react';
 
 type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'inverse' | 'ghost';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -36,15 +37,12 @@ export function Button({
   );
 }
 
-export function IconButton({
-  className = '',
-  size = 'md',
-  ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { size?: ButtonSize }) {
-  return (
-    <button className={`gv-icon-button gv-icon-button--${size} ${className}`.trim()} {...props} />
-  );
-}
+export const IconButton = forwardRef<
+  HTMLButtonElement,
+  ButtonHTMLAttributes<HTMLButtonElement> & { size?: ButtonSize }
+>(function IconButton({ className = '', size = 'md', ...props }, ref) {
+  return <button ref={ref} className={`gv-icon-button gv-icon-button--${size} ${className}`.trim()} {...props} />;
+});
 
 export function Card({ className = '', ...props }: HTMLAttributes<HTMLElement>) {
   return <article className={`gv-card ${className}`.trim()} {...props} />;

@@ -11,13 +11,13 @@ export function SectionHeading({
 }) {
   if (!eyebrow && !title && !body) return null;
   return (
-    <div className="section-heading">
+    <div className="section-heading" data-reveal-group="heading">
       <div>
-        <span className="eyebrow">{eyebrow || 'GATEVIA'}</span>
-        {title && <h2>{title}</h2>}
+        <span className="eyebrow" data-reveal="fade">{eyebrow || 'GATEVIA'}</span>
+        {title && <h2 data-reveal="up" style={{ '--reveal-delay': '55ms' } as React.CSSProperties}>{title}</h2>}
       </div>
-      {body && <p>{body}</p>}
-      {action}
+      {body && <p data-reveal="up" style={{ '--reveal-delay': '95ms' } as React.CSSProperties}>{body}</p>}
+      {action && <div data-reveal="fade" style={{ '--reveal-delay': '120ms' } as React.CSSProperties}>{action}</div>}
     </div>
   );
 }

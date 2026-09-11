@@ -12,7 +12,7 @@ export function MediaFrame({
   className?: string;
 }) {
   return (
-    <figure className={`media-frame ${className}`.trim()}>
+    <figure className={`media-frame ${className}`.trim()} data-reveal="media">
       <Image
         src={src}
         alt={alt}

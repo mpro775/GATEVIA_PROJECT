@@ -89,11 +89,11 @@ function CardLink({
   const tr = translation(item);
   const href = tr.slug ? `/${locale}/${resource}/${String(tr.slug)}` : undefined;
   return href ? (
-    <Link className={className} href={href}>
+    <Link className={className} href={href} data-reveal="up">
       {children}
     </Link>
   ) : (
-    <article className={className}>{children}</article>
+    <article className={className} data-reveal="up">{children}</article>
   );
 }
 

@@ -23,13 +23,13 @@ export function PageHero({
   home?: boolean;
 }) {
   return (
-    <section className="hero">
+    <section className={`hero ${home ? 'hero--home' : 'hero--inner'}`}>
       <div className="container hero-grid">
-        <div>
-          <div className="eyebrow">GATEVIA · SAUDI ARABIA</div>
-          <h1>{text(tr.title, home ? 'GATEVIA' : '')}</h1>
-          {Boolean(tr.excerpt) && <p>{text(tr.excerpt)}</p>}
-          <div className="hero-actions">
+        <div className="hero-copy">
+          <div className="eyebrow" data-reveal="fade">GATEVIA · SAUDI ARABIA</div>
+          <h1 data-reveal="up" style={{ '--reveal-delay': '55ms' } as React.CSSProperties}>{text(tr.title, home ? 'GATEVIA' : '')}</h1>
+          {Boolean(tr.excerpt) && <p data-reveal="up" style={{ '--reveal-delay': '105ms' } as React.CSSProperties}>{text(tr.excerpt)}</p>}
+          <div className="hero-actions" data-reveal="up" style={{ '--reveal-delay': '155ms' } as React.CSSProperties}>
             <Link className="gv-button" href={`/${locale}/book-consultation`}>
               {copy(locale).consultation}
             </Link>
@@ -94,13 +94,13 @@ export async function SectionRenderer({ sections, locale }: { sections: unknown;
             return (
               <section className="hero" key={String(row.id)}>
                 <div className="container hero-grid">
-                  <div>
+                  <div className="hero-copy">
                     {Boolean(content.eyebrow) && (
-                      <div className="eyebrow">{text(content.eyebrow)}</div>
+                      <div className="eyebrow" data-reveal="fade">{text(content.eyebrow)}</div>
                     )}
-                    <h1>{text(content.title)}</h1>
-                    {Boolean(content.body) && <p>{text(content.body)}</p>}
-                    <div className="hero-actions">
+                    <h1 data-reveal="up" style={{ '--reveal-delay': '55ms' } as React.CSSProperties}>{text(content.title)}</h1>
+                    {Boolean(content.body) && <p data-reveal="up" style={{ '--reveal-delay': '105ms' } as React.CSSProperties}>{text(content.body)}</p>}
+                    <div className="hero-actions" data-reveal="up" style={{ '--reveal-delay': '155ms' } as React.CSSProperties}>
                       {Boolean(primary?.label) && Boolean(primary?.href) && (
                         <Link className="gv-button" href={text(primary?.href)}>
                           {text(primary?.label)}
@@ -135,7 +135,7 @@ export async function SectionRenderer({ sections, locale }: { sections: unknown;
               <section className="section section--surface" key={String(row.id)}>
                 <div className="container text-image">
                   {content.mediaPosition === 'start' && image}
-                  <div className="rich-text">
+                  <div className="rich-text" data-reveal="up">
                     {Boolean(content.eyebrow) && (
                       <span className="eyebrow">{text(content.eyebrow)}</span>
                     )}
@@ -152,12 +152,12 @@ export async function SectionRenderer({ sections, locale }: { sections: unknown;
             return (
               <section className="section" key={String(row.id)}>
                 <div className="container">
-                  {Boolean(content.title) && <h2>{text(content.title)}</h2>}
-                  <ol className={type === 'timeline' ? 'timeline' : 'process-grid'}>
+                  {Boolean(content.title) && <h2 data-reveal="up">{text(content.title)}</h2>}
+                  <ol className={type === 'timeline' ? 'timeline' : 'process-grid'} data-reveal="line">
                     {list(content.steps).map((rawStep, index) => {
                       const step = rawStep as Record<string, unknown>;
                       return (
-                        <li key={index}>
+                        <li key={index} data-reveal="up" style={{ '--reveal-delay': `${Math.min(index, 6) * 60}ms` } as React.CSSProperties}>
                           <span className="eyebrow">
                             {text(step.marker, String(index + 1).padStart(2, '0'))}
                           </span>
@@ -180,7 +180,7 @@ export async function SectionRenderer({ sections, locale }: { sections: unknown;
                   {list(content.items).map((raw, index) => {
                     const item = raw as Record<string, unknown>;
                     return (
-                      <div className="stat" key={index}>
+                      <div className="stat" key={index} data-reveal="up" style={{ '--reveal-delay': `${Math.min(index, 5) * 55}ms` } as React.CSSProperties}>
                         <strong>
                           {text(item.value)}
                           {text(item.suffix)}
@@ -240,7 +240,7 @@ export async function SectionRenderer({ sections, locale }: { sections: unknown;
             return (
               <section className="section section--surface" key={String(row.id)}>
                 <div className="container">
-                  {Boolean(content.title) && <h2>{text(content.title)}</h2>}
+                  {Boolean(content.title) && <h2 data-reveal="up">{text(content.title)}</h2>}
                   <div className="logo-cloud">
                     {items.map((item) => {
                       const itemTr = translation(item);
@@ -253,7 +253,7 @@ export async function SectionRenderer({ sections, locale }: { sections: unknown;
                       const logoId = text(item.logoMediaId);
                       const logo = logoId ? itemMedia?.[logoId] : undefined;
                       return (
-                        <div className="logo-card" key={String(item.id)}>
+                        <div className="logo-card" key={String(item.id)} data-reveal="fade">
                           {logo?.url && (
                             <>
                               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -286,7 +286,7 @@ export async function SectionRenderer({ sections, locale }: { sections: unknown;
             return (
               <section className="section" key={String(row.id)}>
                 <div className="container">
-                  {Boolean(content.title) && <h2>{text(content.title)}</h2>}
+                  {Boolean(content.title) && <h2 data-reveal="up">{text(content.title)}</h2>}
                   <LeadForm kind={formType} locale={locale} />
                 </div>
               </section>
@@ -298,8 +298,8 @@ export async function SectionRenderer({ sections, locale }: { sections: unknown;
             const primaryCta = content.primaryCta as Record<string, unknown> | undefined;
             return (
               <section className="section section--accent" key={String(row.id)}>
-                <div className="container cta-panel">
-                  {Boolean(content.title) && <h2>{text(content.title)}</h2>}
+                <div className="container cta-panel" data-reveal="up">
+                  {Boolean(content.title) && <h2 data-reveal="up">{text(content.title)}</h2>}
                   {Boolean(content.body) && <p>{text(content.body)}</p>}
                   {primaryCta && Boolean(primaryCta.label) && Boolean(primaryCta.href) && (
                     <Link className="gv-button" href={text(primaryCta.href)}>
@@ -330,7 +330,7 @@ export async function SectionRenderer({ sections, locale }: { sections: unknown;
                     {faqs.map((faq) => {
                       const ft = translation(faq);
                       return (
-                        <details key={String(faq.id)} className="faq-item">
+                        <details key={String(faq.id)} className="faq-item" data-reveal="fade">
                           <summary>
                             <span>{text(ft.title ?? ft.question)}</span>
                             <Icon name="plus" />
@@ -348,7 +348,7 @@ export async function SectionRenderer({ sections, locale }: { sections: unknown;
           // ── Rich text / safe fallback section ─────────────────────────────
           return (
             <section className="section section--surface" key={String(row.id)}>
-              <div className="container rich-text">
+              <div className="container rich-text" data-reveal="up">
                 <span className="eyebrow">GATEVIA</span>
                 {Boolean(content.title) && <h2>{text(content.title)}</h2>}
                 {Boolean(content.body) && <p>{text(content.body)}</p>}

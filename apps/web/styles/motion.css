@@ -1,29 +1,61 @@
+/* Content is visible in the server response. Initial states only activate after
+   the observer has mounted, so failed or delayed JavaScript never hides content. */
 @media (prefers-reduced-motion: no-preference) {
-  .hero-grid > div:first-child {
-    animation: enter-up 0.65s ease both;
-  }
-  .gateway-visual,
-  .hero .media-frame {
-    animation: enter-fade 0.8s 0.12s ease both;
-  }
-  .gateway-visual__path span {
-    animation: path-pulse 2.8s ease-in-out infinite;
-  }
-}
-@keyframes enter-up {
-  from {
+  .motion-ready [data-reveal]:not(.is-revealed) {
     opacity: 0;
-    transform: translateY(1.3rem);
+  }
+  .motion-ready [data-reveal='up']:not(.is-revealed) {
+    transform: translateY(1.15rem);
+  }
+  .motion-ready [data-reveal='scale']:not(.is-revealed) {
+    transform: translateY(.5rem) scale(.982);
+  }
+  .motion-ready [data-reveal='media']:not(.is-revealed) {
+    transform: scale(.992);
+    clip-path: inset(0 0 10% 0);
+  }
+  [data-reveal] {
+    transition: opacity var(--motion-duration-reveal) var(--motion-ease-standard) var(--reveal-delay, 0ms), transform var(--motion-duration-reveal) var(--motion-ease-enter) var(--reveal-delay, 0ms), clip-path var(--motion-duration-reveal) var(--motion-ease-enter) var(--reveal-delay, 0ms);
+  }
+  [data-reveal='line'] {
+    opacity: 1;
+  }
+  .process-grid[data-reveal='line']::after,
+  .timeline[data-reveal='line']::after {
+    transform: scaleX(0);
+  }
+  .process-grid[data-reveal='line'].is-revealed::after,
+  .timeline[data-reveal='line'].is-revealed::after {
+    transform: scaleX(1);
+  }
+  .gateway-visual.is-revealed .gateway-visual__frame--outer {
+    animation: gateway-frame var(--motion-duration-slow) var(--motion-ease-enter) 90ms both;
+  }
+  .gateway-visual.is-revealed .gateway-visual__frame--inner {
+    animation: gateway-inner var(--motion-duration-slow) var(--motion-ease-enter) 180ms both;
+  }
+  .gateway-visual.is-revealed [data-gateway-path='true'] {
+    animation: gateway-path var(--motion-duration-reveal) var(--motion-ease-enter) 250ms both;
+  }
+  .gateway-visual.is-revealed .gateway-visual__point {
+    animation: gateway-point var(--motion-duration-base) var(--motion-ease-enter) 480ms both;
+  }
+  .gateway-visual.is-revealed .gateway-visual__path span {
+    animation: gateway-point var(--motion-duration-base) var(--motion-ease-enter) 520ms both, path-pulse 3.6s var(--motion-ease-standard) 1.2s infinite;
   }
 }
-@keyframes enter-fade {
-  from {
-    opacity: 0;
-    transform: scale(0.98);
-  }
-}
-@keyframes path-pulse {
-  50% {
-    box-shadow: 0 0 0 1rem color-mix(in srgb, var(--color-accent) 2%, transparent);
+
+@keyframes gateway-frame { from { opacity: 0; transform: perspective(40rem) rotateY(-14deg) skewY(-5deg) scale(.9); } }
+@keyframes gateway-inner { from { opacity: 0; transform: perspective(40rem) rotateY(-14deg) skewY(-5deg) translate(1.2rem, 1rem) scale(.86); } }
+@keyframes gateway-path { from { opacity: 0; clip-path: inset(0 0 100% 0); } }
+@keyframes gateway-point { from { opacity: 0; transform: scale(.3); } }
+@keyframes path-pulse { 50% { box-shadow: 0 0 0 .8rem color-mix(in srgb, var(--color-accent) 3%, transparent); } }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal], [data-reveal]::before, [data-reveal]::after {
+    opacity: 1 !important;
+    transform: none !important;
+    clip-path: none !important;
+    transition-delay: 0ms !important;
   }
 }

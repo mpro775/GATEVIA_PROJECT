@@ -156,7 +156,7 @@ export async function generateMetadata({
 function Section({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
     <section className={`section${className ? ` ${className}` : ''}`}>
-      <div className="container rich-text">{children}</div>
+      <div className="container rich-text" data-reveal="up">{children}</div>
     </section>
   );
 }
@@ -176,7 +176,7 @@ function RelatedGrid({
   return (
     <section className="section">
       <div className="container">
-        <div className="section-heading">
+        <div className="section-heading" data-reveal="up">
           <div>
             <span className="eyebrow">GATEVIA</span>
             <h2>{heading}</h2>
@@ -292,7 +292,7 @@ async function ServiceDetail({
         </Section>
       )}
       <section className="section section--accent">
-        <div className="container cta-panel">
+        <div className="container cta-panel" data-reveal="up">
           <h2>{t.readyMarket}</h2>
           <Link className="gv-button" href={`/${locale}/book-consultation`}>
             {t.consultation}
@@ -349,7 +349,7 @@ async function IndustryDetail({
         heading={t.industryInsights}
       />
       <section className="section section--accent">
-        <div className="container cta-panel">
+        <div className="container cta-panel" data-reveal="up">
           <h2>{t.interestedMarket}</h2>
           <Link className="gv-button" href={`/${locale}/book-consultation`}>
             {t.consultation}
@@ -446,7 +446,7 @@ function CaseStudyDetail({ entity, locale }: { entity: Record<string, unknown>; 
         heading={t.industries}
       />
       <section className="section section--accent">
-        <div className="container cta-panel">
+        <div className="container cta-panel" data-reveal="up">
           <h2>{t.similarResults}</h2>
           <Link className="gv-button" href={`/${locale}/book-consultation`}>
             {t.consultation}
@@ -495,7 +495,7 @@ function InsightDetail({ entity, locale }: { entity: Record<string, unknown>; lo
         heading={t.relatedIndustries}
       />
       <section className="section section--accent">
-        <div className="container cta-panel">
+        <div className="container cta-panel" data-reveal="up">
           <h2>{t.actInsights}</h2>
           <Link className="gv-button" href={`/${locale}/book-consultation`}>
             {t.consultation}
@@ -534,7 +534,7 @@ function BrandOrProductDetail({
         )}
       </Section>
       <section className="section section--accent">
-        <div className="container cta-panel">
+        <div className="container cta-panel" data-reveal="up">
           <h2>{t.interestedPartnering}</h2>
           <Link className="gv-button" href={`/${locale}/book-consultation`}>
             {t.consultation}
@@ -578,9 +578,9 @@ export default async function DynamicPage({
       <>
         {faqJsonLd && <JsonLd schema={faqJsonLd} />}
         <section className={`page-head page-head--${result.resource}`}>
-          <div className="container">
-            <span className="eyebrow">GATEVIA</span>
-            <h1>
+          <div className="container page-head__content">
+            <span className="eyebrow" data-reveal="fade">GATEVIA</span>
+            <h1 data-reveal="up" style={{ '--reveal-delay': '55ms' } as React.CSSProperties}>
               {(
                 {
                   services: t.services,
@@ -600,7 +600,7 @@ export default async function DynamicPage({
           </div>
         </section>
         <section className="section">
-          <div className="container">
+          <div className="container" data-reveal="fade">
             {segments[0] === 'insights' && (
               <form className="filter-bar" method="get">
                 <input
@@ -629,9 +629,9 @@ export default async function DynamicPage({
     return (
       <>
         <section className="page-head page-head--form">
-          <div className="container">
-            <span className="eyebrow">GATEVIA</span>
-            <h1>
+          <div className="container page-head__content">
+            <span className="eyebrow" data-reveal="fade">GATEVIA</span>
+            <h1 data-reveal="up" style={{ '--reveal-delay': '55ms' } as React.CSSProperties}>
               {pageKey === 'contact'
                 ? locale.startsWith('ar')
                   ? 'تواصل معنا'
@@ -645,7 +645,7 @@ export default async function DynamicPage({
           </div>
         </section>
         <section className="section conversion-section">
-          <div className="container-narrow">
+          <div className="container-narrow" data-reveal="up">
             <LeadForm kind={formMap[pageKey]} locale={locale} />
           </div>
         </section>

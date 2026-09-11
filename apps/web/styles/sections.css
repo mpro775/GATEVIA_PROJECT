@@ -1,11 +1,29 @@
 .process-grid,
 .timeline {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
   padding: 0;
   list-style: none;
   border-block-start: 1px solid var(--color-border-default);
+}
+.process-grid::after,
+.timeline::after {
+  content: '';
+  position: absolute;
+  inset-block-start: -1px;
+  inset-inline: 0;
+  block-size: 2px;
+  background: linear-gradient(90deg, var(--color-accent), color-mix(in srgb, var(--color-accent) 20%, transparent));
+  transform-origin: 0 50%;
+  transition: transform var(--motion-duration-reveal) var(--motion-ease-enter);
+  pointer-events: none;
+}
+html[dir='rtl'] .process-grid::after,
+html[dir='rtl'] .timeline::after {
+  background: linear-gradient(-90deg, var(--color-accent), color-mix(in srgb, var(--color-accent) 20%, transparent));
+  transform-origin: 100% 50%;
 }
 .process-grid li,
 .timeline li {
@@ -65,7 +83,14 @@
   border-inline-end: 1px solid var(--color-border-default);
   border-block-end: 1px solid var(--color-border-default);
   background: var(--color-bg-canvas);
+  transition: background-color var(--motion-duration-fast), border-color var(--motion-duration-fast);
 }
+.logo-card:hover { background: var(--color-bg-surface-hover); border-color: var(--color-border-strong); }
+.logo-cloud > :nth-child(2) { --reveal-delay: 45ms; }
+.logo-cloud > :nth-child(3) { --reveal-delay: 90ms; }
+.logo-cloud > :nth-child(4) { --reveal-delay: 135ms; }
+.logo-cloud > :nth-child(5) { --reveal-delay: 180ms; }
+.logo-cloud > :nth-child(n + 6) { --reveal-delay: 225ms; }
 .logo-card img {
   max-height: 3.5rem;
   max-width: 8rem;
@@ -92,6 +117,8 @@
   cursor: pointer;
   list-style: none;
 }
+.faq-item summary:focus-visible { outline: 3px solid var(--color-focus-ring); outline-offset: 4px; }
+.faq-item summary .gv-icon { transition: transform var(--motion-duration-fast) var(--motion-ease-standard); }
 .faq-item summary::-webkit-details-marker {
   display: none;
 }
@@ -102,6 +129,11 @@
   color: var(--color-text-secondary);
   padding-block-end: 1.5rem;
   max-width: 48rem;
+}
+@supports (interpolate-size: allow-keywords) {
+  .faq-item { interpolate-size: allow-keywords; }
+  .faq-item p { height: 0; opacity: 0; overflow: hidden; transition: height var(--motion-duration-base) var(--motion-ease-enter), opacity var(--motion-duration-fast); }
+  .faq-item[open] p { height: auto; opacity: 1; }
 }
 .rich-text {
   margin-inline: auto;

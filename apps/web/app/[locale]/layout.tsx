@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { Footer } from '@/components/footer';
 import { Header } from '@/components/header';
+import { MotionObserver } from '@/components/motion/motion-observer';
 import { getLanguages, getNavigation, getSettings, safe } from '@/lib/api';
 import { localizedSetting } from '@/lib/content';
 import { copy } from '@/lib/ui-copy';
@@ -72,6 +73,7 @@ export default async function LocaleLayout({
       <Header locale={lc} languages={languages} navItems={mainNav} identity={identity} />
       <main id="main">{children}</main>
       <Footer locale={lc} navItems={footerNav} identity={identity} />
+      <MotionObserver />
     </div>
   );
 }
