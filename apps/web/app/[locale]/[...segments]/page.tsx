@@ -90,6 +90,7 @@ async function resolve(locale: string, segments: string[], q?: string, preview?:
     return {
       kind: 'page' as const,
       resource: pageSlug,
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
       data: (await safe(getPage(locale, pageSlug, preview), {})) as ContentRecord,
     };
   }

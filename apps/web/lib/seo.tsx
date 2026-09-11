@@ -52,6 +52,14 @@ export function buildMetadata(input: SeoInput): Metadata {
         : undefined,
   };
 
+  // Resolve OG image: CMS page OG → hard fallback default
+  const resolvedImageUrl =
+    input.imageUrl ?? new URL('/social/gatevia-og-default.jpg', SITE).toString();
+  // Only omit images for deliberate noindex pages (e.g. admin redirects).
+  const ogImages = input.noindex
+    ? []
+    : [{ url: resolvedImageUrl, alt: input.imageAlt ?? title, width: 1200, height: 630 }];
+
   const openGraph: Metadata['openGraph'] = {
     type: input.type ?? 'website',
     title,
@@ -59,9 +67,7 @@ export function buildMetadata(input: SeoInput): Metadata {
     url,
     siteName: brand,
     locale: input.locale,
-    images: input.imageUrl
-      ? [{ url: input.imageUrl, alt: input.imageAlt ?? title, width: 1200, height: 630 }]
-      : [],
+    images: ogImages,
     ...(input.type === 'article' && input.publishedAt
       ? { publishedTime: input.publishedAt, modifiedTime: input.updatedAt ?? input.publishedAt }
       : {}),
@@ -71,7 +77,7 @@ export function buildMetadata(input: SeoInput): Metadata {
     card: 'summary_large_image',
     title,
     description,
-    ...(input.imageUrl ? { images: [input.imageUrl] } : {}),
+    ...(input.noindex ? {} : { images: [resolvedImageUrl] }),
   };
 
   return {

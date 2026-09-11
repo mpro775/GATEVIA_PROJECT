@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { Icon } from '@gatevia/ui';
 import type { NavItem } from '@/lib/api';
@@ -16,7 +17,16 @@ function FallbackFooter({ locale }: { locale: string }) {
   return (
     <div className="footer-grid">
       <div className="footer-brand">
-        <div className="footer-title">{t.footer}</div>
+        <div className="footer-title">
+          <Image
+            src="/brand/gatevia-logo-dark.svg"
+            alt={t.footer}
+            width={160}
+            height={48}
+            className="footer-logo"
+            unoptimized
+          />
+        </div>
         <p>
           {locale.startsWith('ar')
             ? 'دخول السوق السعودي، التنفيذ، والنمو.'
@@ -68,7 +78,16 @@ export function Footer({
         {hasNav ? (
           <div className="footer-grid">
             <div className="footer-brand">
-              <div className="footer-title">{identity.name}</div>
+              <div className="footer-title">
+                <Image
+                  src="/brand/gatevia-logo-dark.svg"
+                  alt={identity.name}
+                  width={160}
+                  height={48}
+                  className="footer-logo"
+                  unoptimized
+                />
+              </div>
               <p>
                 {locale.startsWith('ar')
                   ? 'دخول السوق السعودي، التنفيذ، والنمو.'

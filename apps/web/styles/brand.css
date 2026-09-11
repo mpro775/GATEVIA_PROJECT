@@ -117,19 +117,6 @@
   background: var(--color-accent);
   inset: 26% auto auto 30%;
 }
-.gateway-visual__index,
-.gateway-visual__label {
-  position: absolute;
-  font-size: 0.68rem;
-  letter-spacing: 0.13em;
-  color: var(--color-text-muted);
-}
-.gateway-visual__index {
-  inset: 1.2rem auto auto 1.2rem;
-}
-.gateway-visual__label {
-  inset: auto 1.2rem 1.2rem auto;
-}
 .media-frame {
   position: relative;
   overflow: hidden;

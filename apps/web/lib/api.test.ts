@@ -75,7 +75,7 @@ describe('getDetail', () => {
   it('calls fetch with single-encoded URL when slug is already percent-encoded', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ data: { id: 'service-1', name: 'أبحاث السوق' } }),
+      json: () => Promise.resolve({ data: { id: 'service-1', name: 'أبحاث السوق' } }),
     });
     vi.stubGlobal('fetch', mockFetch);
 
@@ -87,14 +87,16 @@ describe('getDetail', () => {
     const requestUrl = mockFetch.mock.calls[0]?.[0] as string;
 
     // Check that the URL contains single percent encoding and NOT double encoding (%25D8...)
-    expect(requestUrl).toContain('/public/services/%D8%A3%D8%A8%D8%AD%D8%A7%D8%AB-%D8%A7%D9%84%D8%B3%D9%88%D9%82?locale=ar-sa');
+    expect(requestUrl).toContain(
+      '/public/services/%D8%A3%D8%A8%D8%AD%D8%A7%D8%AB-%D8%A7%D9%84%D8%B3%D9%88%D9%82?locale=ar-sa',
+    );
     expect(requestUrl).not.toContain('%25D8');
   });
 
   it('calls fetch with single-encoded URL when slug is raw Arabic unicode', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ data: { id: 'service-1', name: 'أبحاث السوق' } }),
+      json: () => Promise.resolve({ data: { id: 'service-1', name: 'أبحاث السوق' } }),
     });
     vi.stubGlobal('fetch', mockFetch);
 
@@ -105,7 +107,9 @@ describe('getDetail', () => {
     expect(mockFetch).toHaveBeenCalledOnce();
     const requestUrl = mockFetch.mock.calls[0]?.[0] as string;
 
-    expect(requestUrl).toContain('/public/services/%D8%A3%D8%A8%D8%AD%D8%A7%D8%AB-%D8%A7%D9%84%D8%B3%D9%88%D9%82?locale=ar-sa');
+    expect(requestUrl).toContain(
+      '/public/services/%D8%A3%D8%A8%D8%AD%D8%A7%D8%AB-%D8%A7%D9%84%D8%B3%D9%88%D9%82?locale=ar-sa',
+    );
   });
 
   it('throws ApiError with 404 status when API responds 404', async () => {
@@ -113,12 +117,13 @@ describe('getDetail', () => {
       ok: false,
       status: 404,
       statusText: 'Not Found',
-      json: async () => ({
-        type: 'https://gatevia.example/problems/request-error',
-        title: 'Not Found',
-        status: 404,
-        detail: 'Content translation unavailable.',
-      }),
+      json: () =>
+        Promise.resolve({
+          type: 'https://gatevia.example/problems/request-error',
+          title: 'Not Found',
+          status: 404,
+          detail: 'Content translation unavailable.',
+        }),
     });
     vi.stubGlobal('fetch', mockFetch);
 
@@ -137,12 +142,13 @@ describe('getDetail', () => {
       ok: false,
       status: 500,
       statusText: 'Internal Server Error',
-      json: async () => ({
-        type: 'https://gatevia.example/problems/request-error',
-        title: 'Internal server error',
-        status: 500,
-        detail: 'An unexpected error occurred.',
-      }),
+      json: () =>
+        Promise.resolve({
+          type: 'https://gatevia.example/problems/request-error',
+          title: 'Internal server error',
+          status: 500,
+          detail: 'An unexpected error occurred.',
+        }),
     });
     vi.stubGlobal('fetch', mockFetch);
 

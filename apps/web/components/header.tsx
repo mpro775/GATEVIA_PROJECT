@@ -33,16 +33,17 @@ function Brand({
   locale: string;
   identity: { name: string; logoUrl?: string | undefined };
 }) {
+  const markSrc = identity.logoUrl ?? '/brand/gatevia-mark.svg';
   return (
     <Link href={`/${locale}`} className="brand" aria-label={`${identity.name} home`}>
-      {identity.logoUrl ? (
-        <Image src={identity.logoUrl} alt="" width={42} height={42} className="brand-mark" />
-      ) : (
-        <span className="brand-glyph" aria-hidden="true">
-          <i />
-          <i />
-        </span>
-      )}
+      <Image
+        src={markSrc}
+        alt=""
+        width={42}
+        height={42}
+        className="brand-mark"
+        unoptimized={!identity.logoUrl || markSrc.endsWith('.svg')}
+      />
       <span>{identity.name}</span>
     </Link>
   );

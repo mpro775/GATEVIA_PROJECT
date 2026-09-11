@@ -31,8 +31,9 @@ export function normalizeRouteSlug(value: string): string {
  */
 export function isNotFoundError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
-  if ('status' in error && (error as { status: unknown }).status === 404) return true;
-  if ('statusCode' in error && (error as { statusCode: unknown }).statusCode === 404) return true;
+  if ('status' in error && (error as Record<string, unknown>)['status'] === 404) return true;
+  if ('statusCode' in error && (error as Record<string, unknown>)['statusCode'] === 404)
+    return true;
   if (error instanceof Error && error.message.includes('404')) return true;
   return false;
 }

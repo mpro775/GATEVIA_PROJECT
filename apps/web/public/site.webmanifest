@@ -1,6 +1,8 @@
 {
   "name": "GATEVIA",
   "short_name": "GATEVIA",
+  "start_url": "/",
+  "scope": "/",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",

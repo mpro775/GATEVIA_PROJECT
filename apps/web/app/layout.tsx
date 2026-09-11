@@ -7,12 +7,24 @@ import { localizedSetting } from '@/lib/content';
 import { JsonLd, organizationSchema } from '@/lib/seo';
 import './globals.css';
 
+const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
   const locale = requestHeaders.get('x-gatevia-locale') ?? 'en';
   const settings = await safe(getSettings(locale), { values: {}, media: {} });
   const name = localizedSetting(settings.values, 'company.name', locale, 'GATEVIA');
+  const defaultOgImage = new URL('/social/gatevia-og-default.jpg', SITE).toString();
   return {
+    manifest: '/site.webmanifest',
+    icons: {
+      icon: [
+        { url: '/favicon.ico', sizes: 'any' },
+        { url: '/android-chrome-192x192.png', sizes: '192x192', type: 'image/png' },
+        { url: '/android-chrome-512x512.png', sizes: '512x512', type: 'image/png' },
+      ],
+      apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+    },
     title: {
       default: localizedSetting(settings.values, 'seo.default_title', locale, name),
       template: `%s | ${name}`,
@@ -23,6 +35,14 @@ export async function generateMetadata(): Promise<Metadata> {
       locale,
       'Saudi market access, execution and growth.',
     ),
+    openGraph: {
+      siteName: name,
+      images: [{ url: defaultOgImage, width: 1200, height: 630, alt: name }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      images: [defaultOgImage],
+    },
     robots: { index: true, follow: true, 'max-image-preview': 'large' },
   };
 }
