@@ -5,18 +5,22 @@ import type { Language } from '@gatevia/api-client';
 import { useRouter } from 'next/navigation';
 import {
   cmsDefinitions,
-  fieldSchema,
   sectionSchemas,
   type CmsField,
   type SectionType,
 } from '@gatevia/contracts';
 import { Badge, Button, Field, Input, Textarea } from '@gatevia/ui';
 import { api } from '@/lib/api';
+import {
+  formatCmsValidationError,
+  makeCmsEditorPayload,
+  validateCmsEditorFields,
+  type TranslationMap,
+} from '@/lib/cms-editor';
 import { MediaPicker } from './media-picker';
 import { useAdminAuth } from './auth-context';
 
 type RelOption = { id: string; label: string };
-type TranslationMap = Record<string, Record<string, unknown>>;
 interface PageSection {
   id?: string;
   sectionType: SectionType;
@@ -745,6 +749,7 @@ export function ContentEditor({
   const [options, setOptions] = useState<Record<string, RelOption[]>>({});
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [messageIsError, setMessageIsError] = useState(false);
 
   useEffect(() => {
     void api<Language[]>('/admin/languages').then((rows) => {
@@ -829,46 +834,33 @@ export function ContentEditor({
       .filter(Boolean);
   }
   function makePayload() {
-    const body: Record<string, unknown> = {};
-    for (const key of Object.keys(activeDefinition.fields))
-      if (record[key] !== undefined) body[key] = record[key];
-    for (const [key, relation] of Object.entries(activeDefinition.relations))
-      if (record[key] !== undefined)
-        body[key] = relation.many ? relationIds(key, relation.foreignKey) : record[key];
-    body.translations = Object.fromEntries(
-      Object.entries(translations).map(([translationLocale, values]) => [
-        translationLocale,
-        Object.fromEntries(
-          Object.keys(activeDefinition.translations)
-            .filter((key) => values[key] !== undefined)
-            .map((key) => [key, values[key]]),
-        ),
-      ]),
-    );
-    if (record.status === 'draft' || record.status === 'review') body.status = record.status;
-    if (resource === 'pages')
-      body.sections = sections.map((section) => ({
-        sectionType: section.sectionType,
-        isVisible: section.isVisible,
-        settings: section.settings,
-        translations: section.translations,
-      }));
-    return body;
+    return makeCmsEditorPayload({
+      definition: activeDefinition,
+      record,
+      translations,
+      sections,
+      includeSections: resource === 'pages',
+    });
   }
   function validate(body: Record<string, unknown>) {
-    const localized = body.translations as TranslationMap;
-    for (const [translationLocale, values] of Object.entries(localized)) {
-      for (const [key, value] of Object.entries(values))
-        fieldSchema(activeDefinition.translations[key]!).parse(value);
-      if (!translationLocale) throw new Error('Choose a locale before editing translations.');
-    }
+    const issues = validateCmsEditorFields({ definition: activeDefinition, body, isCreate: !id });
     for (const section of (body.sections as PageSection[] | undefined) ?? [])
-      for (const tr of Object.values(section.translations))
-        sectionSchemas[section.sectionType].parse(tr.content);
+      for (const [translationLocale, tr] of Object.entries(section.translations)) {
+        const result = sectionSchemas[section.sectionType].safeParse(tr.content);
+        if (!result.success)
+          issues.push(
+            ...result.error.issues.map(
+              (issue) =>
+                `${translationLocale} ${humanize(section.sectionType)} section: ${issue.message}`,
+            ),
+          );
+      }
+    if (issues.length > 0) throw new Error(formatCmsValidationError(issues));
   }
   async function save(publish = false): Promise<Record<string, unknown> | undefined> {
     setBusy(true);
     setMessage('');
+    setMessageIsError(false);
     try {
       const body = makePayload();
       validate(body);
@@ -895,7 +887,8 @@ export function ContentEditor({
       if (!id) router.replace(`${returnPath}/${String(saved.id)}`);
       return result;
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Save failed.');
+      setMessageIsError(true);
+      setMessage(error instanceof Error ? error.message : 'Cannot save content.');
     } finally {
       setBusy(false);
     }
@@ -904,6 +897,7 @@ export function ContentEditor({
     if (!id) return;
     setBusy(true);
     setMessage('');
+    setMessageIsError(false);
     try {
       const result = await api<Record<string, unknown>>(`/admin/${resource}/${id}/${action}`, {
         method: 'POST',
@@ -915,6 +909,7 @@ export function ContentEditor({
       });
       setMessage(action === 'archive' ? 'Archived successfully.' : 'Moved to draft.');
     } catch (error) {
+      setMessageIsError(true);
       setMessage(error instanceof Error ? error.message : `Unable to ${action}.`);
     } finally {
       setBusy(false);
@@ -932,6 +927,7 @@ export function ContentEditor({
       const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
       window.open(`${site.replace(/\/$/, '')}${result.path}`, '_blank', 'noopener,noreferrer');
     } catch (error) {
+      setMessageIsError(true);
       setMessage(error instanceof Error ? error.message : 'Preview could not be opened.');
     }
   }
@@ -1119,7 +1115,10 @@ export function ContentEditor({
               </section>
             )}
             {message && (
-              <div className="form-status" role="status">
+              <div
+                className={`form-status${messageIsError ? ' form-status--error' : ''}`}
+                role={messageIsError ? 'alert' : 'status'}
+              >
                 {message}
               </div>
             )}

@@ -15,6 +15,7 @@ export type FieldKind =
 export interface CmsField {
   kind: FieldKind;
   required?: boolean;
+  nullable?: boolean;
   options?: string[];
 }
 export interface CmsRelation {
@@ -31,8 +32,18 @@ export interface CmsDefinition {
   translations: Record<string, CmsField>;
   relations: Record<string, CmsRelation>;
 }
-const f = (kind: FieldKind, required = false): CmsField => ({ kind, required });
-const select = (...options: string[]): CmsField => ({ kind: 'select', options });
+const nullableKinds = new Set<FieldKind>(['text', 'long', 'slug', 'url', 'date', 'media']);
+const f = (kind: FieldKind, required = false): CmsField => ({
+  kind,
+  required,
+  nullable: !required && nullableKinds.has(kind),
+});
+const select = (...options: string[]): CmsField => ({
+  kind: 'select',
+  required: true,
+  nullable: false,
+  options,
+});
 const common = { featured: f('boolean'), sortOrder: f('number') };
 const seo = {
   seoTitle: f('text'),
@@ -407,37 +418,69 @@ export const contentItemsSchema = z
   )
   .max(100);
 export function fieldSchema(field: CmsField): z.ZodTypeAny {
+  let schema: z.ZodTypeAny;
   switch (field.kind) {
     case 'boolean':
-      return z.boolean();
+      schema = z.boolean();
+      break;
     case 'number':
-      return z.number().int().min(0).max(1000000);
+      schema = z.number().int().min(0).max(1000000);
+      break;
     case 'media':
-      return z.string().uuid().nullable();
+      schema = z.string().uuid();
+      break;
     case 'url':
-      return safeHref.or(z.literal('')).nullable();
+      schema = safeHref;
+      break;
     case 'date':
-      return z.string().datetime({ offset: true }).nullable();
+      schema = z.string().datetime({ offset: true });
+      break;
     case 'blocks':
-      return richContentSchema;
+      schema = richContentSchema;
+      break;
     case 'items':
-      return contentItemsSchema;
+      schema = contentItemsSchema;
+      break;
     case 'select':
-      return z.string().refine((v) => field.options?.includes(v), 'Choose an allowed value.');
+      schema = z
+        .string()
+        .refine((value) => field.options?.includes(value), 'Choose an allowed value.');
+      break;
     case 'slug':
-      return z
+      schema = z
         .string()
         .trim()
         .min(1)
         .max(240)
         .regex(/^[\p{L}\p{N}_-]+$/u);
+      break;
     default:
-      return z
+      schema = z
         .string()
         .trim()
         .min(field.required ? 1 : 0)
         .max(field.kind === 'long' ? 30000 : 500);
   }
+  return field.nullable ? schema.nullable() : schema;
+}
+
+/** Normalize an authored CMS value to the storage contract without dropping explicit clears. */
+export function normalizeCmsFieldValue(field: CmsField, value: unknown): unknown {
+  if (value === '' && field.nullable) return null;
+  return value;
+}
+
+/** Apply CMS field normalization while preserving unknown keys for strict validation to report. */
+export function normalizeCmsFieldRecord(
+  fields: Record<string, CmsField>,
+  values: Record<string, unknown>,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(values).map(([key, value]) => [
+      key,
+      fields[key] ? normalizeCmsFieldValue(fields[key], value) : value,
+    ]),
+  );
 }
 export function translationCompleteness(def: CmsDefinition, translation?: Record<string, unknown>) {
   const required = Object.entries(def.translations)

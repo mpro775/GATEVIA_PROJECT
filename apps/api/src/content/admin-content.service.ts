@@ -9,6 +9,7 @@ import { z } from 'zod';
 import {
   cmsDefinitions,
   fieldSchema,
+  normalizeCmsFieldRecord,
   translationCompleteness,
   paginationSchema,
 } from '@gatevia/contracts';
@@ -173,6 +174,23 @@ export class AdminContentService {
   }
   private async normalize(resource: string, raw: Record<string, unknown>, id?: string) {
     const def = this.definition(resource);
+    const normalizedRaw = normalizeCmsFieldRecord(def.fields, raw);
+    if (
+      normalizedRaw.translations &&
+      typeof normalizedRaw.translations === 'object' &&
+      !Array.isArray(normalizedRaw.translations)
+    ) {
+      normalizedRaw.translations = Object.fromEntries(
+        Object.entries(normalizedRaw.translations as Record<string, unknown>).map(
+          ([locale, value]) => [
+            locale,
+            value && typeof value === 'object' && !Array.isArray(value)
+              ? normalizeCmsFieldRecord(def.translations, value as Record<string, unknown>)
+              : value,
+          ],
+        ),
+      );
+    }
     const shape: Record<string, z.ZodTypeAny> = {};
     for (const [key, field] of Object.entries(def.fields))
       shape[key] = id || !field.required ? fieldSchema(field).optional() : fieldSchema(field);
@@ -216,7 +234,7 @@ export class AdminContentService {
         )
         .max(100)
         .optional();
-    const data = z.object(shape).strict().parse(raw) as Record<string, unknown>;
+    const data = z.object(shape).strict().parse(normalizedRaw) as Record<string, unknown>;
     const localized = data.translations as Record<string, Record<string, unknown>> | undefined;
     if (localized) {
       await this.website.assertLocales(Object.keys(localized));
