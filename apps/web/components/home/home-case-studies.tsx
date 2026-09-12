@@ -1,16 +1,16 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { Icon } from '@gatevia/ui';
+import { MediaImage } from '@/components/media-image';
 import { text, translation } from '@/lib/content';
+import { mediaFromMap } from '@/lib/media';
 import { copy } from '@/lib/ui-copy';
-
-type MediaRecord = Record<string, { url?: string; translations?: Array<{ altText?: string }> }>;
 
 function caseMedia(item: Record<string, unknown>) {
   const tr = translation(item);
-  const media = item.media as MediaRecord | undefined;
+  const media = item.media;
   for (const id of [item.heroMediaId, tr.ogMediaId]) {
-    if (typeof id === 'string' && media?.[id]?.url) return media[id];
+    const candidate = mediaFromMap(media, id);
+    if (candidate?.url) return candidate;
   }
   return undefined;
 }
@@ -75,9 +75,10 @@ export function HomeCaseStudies({
           <article className="home-cases__featured" data-reveal="case-feature">
             <div className="home-cases__media">
               {featuredMedia?.url ? (
-                <Image
-                  src={featuredMedia.url}
-                  alt={featuredMedia.translations?.[0]?.altText ?? featuredTitle}
+                <MediaImage
+                  media={featuredMedia}
+                  alt={featuredTitle}
+                  preset="content"
                   fill
                   sizes="(max-width: 768px) 100vw, 62vw"
                 />

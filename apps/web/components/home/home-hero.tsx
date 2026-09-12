@@ -1,9 +1,8 @@
 import Link from 'next/link';
 import { text } from '@/lib/content';
+import type { MediaLike } from '@/lib/media';
 import { MediaFrame } from '../brand/media-frame';
 import { HeroGatewayScene } from './hero-gateway-scene';
-
-type MediaItem = { url?: string; translations?: Array<{ altText?: string }> } | undefined;
 
 function DirectionCue() {
   return (
@@ -21,7 +20,7 @@ export function HomeHero({
 }: {
   content: Record<string, unknown>;
   locale: string;
-  mediaItem: MediaItem;
+  mediaItem: MediaLike | undefined;
   railSteps: Record<string, unknown>[];
 }) {
   const primary = content.primaryCta as Record<string, unknown> | undefined;
@@ -73,9 +72,10 @@ export function HomeHero({
         <div className="home-hero__visual">
           {mediaItem?.url ? (
             <MediaFrame
-              src={mediaItem.url}
-              alt={mediaItem.translations?.[0]?.altText ?? ''}
+              media={mediaItem}
               priority
+              preset="hero"
+              sizes="(max-width: 834px) calc(100vw - 2rem), 58vw"
               className="home-hero__media"
             />
           ) : (

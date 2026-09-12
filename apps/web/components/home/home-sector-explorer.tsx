@@ -1,19 +1,19 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { Icon } from '@gatevia/ui';
 import { useId, useState } from 'react';
 import { text, translation } from '@/lib/content';
+import { MediaImage } from '@/components/media-image';
+import { mediaFromMap } from '@/lib/media';
 import { copy } from '@/lib/ui-copy';
-
-type MediaRecord = Record<string, { url?: string; translations?: Array<{ altText?: string }> }>;
 
 function sectorMedia(item: Record<string, unknown>) {
   const tr = translation(item);
-  const media = item.media as MediaRecord | undefined;
+  const media = item.media;
   for (const id of [item.heroMediaId, tr.ogMediaId]) {
-    if (typeof id === 'string' && media?.[id]?.url) return media[id];
+    const candidate = mediaFromMap(media, id);
+    if (candidate?.url) return candidate;
   }
   return undefined;
 }
@@ -86,9 +86,10 @@ export function HomeSectorExplorer({
               key={`${String(activeItem.id)}-${safeIndex}`}
             >
               {media?.url ? (
-                <Image
-                  src={media.url}
-                  alt={media.translations?.[0]?.altText ?? title}
+                <MediaImage
+                  media={media}
+                  alt={title}
+                  preset="content"
                   fill
                   sizes="(max-width: 768px) 100vw, 58vw"
                 />

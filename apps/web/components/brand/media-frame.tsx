@@ -1,25 +1,31 @@
-import Image from 'next/image';
+import { MediaImage } from '@/components/media-image';
+import type { MediaLike, MediaPreset } from '@/lib/media';
 
 export function MediaFrame({
-  src,
+  media,
   alt = '',
   priority = false,
   className = '',
+  preset = 'content',
+  sizes,
 }: {
-  src: string;
+  media: MediaLike;
   alt?: string;
   priority?: boolean;
   className?: string;
+  preset?: MediaPreset;
+  sizes?: string;
 }) {
   return (
     <figure className={`media-frame ${className}`.trim()} data-reveal="media">
-      <Image
-        src={src}
+      <MediaImage
+        media={media}
         alt={alt}
         width={1280}
         height={900}
-        sizes="(max-width: 768px) 100vw, 50vw"
+        sizes={sizes}
         priority={priority}
+        preset={preset}
       />
     </figure>
   );

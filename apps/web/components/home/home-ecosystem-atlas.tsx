@@ -1,26 +1,28 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { Icon } from '@gatevia/ui';
+import { MediaImage } from '@/components/media-image';
 import { text, translation } from '@/lib/content';
+import { mediaFromMap, type MediaLike } from '@/lib/media';
 import { copy } from '@/lib/ui-copy';
 
-type MediaRecord = Record<string, { url?: string; translations?: Array<{ altText?: string }> }>;
 type EcosystemKind = 'brand' | 'product';
 type MediaMode = 'cover' | 'logo';
 
 function identityMedia(
   item: Record<string, unknown>,
   kind: EcosystemKind,
-): { media: MediaRecord[string] | undefined; mode: MediaMode } {
-  const mediaMap = item.media as MediaRecord | undefined;
+): { media: MediaLike | undefined; mode: MediaMode } {
+  const mediaMap = item.media;
   // brand with cover image → cover presentation
-  if (kind === 'brand' && typeof item.coverMediaId === 'string' && mediaMap?.[item.coverMediaId]?.url) {
-    return { media: mediaMap[item.coverMediaId], mode: 'cover' };
+  const cover = mediaFromMap(mediaMap, item.coverMediaId);
+  if (kind === 'brand' && cover?.url) {
+    return { media: cover, mode: 'cover' };
   }
   // brand logo-only OR product logo → logo presentation
   const logoId = kind === 'brand' ? item.logoMediaId : item.logoMediaId;
-  if (typeof logoId === 'string' && mediaMap?.[logoId]?.url) {
-    return { media: mediaMap[logoId], mode: 'logo' };
+  const logo = mediaFromMap(mediaMap, logoId);
+  if (logo?.url) {
+    return { media: logo, mode: 'logo' };
   }
   return { media: undefined, mode: 'logo' };
 }
@@ -130,9 +132,10 @@ export function HomeEcosystemAtlas({
         <article className="home-ecosystem__featured" data-reveal="ecosystem-feature">
           <div className={`home-ecosystem__identity home-ecosystem__identity--${featuredMediaMode}`}>
             {featuredMedia?.url ? (
-              <Image
-                src={featuredMedia.url}
-                alt={featuredMedia.translations?.[0]?.altText ?? featuredName}
+              <MediaImage
+                media={featuredMedia}
+                alt={featuredName}
+                preset={featuredMediaMode === 'logo' ? 'logo' : 'content'}
                 fill
                 sizes="(max-width: 768px) 100vw, 38vw"
               />

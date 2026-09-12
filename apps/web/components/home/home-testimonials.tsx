@@ -1,12 +1,10 @@
-import Image from 'next/image';
+import { MediaImage } from '@/components/media-image';
 import { text, translation } from '@/lib/content';
+import { mediaFromMap } from '@/lib/media';
 import { copy } from '@/lib/ui-copy';
 
-type MediaRecord = Record<string, { url?: string; translations?: Array<{ altText?: string }> }>;
-
 function testimonialLogo(item: Record<string, unknown>) {
-  const media = item.media as MediaRecord | undefined;
-  return typeof item.logoMediaId === 'string' ? media?.[item.logoMediaId] : undefined;
+  return mediaFromMap(item.media, item.logoMediaId);
 }
 
 function Attribution({ item }: { item: Record<string, unknown> }) {
@@ -16,9 +14,10 @@ function Attribution({ item }: { item: Record<string, unknown> }) {
     <footer className="home-testimonials__attribution">
       {logo?.url && (
         <span className="home-testimonials__logo">
-          <Image
-            src={logo.url}
-            alt={logo.translations?.[0]?.altText ?? text(item.companyName)}
+          <MediaImage
+            media={logo}
+            alt={text(item.companyName)}
+            preset="logo"
             width={120}
             height={48}
             sizes="120px"

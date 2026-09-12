@@ -3,6 +3,8 @@ import { EmptyState, Icon } from '@gatevia/ui';
 import { getList, safe } from '@/lib/api';
 import { list, text, translation } from '@/lib/content';
 import { copy } from '@/lib/ui-copy';
+import { MediaImage } from './media-image';
+import { mediaFromMap, type MediaMap } from '@/lib/media';
 import { LeadForm } from './lead-form';
 import { GatewayVisual } from './brand/gateway-visual';
 import { MediaFrame } from './brand/media-frame';
@@ -125,11 +127,8 @@ export async function SectionRenderer({
           const type = text(row.sectionType);
           const settings = row.settings as Record<string, unknown> | undefined;
           const demo = settings?.demo === true;
-          const media = row.media as
-            | Record<string, { url?: string; translations?: Array<{ altText?: string }> }>
-            | undefined;
-          const mediaItem =
-            typeof content.mediaId === 'string' ? media?.[content.mediaId] : undefined;
+          const media = row.media as MediaMap | undefined;
+          const mediaItem = mediaFromMap(media, content.mediaId);
 
           if (type === 'hero') {
             if (variant === 'home') {
@@ -187,9 +186,10 @@ export async function SectionRenderer({
                   </div>
                   {mediaItem?.url ? (
                     <MediaFrame
-                      src={mediaItem.url}
-                      alt={mediaItem.translations?.[0]?.altText ?? ''}
+                      media={mediaItem}
                       priority
+                      preset="hero"
+                      sizes="(max-width: 768px) calc(100vw - 2rem), 50vw"
                     />
                   ) : (
                     <GatewayVisual />
@@ -201,7 +201,7 @@ export async function SectionRenderer({
 
           if (type === 'text_image') {
             const image = mediaItem?.url ? (
-              <MediaFrame src={mediaItem.url} alt={mediaItem.translations?.[0]?.altText ?? ''} />
+              <MediaFrame media={mediaItem} preset="content" />
             ) : null;
             return (
               <section className="section section--surface" key={String(row.id)}>
@@ -444,27 +444,19 @@ export async function SectionRenderer({
                   <div className="logo-cloud">
                     {items.map((item) => {
                       const itemTr = translation(item);
-                      const itemMedia = item.media as
-                        | Record<
-                            string,
-                            { url?: string; translations?: Array<{ altText?: string }> }
-                          >
-                        | undefined;
+                      const itemMedia = item.media;
                       const logoId = text(item.logoMediaId);
-                      const logo = logoId ? itemMedia?.[logoId] : undefined;
+                      const logo = mediaFromMap(itemMedia, logoId);
                       return (
                         <div className="logo-card" key={String(item.id)} data-reveal="fade">
                           {logo?.url && (
-                            <>
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={logo.url}
-                                alt={
-                                  logo.translations?.[0]?.altText ??
-                                  text(itemTr.name ?? itemTr.title)
-                                }
-                              />
-                            </>
+                            <MediaImage
+                              media={logo}
+                              alt={text(itemTr.name ?? itemTr.title)}
+                              preset="logo"
+                              width={180}
+                              height={72}
+                            />
                           )}
                           <strong>{text(itemTr.name ?? itemTr.title)}</strong>
                         </div>

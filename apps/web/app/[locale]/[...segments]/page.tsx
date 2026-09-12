@@ -11,6 +11,7 @@ import {
   SectionRenderer,
 } from '@/components/content';
 import { LeadForm } from '@/components/lead-form';
+import { MediaImage } from '@/components/media-image';
 import {
   getDetail,
   getList,
@@ -22,6 +23,7 @@ import {
 } from '@/lib/api';
 import { list, localizedSetting, resolvedMediaUrl, text, translation } from '@/lib/content';
 import { copy } from '@/lib/ui-copy';
+import type { MediaLike, MediaMap } from '@/lib/media';
 import {
   breadcrumbSchema,
   buildMetadata,
@@ -419,11 +421,13 @@ function CaseStudyDetail({ entity, locale }: { entity: Record<string, unknown>; 
               {gallery.map((media, i) => (
                 <div key={i} className="content-card">
                   {text(media.url) && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={text(media.url)}
+                    <MediaImage
+                      media={media as MediaLike}
                       alt={text(media.alt)}
-                      loading="lazy"
+                      preset="content"
+                      width={1280}
+                      height={800}
+                      sizes="(max-width: 768px) calc(100vw - 2rem), 50vw"
                       className="gallery-image"
                     />
                   )}
@@ -478,9 +482,7 @@ function InsightDetail({ entity, locale }: { entity: Record<string, unknown>; lo
           <RichBlocks
             blocks={tr.content}
             media={
-              (entity.media as
-                | Record<string, { url?: string; translations?: Array<{ altText?: string }> }>
-                | undefined) ?? {}
+              (entity.media as MediaMap | undefined) ?? {}
             }
           />
         ) : (

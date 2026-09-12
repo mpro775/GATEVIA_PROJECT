@@ -1,7 +1,8 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { Icon } from '@gatevia/ui';
+import { MediaImage } from '@/components/media-image';
 import { text, translation } from '@/lib/content';
+import { mediaFromMap, type MediaLike } from '@/lib/media';
 
 type Stage = {
   key: string;
@@ -11,22 +12,22 @@ type Stage = {
 };
 
 type ServiceMedia = {
-  item: { url?: string; translations?: Array<{ altText?: string }> };
+  item: MediaLike;
   mode: 'cover' | 'contain';
 };
 
 function mediaForService(item: Record<string, unknown>): ServiceMedia | undefined {
   const tr = translation(item);
-  const media = item.media as
-    Record<string, { url?: string; translations?: Array<{ altText?: string }> }> | undefined;
+  const media = item.media;
   const candidates: Array<{ id: unknown; mode: ServiceMedia['mode'] }> = [
     { id: item.heroMediaId, mode: 'cover' },
     { id: item.iconMediaId, mode: 'contain' },
     { id: tr.ogMediaId, mode: 'cover' },
   ];
   for (const candidate of candidates) {
-    if (typeof candidate.id === 'string' && media?.[candidate.id]?.url) {
-      return { item: media[candidate.id]!, mode: candidate.mode };
+    const resolved = mediaFromMap(media, candidate.id);
+    if (resolved?.url) {
+      return { item: resolved, mode: candidate.mode };
     }
   }
   return undefined;
@@ -155,9 +156,9 @@ export function HomeServicesShowcase({
                           <span
                             className={`home-services__item-media home-services__item-media--${serviceMedia.mode}`}
                           >
-                            <Image
-                              src={serviceMedia.item.url}
-                              alt={serviceMedia.item.translations?.[0]?.altText ?? ''}
+                            <MediaImage
+                              media={serviceMedia.item}
+                              preset={serviceMedia.mode === 'contain' ? 'logo' : 'thumbnail'}
                               fill
                               sizes="(max-width: 834px) 6rem, 7rem"
                             />

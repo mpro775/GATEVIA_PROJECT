@@ -1,10 +1,9 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { Icon } from '@gatevia/ui';
+import { MediaImage } from '@/components/media-image';
 import { text, translation } from '@/lib/content';
+import { getMediaAlt, mediaFromMap } from '@/lib/media';
 import { copy } from '@/lib/ui-copy';
-
-type MediaRecord = Record<string, { url?: string; translations?: Array<{ altText?: string }> }>;
 
 /**
  * Resource-aware media resolver.
@@ -13,7 +12,7 @@ type MediaRecord = Record<string, { url?: string; translations?: Array<{ altText
  */
 function mediaFor(item: Record<string, unknown>, resource?: string) {
   const tr = translation(item);
-  const media = item.media as MediaRecord | undefined;
+  const media = item.media;
 
   // Build a priority list of candidate IDs based on the resource type.
   let ids: unknown[];
@@ -68,7 +67,8 @@ function mediaFor(item: Record<string, unknown>, resource?: string) {
   }
 
   for (const id of ids) {
-    if (typeof id === 'string' && media?.[id]?.url) return media[id];
+    const candidate = mediaFromMap(media, id);
+    if (candidate?.url) return candidate;
   }
   return undefined;
 }
@@ -101,14 +101,18 @@ function CardLink({
 
 function Media({ item, resource }: { item: Record<string, unknown>; resource?: string }) {
   const media = mediaFor(item, resource);
+  const logoPreset = ['clients', 'partners', 'certifications', 'testimonials', 'products'].includes(
+    resource ?? '',
+  );
   return media?.url ? (
     <div className="resource-card__media">
-      <Image
-        src={media.url}
-        alt={media.translations?.[0]?.altText ?? ''}
+      <MediaImage
+        media={media}
+        alt={getMediaAlt(media)}
+        preset={logoPreset ? 'logo' : 'card'}
         width={900}
         height={640}
-        sizes="(max-width: 700px) 100vw, 33vw"
+        sizes="(max-width: 700px) calc(100vw - 2rem), (max-width: 1100px) 50vw, 33vw"
       />
     </div>
   ) : (

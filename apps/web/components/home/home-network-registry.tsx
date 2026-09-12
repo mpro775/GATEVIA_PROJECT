@@ -1,12 +1,10 @@
-import Image from 'next/image';
+import { MediaImage } from '@/components/media-image';
 import { text, translation } from '@/lib/content';
+import { mediaFromMap } from '@/lib/media';
 import { copy } from '@/lib/ui-copy';
 
-type MediaRecord = Record<string, { url?: string; translations?: Array<{ altText?: string }> }>;
-
 function logoFor(item: Record<string, unknown>) {
-  const media = item.media as MediaRecord | undefined;
-  return typeof item.logoMediaId === 'string' ? media?.[item.logoMediaId] : undefined;
+  return mediaFromMap(item.media, item.logoMediaId);
 }
 
 function validWebsite(value: unknown): string | undefined {
@@ -41,9 +39,10 @@ function RegistryItem({
       </span>
       <span className="home-network__logo">
         {logo?.url ? (
-          <Image
-            src={logo.url}
-            alt={logo.translations?.[0]?.altText ?? name}
+          <MediaImage
+            media={logo}
+            alt={name}
+            preset="logo"
             width={180}
             height={72}
             sizes="180px"

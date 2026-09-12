@@ -46,6 +46,8 @@ export const resolvedMediaUrl = (
   mediaId: unknown,
 ): string | undefined => {
   if (typeof mediaId !== 'string') return undefined;
+  // Metadata and structured-data consumers need a stable, directly crawlable public URL.
+  // Visual components use MediaImage and the generated variants instead.
   const media = entity.media as Record<string, { url?: string }> | undefined;
   return media?.[mediaId]?.url;
 };

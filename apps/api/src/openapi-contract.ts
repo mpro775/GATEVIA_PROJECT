@@ -134,6 +134,7 @@ const schemas: Record<string, SchemaObject> = {
       url: { type: 'string', format: 'uri' },
       width: { type: 'integer' },
       height: { type: 'integer' },
+      mimeType: { type: 'string' },
     },
   },
   MediaFolder: {
@@ -152,9 +153,14 @@ const schemas: Record<string, SchemaObject> = {
       id: { type: 'string', format: 'uuid' },
       originalFilename: { type: 'string' },
       mimeType: { type: 'string' },
-      status: { type: 'string', enum: ['pending', 'processing', 'ready', 'failed', 'archived'] },
+      status: {
+        type: 'string',
+        enum: ['pending_upload', 'processing', 'ready', 'failed', 'archived'],
+      },
       sizeBytes: { oneOf: [{ type: 'integer' }, { type: 'string' }] },
       url: { type: 'string', format: 'uri' },
+      width: { type: 'integer' },
+      height: { type: 'integer' },
       folderId: nullable({ type: 'string', format: 'uuid' }),
       folder: nullable(ref('MediaFolder')),
       translations: arrayOf(ref('MediaTranslation')),

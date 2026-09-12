@@ -1,7 +1,8 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { Icon } from '@gatevia/ui';
+import { MediaImage } from '@/components/media-image';
 import { text } from '@/lib/content';
+import type { MediaLike } from '@/lib/media';
 
 export function HomeConsultationGateway({
   content,
@@ -10,7 +11,7 @@ export function HomeConsultationGateway({
 }: {
   content: Record<string, unknown>;
   locale: string;
-  mediaItem?: { url?: string; translations?: Array<{ altText?: string }> } | undefined;
+  mediaItem?: MediaLike | undefined;
 }) {
   const primaryCta = content.primaryCta as Record<string, unknown> | undefined;
   const hasAction = Boolean(primaryCta?.label) && Boolean(primaryCta?.href);
@@ -30,9 +31,9 @@ export function HomeConsultationGateway({
         <div className="home-consultation__action-side">
           {mediaItem?.url ? (
             <div className="home-consultation__visual" data-reveal="home-consultation">
-              <Image
-                src={mediaItem.url}
-                alt={mediaItem.translations?.[0]?.altText ?? ''}
+              <MediaImage
+                media={mediaItem}
+                preset="content"
                 fill
                 sizes="(max-width: 834px) calc(100vw - 2rem), 42vw"
               />

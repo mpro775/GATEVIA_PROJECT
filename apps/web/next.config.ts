@@ -3,6 +3,20 @@ import path from 'node:path';
 const apiOrigin = process.env.NEXT_PUBLIC_API_URL
   ? new URL(process.env.NEXT_PUBLIC_API_URL).origin
   : "'self'";
+const configuredImageOrigins = [
+  process.env.NEXT_PUBLIC_MEDIA_URL,
+  process.env.R2_PUBLIC_BASE_URL,
+  process.env.NEXT_PUBLIC_API_URL,
+].filter((value): value is string => Boolean(value));
+const remotePatterns = configuredImageOrigins.flatMap((value) => {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return [];
+    return [{ protocol: url.protocol.slice(0, -1) as 'http' | 'https', hostname: url.hostname, port: url.port }];
+  } catch {
+    return [];
+  }
+});
 const nextConfig: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.resolve(__dirname, '../..'),
@@ -14,7 +28,7 @@ const nextConfig: NextConfig = {
     };
     return config;
   },
-  images: { remotePatterns: [{ protocol: 'https', hostname: '**' }] },
+  images: { remotePatterns },
   headers() {
     return Promise.resolve([
       {

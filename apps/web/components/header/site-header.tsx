@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Icon, IconButton, ThemeToggle } from '@gatevia/ui';
 import { apiClient, type Language, type NavItem } from '@/lib/api';
 import { copy } from '@/lib/ui-copy';
+import type { MediaIdentity } from '@/lib/media';
 import { track } from '../analytics';
 import { HeaderBrand } from './brand';
 import { DesktopNavigation } from './desktop-navigation';
@@ -14,7 +15,7 @@ import { LanguageMenu } from './language-menu';
 import { MobileNavigation } from './mobile-navigation';
 import { useHeaderScrollState } from './use-header-scroll-state';
 
-export function Header({ locale, languages, navItems, identity }: { locale: string; languages: Language[]; navItems: NavItem[]; identity: { name: string; logoUrl?: string | undefined } }) {
+export function Header({ locale, languages, navItems, identity }: { locale: string; languages: Language[]; navItems: NavItem[]; identity: MediaIdentity }) {
   const pathname = usePathname();
   const scrolled = useHeaderScrollState();
   const [drawerMounted, setDrawerMounted] = useState(false);

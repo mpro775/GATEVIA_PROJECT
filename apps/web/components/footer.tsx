@@ -1,7 +1,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Icon } from '@gatevia/ui';
+import { MediaImage } from '@/components/media-image';
 import type { FooterNavigation, NavItem } from '@/lib/api';
+import type { MediaIdentity } from '@/lib/media';
 import { copy } from '@/lib/ui-copy';
 
 type FooterLink = { id: string; label: string; href: string; external?: boolean };
@@ -72,9 +74,7 @@ export function Footer({
 }: {
   locale: string;
   navigation: FooterNavigation;
-  identity: {
-    name: string;
-    logoUrl?: string | undefined;
+  identity: MediaIdentity & {
     email?: string | undefined;
     phone?: string | undefined;
     linkedInUrl?: string | undefined;
@@ -121,16 +121,28 @@ export function Footer({
         <div className="footer-layout">
           <div className="footer-brand" data-reveal="up">
             <div
-              className={`footer-logo-surface${identity.logoUrl ? ' footer-logo-surface--cms' : ''}`}
+              className={`footer-logo-surface${identity.logoMedia?.url ? ' footer-logo-surface--cms' : ''}`}
             >
-              <Image
-                src={identity.logoUrl ?? '/brand/gatevia-logo-dark.svg'}
-                alt={identity.name}
-                width={190}
-                height={58}
-                className="footer-logo"
-                unoptimized={!identity.logoUrl || (identity.logoUrl ?? '').endsWith('.svg')}
-              />
+              {identity.logoMedia?.url ? (
+                <MediaImage
+                  media={identity.logoMedia}
+                  preset="logo"
+                  alt={identity.name}
+                  width={190}
+                  height={58}
+                  sizes="190px"
+                  className="footer-logo"
+                />
+              ) : (
+                <Image
+                  src="/brand/gatevia-logo-dark.svg"
+                  alt={identity.name}
+                  width={190}
+                  height={58}
+                  className="footer-logo"
+                  unoptimized
+                />
+              )}
             </div>
             <p>
               {locale.startsWith('ar')

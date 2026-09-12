@@ -1,5 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { MediaImage } from '@/components/media-image';
+import type { MediaIdentity } from '@/lib/media';
 import { copy } from '@/lib/ui-copy';
 
 export function HeaderBrand({
@@ -8,10 +10,9 @@ export function HeaderBrand({
   onNavigate,
 }: {
   locale: string;
-  identity: { name: string; logoUrl?: string | undefined };
+  identity: MediaIdentity;
   onNavigate?: () => void;
 }) {
-  const markSrc = identity.logoUrl ?? '/brand/gatevia-mark.svg';
   const t = copy(locale);
   return (
     <Link
@@ -20,14 +21,26 @@ export function HeaderBrand({
       aria-label={`${identity.name} ${t.brandHome}`}
       {...(onNavigate ? { onClick: onNavigate } : {})}
     >
-      <Image
-        src={markSrc}
-        alt=""
-        width={42}
-        height={42}
-        className="brand-mark"
-        unoptimized={!identity.logoUrl || markSrc.endsWith('.svg')}
-      />
+      {identity.logoMedia?.url ? (
+        <MediaImage
+          media={identity.logoMedia}
+          preset="logo"
+          alt=""
+          width={42}
+          height={42}
+          sizes="42px"
+          className="brand-mark"
+        />
+      ) : (
+        <Image
+          src="/brand/gatevia-mark.svg"
+          alt=""
+          width={42}
+          height={42}
+          className="brand-mark"
+          unoptimized
+        />
+      )}
       <span>{identity.name}</span>
     </Link>
   );

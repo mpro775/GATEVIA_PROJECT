@@ -4,6 +4,7 @@ import { Header } from '@/components/header';
 import { MotionObserver } from '@/components/motion/motion-observer';
 import { getFooterNavigation, getLanguages, getNavigation, getSettings, safe } from '@/lib/api';
 import { localizedSetting } from '@/lib/content';
+import { mediaFromMap } from '@/lib/media';
 import { copy } from '@/lib/ui-copy';
 
 export default async function LocaleLayout({
@@ -50,7 +51,7 @@ export default async function LocaleLayout({
   const logoId = settings.values['company.logo_media_id'];
   const identity = {
     name: localizedSetting(settings.values, 'company.name', language.code, 'GATEVIA'),
-    logoUrl: typeof logoId === 'string' ? settings.media[logoId]?.url : undefined,
+    logoMedia: mediaFromMap(settings.media, logoId),
     email:
       typeof settings.values['contact.email'] === 'string'
         ? settings.values['contact.email']

@@ -1,14 +1,13 @@
-import Image from 'next/image';
+import { MediaImage } from '@/components/media-image';
 import { list, text } from '@/lib/content';
-
-type MediaRecord = Record<string, { url?: string; translations?: Array<{ altText?: string }> }>;
+import { mediaFromMap, type MediaMap } from '@/lib/media';
 
 export function StrategicPillars({
   content,
   media,
 }: {
   content: Record<string, unknown>;
-  media?: MediaRecord | undefined;
+  media?: MediaMap | undefined;
 }) {
   const steps = list(content.steps) as Record<string, unknown>[];
 
@@ -33,7 +32,7 @@ export function StrategicPillars({
           <ol className="strategic-pillars__grid">
             {steps.map((rawStep, index) => {
               const mediaId = typeof rawStep.mediaId === 'string' ? rawStep.mediaId : undefined;
-              const item = mediaId ? media?.[mediaId] : undefined;
+              const item = mediaFromMap(media, mediaId);
               return (
                 <li
                   className="strategic-pillar"
@@ -51,9 +50,9 @@ export function StrategicPillars({
                   </div>
                   {item?.url ? (
                     <div className="strategic-pillar__media" data-reveal="media">
-                      <Image
-                        src={item.url}
-                        alt={item.translations?.[0]?.altText ?? ''}
+                      <MediaImage
+                        media={item}
+                        preset="card"
                         fill
                         sizes="(max-width: 834px) calc(100vw - 5rem), 33vw"
                       />

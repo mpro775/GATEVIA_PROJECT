@@ -281,7 +281,7 @@ export class PublicContentService {
   }
   async media(id: string, locale: string) {
     const media = await this.prisma.media.findFirst({
-      where: { id, status: 'ready' },
+      where: { id, status: { in: ['processing', 'ready', 'failed'] } },
       include: { translations: { where: { locale } }, variants: true },
     });
     if (!media) return null;
@@ -289,17 +289,22 @@ export class PublicContentService {
     if (!base) return null;
     return {
       id: media.id,
+      originalFilename: media.originalFilename,
       url: `${base}/${media.storageKey}`,
       mimeType: media.mimeType,
+      status: media.status,
+      sizeBytes: media.sizeBytes.toString(),
       width: media.width,
       height: media.height,
       translations: media.translations.map((t) => ({
+        locale: t.locale,
         title: t.title,
         altText: t.altText,
         caption: t.caption,
         decorative: t.decorative,
       })),
       variants: media.variants.map((v) => ({
+        variantKey: v.variantKey,
         key: v.variantKey,
         url: `${base}/${v.storageKey}`,
         width: v.width,

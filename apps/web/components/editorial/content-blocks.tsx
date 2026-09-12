@@ -1,13 +1,14 @@
-import Image from 'next/image';
 import Link from 'next/link';
+import { MediaImage } from '@/components/media-image';
 import { list, text } from '@/lib/content';
+import { mediaFromMap, type MediaMap } from '@/lib/media';
 
 export function RichBlocks({
   blocks,
   media = {},
 }: {
   blocks: unknown;
-  media?: Record<string, { url?: string; translations?: Array<{ altText?: string }> }>;
+  media?: MediaMap;
 }) {
   return (
     <>
@@ -43,12 +44,12 @@ export function RichBlocks({
             </p>
           );
         if (type === 'image') {
-          const item = media[text(block.mediaId)];
+          const item = mediaFromMap(media, block.mediaId);
           return item?.url ? (
             <figure className="editorial-media" key={index} data-reveal="media">
-              <Image
-                src={item.url}
-                alt={item.translations?.[0]?.altText ?? ''}
+              <MediaImage
+                media={item}
+                preset="content"
                 width={1280}
                 height={800}
                 sizes="(max-width: 850px) 100vw, 800px"

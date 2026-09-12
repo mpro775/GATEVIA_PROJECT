@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Icon, IconButton, ThemeToggle } from '@gatevia/ui';
 import type { Language, NavItem } from '@/lib/api';
+import type { MediaIdentity } from '@/lib/media';
 import { HeaderBrand } from './brand';
 import { resolveUrl } from './header-utils';
 
@@ -16,7 +17,7 @@ export function MobileNavigation({ active, mounted, locale, languages, links, id
   locale: string;
   languages: Language[];
   links: NavItem[];
-  identity: { name: string; logoUrl?: string | undefined };
+  identity: MediaIdentity;
   labels: { menu: string; close: string; consultation: string; language: string };
   onClose: () => void;
   onLanguage: (language: Language) => void;

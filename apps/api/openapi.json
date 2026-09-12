@@ -2574,6 +2574,9 @@
           },
           "height": {
             "type": "integer"
+          },
+          "mimeType": {
+            "type": "string"
           }
         }
       },
@@ -2627,7 +2630,7 @@
           "status": {
             "type": "string",
             "enum": [
-              "pending",
+              "pending_upload",
               "processing",
               "ready",
               "failed",
@@ -2647,6 +2650,12 @@
           "url": {
             "type": "string",
             "format": "uri"
+          },
+          "width": {
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer"
           },
           "folderId": {
             "oneOf": [

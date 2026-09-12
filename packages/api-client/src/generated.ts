@@ -265,6 +265,7 @@ export interface components {
       url?: string;
       width?: number;
       height?: number;
+      mimeType?: string;
     };
     MediaFolder: {
       /** Format: uuid */
@@ -278,10 +279,12 @@ export interface components {
       originalFilename: string;
       mimeType: string;
       /** @enum {string} */
-      status: "pending" | "processing" | "ready" | "failed" | "archived";
+      status: "pending_upload" | "processing" | "ready" | "failed" | "archived";
       sizeBytes: number | string;
       /** Format: uri */
       url?: string;
+      width?: number;
+      height?: number;
       folderId?: string | null;
       folder?: components["schemas"]["MediaFolder"] | null;
       translations?: components["schemas"]["MediaTranslation"][];
