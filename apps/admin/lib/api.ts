@@ -139,14 +139,16 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
  */
 export const apiEnvelope = async <T>(
   path: string,
+  init: RequestInit = {},
 ): Promise<{
   data: T[];
   meta: { page: number; pageSize: number; total: number; pageCount: number };
 }> => {
   const fullUrl = `${apiOrigin}${resolveApiPath(path)}`;
   const response = await fetch(fullUrl, {
+    ...init,
     credentials: 'include',
-    headers: { Accept: 'application/json' },
+    headers: { Accept: 'application/json', ...init.headers },
   });
   const body = (await response.json()) as {
     data: T[];

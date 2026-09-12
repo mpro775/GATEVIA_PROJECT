@@ -1,15 +1,17 @@
 import { MediaImage } from '@/components/media-image';
-import { list, text } from '@/lib/content';
-import { mediaFromMap, type MediaMap } from '@/lib/media';
+import { text, translation } from '@/lib/content';
+import { mediaFromMap } from '@/lib/media';
 
 export function StrategicPillars({
   content,
-  media,
+  categories,
 }: {
   content: Record<string, unknown>;
-  media?: MediaMap | undefined;
+  categories: Record<string, unknown>[];
 }) {
-  const steps = list(content.steps) as Record<string, unknown>[];
+  const orderedCategories = [...categories].sort(
+    (a, b) => Number(a.sortOrder ?? 0) - Number(b.sortOrder ?? 0),
+  );
 
   return (
     <section className="section strategic-pillars" data-home-section="pillars">
@@ -30,19 +32,19 @@ export function StrategicPillars({
         <div className="strategic-pillars__composition">
           <div className="strategic-pillars__connector" aria-hidden="true" data-reveal="line" />
           <ol className="strategic-pillars__grid">
-            {steps.map((rawStep, index) => {
-              const mediaId = typeof rawStep.mediaId === 'string' ? rawStep.mediaId : undefined;
-              const item = mediaFromMap(media, mediaId);
+            {orderedCategories.map((category, index) => {
+              const tr = translation(category);
+              const item = mediaFromMap(category.media, category.coverMediaId);
               return (
                 <li
                   className="strategic-pillar"
-                  key={index}
+                  key={String(category.id ?? index)}
                   data-reveal="up"
                   style={{ '--reveal-delay': `${160 + index * 80}ms` } as React.CSSProperties}
                 >
                   <div className="strategic-pillar__topline">
                     <span className="strategic-pillar__index">
-                      {text(rawStep.marker, String(index + 1).padStart(2, '0'))}
+                      {String(index + 1).padStart(2, '0')}
                     </span>
                     <span className="strategic-pillar__coordinate" aria-hidden="true">
                       GTV / {String(index + 1).padStart(2, '0')}
@@ -59,8 +61,8 @@ export function StrategicPillars({
                     </div>
                   ) : null}
                   <div className="strategic-pillar__copy">
-                    <h3>{text(rawStep.title)}</h3>
-                    <p>{text(rawStep.body)}</p>
+                    <h3>{text(tr.name)}</h3>
+                    <p>{text(tr.description)}</p>
                   </div>
                 </li>
               );

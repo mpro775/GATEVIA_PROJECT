@@ -93,6 +93,7 @@ export interface paths {
     post: operations["MediaController_finalize"];
   };
   "/api/v1/admin/media/{id}": {
+    get: operations["MediaController_get"];
     patch: operations["MediaController_update"];
   };
   "/api/v1/admin/media/{id}/usages": {
@@ -734,6 +735,11 @@ export interface operations {
     };
   };
   MediaController_list: {
+    parameters: {
+      query?: {
+        mimePrefix?: unknown;
+      };
+    };
     responses: {
       /** @description Successful response */
       200: {
@@ -792,6 +798,24 @@ export interface operations {
     responses: {
       /** @description Successful response */
       201: {
+        content: {
+          "application/json": {
+            data: components["schemas"]["Media"];
+          };
+        };
+      };
+      /** @description Problem Details error response */
+      default: {
+        content: {
+          "application/problem+json": components["schemas"]["ProblemDetails"];
+        };
+      };
+    };
+  };
+  MediaController_get: {
+    responses: {
+      /** @description Successful response */
+      200: {
         content: {
           "application/json": {
             data: components["schemas"]["Media"];

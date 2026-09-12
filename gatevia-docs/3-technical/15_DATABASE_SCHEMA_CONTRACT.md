@@ -240,11 +240,14 @@ UNIQUE(section_id, locale)
 ```text
 id UUID PK
 icon_media_id FK media NULL
+cover_media_id FK media NULL
 status
 sort_order
 created_at
 updated_at
 ```
+
+Both media relations use `ON DELETE RESTRICT` and are indexed. `icon_media_id` is the small symbolic visual; `cover_media_id` is category/pillar photography.
 
 ## `service_category_translations`
 ```text
@@ -273,6 +276,8 @@ updated_by
 created_at
 updated_at
 ```
+
+The public Service contract exposes `category_id` as a scalar only through explicit relation metadata. Public reads require the related category to be published and translated for the requested locale.
 
 ## `service_translations`
 ```text

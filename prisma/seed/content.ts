@@ -260,7 +260,12 @@ function pageTranslation(page: PageDefinition, locale: Locale) {
   };
 }
 
-function pageSections(key: string, serviceIds: Record<string, string>, faqIds: Record<string, string>) {
+function pageSections(
+  key: string,
+  categoryIds: Record<string, string>,
+  serviceIds: Record<string, string>,
+  faqIds: Record<string, string>,
+) {
   const cta = {
     en: { label: 'Book a consultation', href: '/en/book-consultation' },
     'ar-SA': { label: 'احجز استشارة', href: '/ar-sa/book-consultation' },
@@ -277,18 +282,14 @@ function pageSections(key: string, serviceIds: Record<string, string>, faqIds: R
         ),
       },
       {
-        type: 'process',
+        type: 'service_category_pillars',
         sortOrder: 20,
         tr: localized(
-          { eyebrow: 'Three pillars', title: 'From opportunity to sustainable growth', steps: [
-            { title: 'Market Access', body: 'Understand the market, validate the opportunity and define the right entry direction.' },
-            { title: 'Execution', body: 'Coordinate establishment, licensing, sourcing and local operational readiness.' },
-            { title: 'Growth', body: 'Build go-to-market, partnerships, distribution and expansion priorities.' },
+          { eyebrow: 'Three pillars', title: 'From opportunity to sustainable growth', categoryIds: [
+            categoryIds['market-access'], categoryIds.execution, categoryIds.growth,
           ] },
-          { eyebrow: 'ثلاث ركائز', title: 'من الفرصة إلى النمو المستدام', steps: [
-            { title: 'دخول السوق', body: 'فهم السوق والتحقق من الفرصة وتحديد اتجاه الدخول المناسب.' },
-            { title: 'التنفيذ', body: 'تنسيق التأسيس والتراخيص والتوريد والجاهزية التشغيلية المحلية.' },
-            { title: 'النمو', body: 'بناء استراتيجية الذهاب إلى السوق والشراكات والتوزيع وأولويات التوسع.' },
+          { eyebrow: 'ثلاث ركائز', title: 'من الفرصة إلى النمو المستدام', categoryIds: [
+            categoryIds['market-access'], categoryIds.execution, categoryIds.growth,
           ] },
         ),
       },
@@ -418,15 +419,10 @@ function pageSections(key: string, serviceIds: Record<string, string>, faqIds: R
         { type: 'heading', text: 'ما الذي يوجّه نموذج العمل؟', level: 2 },
         { type: 'list', items: ['الأدلة قبل الافتراضات', 'وضوح القرار والمسؤوليات', 'تنسيق عملي للتنفيذ', 'نمو مبني على سياق السوق المحلي'] },
       ] }) },
-      { type: 'process', tr: localized({ title: 'Three connected capabilities', steps: [
-        { title: 'Market Access', body: 'Research, feasibility, competition and entry strategy.' },
-        { title: 'Execution', body: 'Formation, licensing, sourcing and operational setup support.' },
-        { title: 'Growth', body: 'Go-to-market, business development, partnerships and expansion.' },
-      ] }, { title: 'ثلاث قدرات مترابطة', steps: [
-        { title: 'دخول السوق', body: 'البحث والجدوى والمنافسة واستراتيجية الدخول.' },
-        { title: 'التنفيذ', body: 'دعم التأسيس والتراخيص والتوريد والإعداد التشغيلي.' },
-        { title: 'النمو', body: 'الذهاب إلى السوق وتطوير الأعمال والشراكات والتوسع.' },
-      ] }) },
+      { type: 'service_category_pillars', tr: localized(
+        { title: 'Three connected capabilities', categoryIds: [categoryIds['market-access'], categoryIds.execution, categoryIds.growth] },
+        { title: 'ثلاث قدرات مترابطة', categoryIds: [categoryIds['market-access'], categoryIds.execution, categoryIds.growth] },
+      ) },
       { type: 'cta', tr: localized({ title: 'Explore the right path for your company', primaryCta: cta.en }, { title: 'استكشف المسار الأنسب لشركتك', primaryCta: cta['ar-SA'] }) },
     ];
   }
@@ -550,7 +546,12 @@ async function ensureFaq(faq: (typeof faqs)[number]) {
   return id;
 }
 
-async function ensurePage(page: PageDefinition, serviceIds: Record<string, string>, faqIds: Record<string, string>) {
+async function ensurePage(
+  page: PageDefinition,
+  categoryIds: Record<string, string>,
+  serviceIds: Record<string, string>,
+  faqIds: Record<string, string>,
+) {
   const id = stableUuid(`page:${page.key}`);
   const legal = page.pageType === 'legal';
   await prisma.page.upsert({
@@ -573,7 +574,7 @@ async function ensurePage(page: PageDefinition, serviceIds: Record<string, strin
     });
   }
 
-  const sections = pageSections(page.key, serviceIds, faqIds);
+  const sections = pageSections(page.key, categoryIds, serviceIds, faqIds);
   for (let i = 0; i < sections.length; i += 1) {
     const section = sections[i]!;
     // Use explicit sortOrder if provided; otherwise fall back to index-based.
@@ -749,7 +750,8 @@ async function seed() {
   for (const faq of faqs) faqIds[faq.key] = await ensureFaq(faq);
 
   const pageIds: Record<string, string> = {};
-  for (const page of pageDefinitions) pageIds[page.key] = await ensurePage(page, serviceIds, faqIds);
+  for (const page of pageDefinitions)
+    pageIds[page.key] = await ensurePage(page, categoryIds, serviceIds, faqIds);
 
   await seedNavigation(pageIds, serviceIds);
   await seedInitialSettings();

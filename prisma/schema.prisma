@@ -235,6 +235,7 @@ model Media {
   productGallery ProductVentureMedia[]
   refsPageTranslation_ogMedia PageTranslation[] @relation("PageTranslation_ogMedia")
   refsServiceCategory_iconMedia ServiceCategory[] @relation("ServiceCategory_iconMedia")
+  refsServiceCategory_coverMedia ServiceCategory[] @relation("ServiceCategory_coverMedia")
   refsService_heroMedia Service[] @relation("Service_heroMedia")
   refsService_iconMedia Service[] @relation("Service_iconMedia")
   refsServiceTranslation_ogMedia ServiceTranslation[] @relation("ServiceTranslation_ogMedia")
@@ -358,6 +359,7 @@ model PageSectionTranslation {
 model ServiceCategory {
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   iconMediaId String? @map("icon_media_id") @db.Uuid
+  coverMediaId String? @map("cover_media_id") @db.Uuid
   status ContentStatus @default(draft)
   sortOrder Int @default(0) @map("sort_order")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -367,7 +369,9 @@ model ServiceCategory {
   @@index([status, sortOrder])
   @@map("service_categories")
   iconMedia Media? @relation("ServiceCategory_iconMedia", fields: [iconMediaId], references: [id], onDelete: Restrict)
+  coverMedia Media? @relation("ServiceCategory_coverMedia", fields: [coverMediaId], references: [id], onDelete: Restrict)
   @@index([iconMediaId])
+  @@index([coverMediaId])
 }
 
 model ServiceCategoryTranslation {

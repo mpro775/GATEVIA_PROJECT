@@ -5,59 +5,62 @@ import { usePathname, useRouter } from 'next/navigation';
 import { ThemeToggle } from '@gatevia/ui';
 import { api } from '@/lib/api';
 import { useAdminAuth } from './auth-context';
+import { useAdminI18n } from './admin-locale-provider';
+import { AdminLanguageToggle } from './admin-language-toggle';
+import type { TranslationKey } from '@/lib/i18n';
 
 const groups: ReadonlyArray<
-  readonly [string, ReadonlyArray<readonly [string, string]>]
+  readonly [TranslationKey, ReadonlyArray<readonly [TranslationKey, string]>]
 > = [
   [
-    'Content',
+    'nav.content',
     [
-      ['Pages', 'content/pages'],
-      ['Services', 'content/services'],
-      ['Service Categories', 'content/service-categories'],
-      ['Industries', 'content/industries'],
-      ['Case Studies', 'content/case-studies'],
-      ['Insights', 'content/insights'],
-      ['FAQs', 'content/faqs'],
-      ['Team', 'content/team-members'],
+      ['nav.pages', 'content/pages'],
+      ['nav.services', 'content/services'],
+      ['nav.serviceCategories', 'content/service-categories'],
+      ['nav.industries', 'content/industries'],
+      ['nav.caseStudies', 'content/case-studies'],
+      ['nav.insights', 'content/insights'],
+      ['nav.faqs', 'content/faqs'],
+      ['nav.team', 'content/team-members'],
     ],
   ],
   [
-    'Trust & Ecosystem',
+    'nav.trust',
     [
-      ['Clients', 'trust/clients'],
-      ['Partners', 'trust/partners'],
-      ['Brands', 'trust/brands'],
-      ['Products & Ventures', 'trust/products'],
-      ['Testimonials', 'trust/testimonials'],
-      ['Certifications', 'trust/certifications'],
-      ['Trust Metrics', 'trust/trust-metrics'],
+      ['nav.clients', 'trust/clients'],
+      ['nav.partners', 'trust/partners'],
+      ['nav.brands', 'trust/brands'],
+      ['nav.products', 'trust/products'],
+      ['nav.testimonials', 'trust/testimonials'],
+      ['nav.certifications', 'trust/certifications'],
+      ['nav.trustMetrics', 'trust/trust-metrics'],
     ],
   ],
   [
-    'Sales',
+    'nav.sales',
     [
-      ['Leads', 'sales/leads'],
-      ['Consultation Requests', 'sales/consultation'],
-      ['Assessments', 'sales/assessments'],
+      ['nav.leads', 'sales/leads'],
+      ['nav.consultation', 'sales/consultation'],
+      ['nav.assessments', 'sales/assessments'],
     ],
   ],
-  ['Media', [['Media Library', 'media']]],
+  ['nav.media', [['nav.mediaLibrary', 'media']]],
   [
-    'Website',
+    'nav.website',
     [
-      ['Navigation', 'website/navigation'],
-      ['Languages', 'website/languages'],
-      ['SEO & Settings', 'website/settings'],
-      ['Redirects', 'website/redirects'],
+      ['nav.navigation', 'website/navigation'],
+      ['nav.languages', 'website/languages'],
+      ['nav.settings', 'website/settings'],
+      ['nav.redirects', 'website/redirects'],
     ],
   ],
   [
-    'System',
+    'nav.system',
     [
-      ['Users', 'system/users'],
-      ['Roles & Permissions', 'system/roles'],
-      ['Audit Log', 'system/audit-logs'],
+      ['nav.users', 'system/users'],
+      ['nav.roles', 'system/roles'],
+      ['nav.audit', 'system/audit-logs'],
     ],
   ],
 ] as const;
@@ -93,6 +96,7 @@ const pathPermission: Record<string, string> = {
 
 function SidebarContent({ pathname, onNavClick }: { pathname: string; onNavClick?: () => void }) {
   const { can } = useAdminAuth();
+  const { t } = useAdminI18n();
   return (
     <>
       <Link
@@ -109,7 +113,7 @@ function SidebarContent({ pathname, onNavClick }: { pathname: string; onNavClick
         if (!visibleItems.length) return null;
         return (
           <nav className="nav-group" key={String(label)}>
-            <h2>{String(label)}</h2>
+            <h2>{t(label)}</h2>
             {visibleItems.map(([name, path]) => (
               <Link
                 aria-current={pathname.startsWith(`/${path}`) ? 'page' : undefined}
@@ -117,7 +121,7 @@ function SidebarContent({ pathname, onNavClick }: { pathname: string; onNavClick
                 key={path}
                 {...(onNavClick ? { onClick: onNavClick } : {})}
               >
-                {name}
+                {t(name)}
               </Link>
             ))}
           </nav>
@@ -132,6 +136,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
+  const { t } = useAdminI18n();
 
   // Close on Escape
   useEffect(() => {
@@ -174,7 +179,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       <aside
         ref={drawerRef}
         className={`sidebar sidebar--mobile${mobileOpen ? ' sidebar--open' : ''}`}
-        aria-label="Mobile navigation"
+        aria-label={t('app.mobileNavigation')}
         tabIndex={-1}
         role="dialog"
         aria-modal="true"
@@ -186,7 +191,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </span>
           <button
             className="gv-theme-toggle"
-            aria-label="Close navigation"
+            aria-label={t('app.closeNavigation')}
             onClick={() => setMobileOpen(false)}
           >
             ✕
@@ -199,18 +204,19 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         <header className="topbar">
           <button
             className="gv-theme-toggle mobile-nav"
-            aria-label="Open navigation"
+            aria-label={t('app.openNavigation')}
             aria-expanded={mobileOpen}
             aria-controls="mobile-sidebar"
             onClick={() => setMobileOpen(true)}
           >
             ☰
           </button>
-          <span>Administration</span>
+          <span>{t('app.administration')}</span>
           <div className="header-tools">
+            <AdminLanguageToggle />
             <ThemeToggle />
             <button className="text-link" onClick={logout}>
-              Sign out
+              {t('app.signOut')}
             </button>
           </div>
         </header>

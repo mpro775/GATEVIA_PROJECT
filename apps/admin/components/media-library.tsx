@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'react';
 import type {
   Language,
   Media as MediaRow,
-  MediaFolder as Folder,
   MediaUsage as Usage,
   UploadSession,
 } from '@gatevia/api-client';
@@ -17,8 +16,11 @@ import {
   Skeleton,
   Textarea,
 } from '@gatevia/ui';
-import { api, apiEnvelope } from '@/lib/api';
+import { api } from '@/lib/api';
 import { useAdminAuth } from './auth-context';
+import { useAdminI18n } from './admin-locale-provider';
+import { AdminFilterBar } from './admin-filter-bar';
+import { MediaBrowserPagination, MediaBrowserTile, MediaFolderNavigation, useMediaBrowser } from './media-browser';
 
 type DrawerTab = 'meta' | 'translations' | 'variants' | 'usages';
 
@@ -42,80 +44,6 @@ function statusTone(status: string): 'success' | 'danger' | 'neutral' | 'warning
   return 'neutral';
 }
 
-// ─── Media Tile ───────────────────────────────────────────────────────────────
-
-function MediaTile({
-  row,
-  selected,
-  onClick,
-}: {
-  row: MediaRow;
-  selected: boolean;
-  onClick: () => void;
-}) {
-  const thumb = row.variants?.find(
-    (v) => v.variantKey === 'thumbnail' || v.variantKey === 'webp_thumb',
-  );
-  return (
-    <article
-      className="media-tile"
-      onClick={onClick}
-      style={{
-        border: selected
-          ? '2px solid var(--color-accent)'
-          : '2px solid var(--color-border-default)',
-        borderRadius: '.55rem',
-        overflow: 'hidden',
-        cursor: 'pointer',
-        background: 'var(--color-bg-surface)',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      <div
-        style={{
-          background: 'var(--color-bg-elevated)',
-          height: '120px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'hidden',
-        }}
-      >
-        {thumb?.url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={thumb.url}
-            alt={row.originalFilename}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            loading="lazy"
-          />
-        ) : (
-          <span style={{ fontSize: '2rem', color: 'var(--color-text-muted)' }}>
-            {isImage(row.mimeType) ? '🖼️' : row.mimeType.startsWith('video/') ? '🎬' : '📄'}
-          </span>
-        )}
-      </div>
-      <div style={{ padding: '.5rem .6rem', flex: 1 }}>
-        <div
-          style={{
-            fontSize: '.78rem',
-            fontWeight: 600,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {row.originalFilename}
-        </div>
-        <div className="cell-meta" style={{ fontSize: '.72rem', marginBlockStart: '.2rem' }}>
-          {formatBytes(row.sizeBytes)} · <Badge tone={statusTone(row.status)}>{row.status}</Badge>
-        </div>
-      </div>
-    </article>
-  );
-}
-
 // ─── Detail drawer ────────────────────────────────────────────────────────────
 
 function MediaDrawer({
@@ -133,6 +61,7 @@ function MediaDrawer({
   canUpdate: boolean;
   canArchive: boolean;
 }) {
+  const { t, formatDate, formatNumber } = useAdminI18n();
   const [tab, setTab] = useState<DrawerTab>('meta');
   const [usages, setUsages] = useState<Usage[] | null>(null);
   const [usagesLoading, setUsagesLoading] = useState(false);
@@ -220,10 +149,10 @@ function MediaDrawer({
         method: 'PATCH',
         body: JSON.stringify({ translations }),
       });
-      setMessage('Saved.');
+      setMessage(t('media.saved'));
       onRefresh();
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : 'Save failed.');
+      setMessage(e instanceof Error ? e.message : t('media.saveFailed'));
     } finally {
       setBusy(false);
     }
@@ -260,10 +189,10 @@ function MediaDrawer({
     setMessage('');
     try {
       await api(`/admin/media/${row.id}/retry`, { method: 'POST' });
-      setMessage('Retry enqueued.');
+      setMessage(t('media.retryQueued'));
       onRefresh();
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : 'Retry failed.');
+      setMessage(e instanceof Error ? e.message : t('media.retryFailed'));
     } finally {
       setBusy(false);
     }
@@ -288,7 +217,7 @@ function MediaDrawer({
       }}
       role="dialog"
       aria-modal="true"
-      aria-label="Media detail"
+      aria-label={t('media.detail')}
     >
       <div
         style={{
@@ -298,13 +227,13 @@ function MediaDrawer({
           marginBlockEnd: '1rem',
         }}
       >
-        <strong style={{ fontSize: '1rem' }}>Media detail</strong>
+        <strong style={{ fontSize: '1rem' }}>{t('media.detail')}</strong>
         <button
           className="text-link"
           style={{ padding: '.3rem .6rem', minHeight: 'unset' }}
           onClick={onClose}
         >
-          ✕ Close
+          ✕ {t('action.close')}
         </button>
       </div>
 
@@ -337,7 +266,7 @@ function MediaDrawer({
 
       {/* Status badge + actions */}
       <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginBlockEnd: '1rem' }}>
-        <Badge tone={statusTone(row.status)}>{row.status}</Badge>
+        <Badge tone={statusTone(row.status)}>{t(`status.${row.status}` as Parameters<typeof t>[0], row.status)}</Badge>
         {canUpdate && row.status === 'failed' && (
           <button
             className="text-link"
@@ -345,7 +274,7 @@ function MediaDrawer({
             onClick={retryProcessing}
             disabled={busy}
           >
-            Retry processing
+            {t('media.retryProcessing')}
           </button>
         )}
         {canArchive && row.status !== 'archived' && (
@@ -360,13 +289,13 @@ function MediaDrawer({
             onClick={() => {
               if (
                 confirm(
-                  'Archive this media? Referenced media cannot be archived until every blocking usage is removed.',
+                  t('media.archiveConfirm'),
                 )
               )
                 onArchive();
             }}
           >
-            Archive
+            {t('action.archive')}
           </button>
         )}
         {canUpdate && (
@@ -379,7 +308,7 @@ function MediaDrawer({
               cursor: 'pointer',
             }}
           >
-            Replace file
+            {t('media.replaceFile')}
             <input
               ref={replaceRef}
               type="file"
@@ -393,16 +322,16 @@ function MediaDrawer({
 
       {/* Tabs */}
       <div className="tabs" role="tablist" style={{ marginBlockEnd: '.8rem' }}>
-        {(['meta', 'translations', 'variants', 'usages'] as const).map((t) => (
+        {(['meta', 'translations', 'variants', 'usages'] as const).map((tabKey) => (
           <button
-            key={t}
+            key={tabKey}
             role="tab"
             className="tab"
-            aria-selected={tab === t}
-            onClick={() => setTab(t)}
+            aria-selected={tab === tabKey}
+            onClick={() => setTab(tabKey)}
             style={{ textTransform: 'capitalize' }}
           >
-            {t}
+            {t(`media.${tabKey}` as Parameters<typeof t>[0], tabKey)}
           </button>
         ))}
       </div>
@@ -411,11 +340,11 @@ function MediaDrawer({
       {tab === 'meta' && (
         <dl style={{ fontSize: '.88rem' }}>
           {[
-            ['Filename', row.originalFilename],
-            ['MIME type', row.mimeType],
-            ['Size', formatBytes(row.sizeBytes)],
-            ['Folder', row.folder?.name ?? '—'],
-            ['Uploaded', row.createdAt ? new Date(row.createdAt).toLocaleString() : '—'],
+            [t('media.filename'), row.originalFilename],
+            [t('media.mimeType'), row.mimeType],
+            [t('media.size'), formatBytes(row.sizeBytes)],
+            [t('media.folder'), row.folder?.name ?? '—'],
+            [t('media.uploaded'), row.createdAt ? formatDate(row.createdAt) : '—'],
           ].map(([label, value]) => (
             <div key={String(label)} style={{ marginBlockEnd: '.5rem' }}>
               <dt style={{ color: 'var(--color-text-muted)', fontWeight: 600, fontSize: '.78rem' }}>
@@ -444,20 +373,20 @@ function MediaDrawer({
             ))}
           </div>
           <fieldset disabled={!canUpdate} style={{ border: 0, padding: 0, margin: 0 }}>
-            <Field label="Title (display name)">
+            <Field label={t('media.displayTitle')}>
               <Input
                 value={currentTrans.title}
                 onChange={(e) => updateTrans('title', e.target.value)}
               />
             </Field>
-            <Field label="Alt text (accessibility)">
+            <Field label={t('media.altText')}>
               <Textarea
                 value={currentTrans.altText}
                 onChange={(e) => updateTrans('altText', e.target.value)}
                 maxLength={500}
               />
             </Field>
-            <Field label="Caption">
+            <Field label={t('media.caption')}>
               <Textarea
                 value={currentTrans.caption}
                 onChange={(e) => updateTrans('caption', e.target.value)}
@@ -470,11 +399,11 @@ function MediaDrawer({
                 checked={currentTrans.decorative}
                 onChange={(e) => updateTrans('decorative', e.target.checked)}
               />{' '}
-              Decorative (no alt text needed for screen readers)
+              {t('media.decorative')}
             </label>
             {canUpdate && (
               <Button disabled={busy} onClick={saveTranslations}>
-                Save translations
+                {t('media.saveTranslations')}
               </Button>
             )}
           </fieldset>
@@ -491,8 +420,8 @@ function MediaDrawer({
         <>
           {(row.variants ?? []).length === 0 ? (
             <EmptyState
-              title="No variants"
-              description="Image variants are generated automatically after upload."
+              title={t('media.noVariants')}
+              description={t('media.noVariantsDescription')}
             />
           ) : (
             <div style={{ display: 'grid', gap: '.6rem' }}>
@@ -512,7 +441,7 @@ function MediaDrawer({
                       className="text-link"
                       style={{ fontSize: '.8rem', padding: '.1rem .3rem', minHeight: 'unset' }}
                     >
-                      View
+                      {t('action.view')}
                     </a>
                   )}
                 </div>
@@ -533,13 +462,13 @@ function MediaDrawer({
             </div>
           ) : usages === null || usages.length === 0 ? (
             <EmptyState
-              title="No usages found"
-              description="This media is not referenced by any content. It is safe to archive."
+              title={t('media.noUsages')}
+              description={t('media.noUsagesDescription')}
             />
           ) : (
             <div style={{ display: 'grid', gap: '.5rem' }}>
               <p className="cell-meta">
-                {usages.length} blocking reference(s) found. Remove these usages before archiving
+                {formatNumber(usages.length)} blocking reference(s) found. Remove these usages before archiving
                 this media.
               </p>
               {usages.map((usage, i) => (
@@ -566,60 +495,25 @@ export function MediaLibrary({
   onSelect?: (id: string) => void;
 }) {
   const { can } = useAdminAuth();
+  const { t } = useAdminI18n();
   const canUpload = can('media.upload');
   const canUpdate = can('media.update');
   const canArchive = can('media.archive');
-  const [rows, setRows] = useState<MediaRow[]>([]);
-  const [folders, setFolders] = useState<Folder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const browser = useMediaBrowser({ pageSize: 40 });
+  const { rows, folders, loading, q, status: statusFilter, folderId, page, meta } = browser;
+  const [actionError, setError] = useState('');
+  const error = actionError || browser.error;
   const [busy, setBusy] = useState(false);
-  const [q, setQ] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [folderId, setFolderId] = useState<string | null>(null);
   const [selected, setSelected] = useState<MediaRow | null>(null);
-  const [page, setPage] = useState(1);
-  const [pageCount, setPageCount] = useState(1);
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [newFolderName, setNewFolderName] = useState('');
 
-  async function load() {
-    setLoading(true);
-    setError('');
-    try {
-      const query = [
-        `page=${page}`,
-        `pageSize=40`,
-        q ? `q=${encodeURIComponent(q)}` : '',
-        statusFilter ? `status=${encodeURIComponent(statusFilter)}` : '',
-        folderId ? `folderId=${encodeURIComponent(folderId)}` : '',
-      ]
-        .filter(Boolean)
-        .join('&');
-      const result = await apiEnvelope<MediaRow>(`/admin/media?${query}`);
-      setRows(result.data);
-      setPageCount(result.meta.pageCount);
-    } catch {
-      setError('The Media Library could not be loaded.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function loadFolders() {
-    try {
-      const result = await api<Folder[]>('/admin/media-folders');
-      setFolders(Array.isArray(result) ? result : []);
-    } catch {
-      /* ignore */
-    }
-  }
-
-  useEffect(() => {
-    void load();
-    void loadFolders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, q, statusFilter, folderId]);
+  const load = browser.reload;
+  const loadFolders = browser.reloadFolders;
+  const setPage = browser.setPage;
+  const setQ = browser.setQ;
+  const setStatusFilter = browser.setStatus;
+  const setFolderId = browser.setFolderId;
 
   async function upload(event: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
@@ -691,13 +585,13 @@ export function MediaLibrary({
     <>
       <div className="page-title">
         <div>
-          <h1>Media Library</h1>
-          <p>Upload, organise and manage all approved media assets.</p>
+          <h1>{t('media.title')}</h1>
+          <p>{t('media.description')}</p>
         </div>
         {canUpload && (
           <div className="toolbar">
             <label className="gv-button">
-              {busy ? 'Uploading…' : 'Upload files'}
+              {busy ? t('action.uploading') : t('action.upload')}
               <input
                 type="file"
                 multiple
@@ -711,60 +605,15 @@ export function MediaLibrary({
         )}
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '220px 1fr',
-          gap: '1rem',
-          alignItems: 'start',
-        }}
-      >
+      <div className="media-browser-layout">
         {/* Folder sidebar */}
-        <aside className="panel" style={{ position: 'sticky', top: '5rem' }}>
-          <h2 style={{ marginBlockStart: 0 }}>Folders</h2>
-          <button
-            className={`text-link${!folderId ? ' nav-group a[aria-current]' : ''}`}
-            style={{
-              display: 'block',
-              width: '100%',
-              textAlign: 'start',
-              padding: '.4rem .5rem',
-              borderRadius: '.35rem',
-              background: !folderId ? 'var(--color-bg-elevated)' : 'transparent',
-            }}
-            onClick={() => {
-              setFolderId(null);
-              setPage(1);
-            }}
-          >
-            All files
-          </button>
-          {folders.map((folder) => (
-            <button
-              key={folder.id}
-              className="text-link"
-              style={{
-                display: 'block',
-                width: '100%',
-                textAlign: 'start',
-                padding: '.4rem .5rem',
-                borderRadius: '.35rem',
-                background: folderId === folder.id ? 'var(--color-bg-elevated)' : 'transparent',
-              }}
-              onClick={() => {
-                setFolderId(folder.id);
-                setPage(1);
-              }}
-            >
-              📁 {folder.name}
-            </button>
-          ))}
+        <div><MediaFolderNavigation folders={folders} folderId={folderId} onFolder={setFolderId}/>
           {canUpdate && (
-            <div style={{ display: 'flex', gap: '.3rem', marginBlockStart: '1rem' }}>
+            <div className="media-browser-new-folder">
               <input
                 className="gv-input"
                 style={{ flex: 1, fontSize: '.8rem', padding: '.3rem .5rem' }}
-                placeholder="New folder…"
+                placeholder={t('media.newFolder')}
                 value={newFolderName}
                 onChange={(e) => setNewFolderName(e.target.value)}
                 onKeyDown={(e) => {
@@ -780,16 +629,21 @@ export function MediaLibrary({
               </button>
             </div>
           )}
-        </aside>
+        </div>
 
         {/* Main content */}
         <div>
           {/* Toolbar */}
-          <div className="toolbar" style={{ marginBlockEnd: '1rem' }}>
+          <AdminFilterBar hasActiveFilters={Boolean(q || statusFilter)} onReset={browser.reset} actions={
+            <div className="media-browser-view-toggle">
+              <button className="text-link" aria-pressed={view === 'grid'} onClick={() => setView('grid')}>{t('media.grid')}</button>
+              <button className="text-link" aria-pressed={view === 'list'} onClick={() => setView('list')}>{t('media.list')}</button>
+            </div>
+          }>
             <input
-              className="gv-input search-input"
+              className="gv-input admin-filter-bar__search"
               type="search"
-              placeholder="Search files…"
+              placeholder={t('media.search')}
               value={q}
               onChange={(e) => {
                 setQ(e.target.value);
@@ -797,47 +651,23 @@ export function MediaLibrary({
               }}
             />
             <select
-              className="gv-input"
+              className="gv-input admin-filter-bar__control"
               value={statusFilter}
               onChange={(e) => {
                 setStatusFilter(e.target.value);
                 setPage(1);
               }}
-              aria-label="Status filter"
+              aria-label={t('filter.status')}
             >
-              <option value="">All statuses</option>
-              <option value="ready">Ready</option>
-              <option value="processing">Processing</option>
-              <option value="failed">Failed</option>
-              <option value="archived">Archived</option>
+              <option value="">{t('filter.allStatuses')}</option>
+              <option value="ready">{t('status.ready')}</option>
+              <option value="processing">{t('status.processing')}</option>
+              <option value="failed">{t('status.failed')}</option>
+              <option value="archived">{t('status.archived')}</option>
             </select>
-            <div style={{ marginInlineStart: 'auto', display: 'flex', gap: '.3rem' }}>
-              <button
-                className="text-link"
-                style={{
-                  padding: '.3rem .5rem',
-                  minHeight: 'unset',
-                  background: view === 'grid' ? 'var(--color-bg-elevated)' : '',
-                }}
-                onClick={() => setView('grid')}
-              >
-                Grid
-              </button>
-              <button
-                className="text-link"
-                style={{
-                  padding: '.3rem .5rem',
-                  minHeight: 'unset',
-                  background: view === 'list' ? 'var(--color-bg-elevated)' : '',
-                }}
-                onClick={() => setView('list')}
-              >
-                List
-              </button>
-            </div>
-          </div>
+          </AdminFilterBar>
 
-          {error && <ErrorState title="Media error" description={error} />}
+          {error && <ErrorState title={t('media.error')} description={error} />}
 
           {loading ? (
             <div className="panel">
@@ -846,21 +676,15 @@ export function MediaLibrary({
               <Skeleton width="70%" />
             </div>
           ) : rows.length === 0 ? (
-            <EmptyState title="No media found" description="Upload the first approved asset." />
+            <EmptyState title={t('media.noMedia')} description={t('media.noMediaDescription')} />
           ) : view === 'grid' ? (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))',
-                gap: '.8rem',
-              }}
-            >
+            <div className="media-browser-grid">
               {rows.map((row) => (
-                <MediaTile
+                <MediaBrowserTile
                   key={row.id}
                   row={row}
                   selected={selected?.id === row.id}
-                  onClick={() => handleSelect(row)}
+                  onSelect={() => handleSelect(row)}
                 />
               ))}
             </div>
@@ -869,11 +693,11 @@ export function MediaLibrary({
               <table>
                 <thead>
                   <tr>
-                    <th>Filename</th>
-                    <th>Type</th>
-                    <th>Size</th>
-                    <th>Status</th>
-                    <th>Folder</th>
+                    <th>{t('media.filename')}</th>
+                    <th>{t('media.type')}</th>
+                    <th>{t('media.size')}</th>
+                    <th>{t('media.status')}</th>
+                    <th>{t('media.folder')}</th>
                     <th />
                   </tr>
                 </thead>
@@ -900,7 +724,7 @@ export function MediaLibrary({
                           className="text-link"
                           style={{ padding: '.2rem .4rem', minHeight: 'unset' }}
                         >
-                          Details
+                          {t('action.details')}
                         </button>
                       </td>
                     </tr>
@@ -911,34 +735,7 @@ export function MediaLibrary({
           )}
 
           {/* Pagination */}
-          {pageCount > 1 && (
-            <div
-              style={{
-                display: 'flex',
-                gap: '.5rem',
-                justifyContent: 'center',
-                marginBlockStart: '1rem',
-              }}
-            >
-              <button
-                className="text-link"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => p - 1)}
-              >
-                ← Prev
-              </button>
-              <span className="cell-meta">
-                Page {page} / {pageCount}
-              </span>
-              <button
-                className="text-link"
-                disabled={page >= pageCount}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                Next →
-              </button>
-            </div>
-          )}
+          <MediaBrowserPagination page={page} pageCount={meta.pageCount} total={meta.total} onPage={setPage}/>
         </div>
       </div>
 

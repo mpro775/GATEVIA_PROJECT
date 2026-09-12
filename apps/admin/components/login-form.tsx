@@ -3,7 +3,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Field, Input } from '@gatevia/ui';
 import { api } from '@/lib/api';
+import { useAdminI18n } from './admin-locale-provider';
 export function LoginForm() {
+  const { t } = useAdminI18n();
   const router = useRouter();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -20,7 +22,7 @@ export function LoginForm() {
       router.replace('/dashboard');
       router.refresh();
     } catch {
-      setError('The email or password is incorrect.');
+      setError(t('auth.invalid'));
     } finally {
       setBusy(false);
     }
@@ -28,14 +30,14 @@ export function LoginForm() {
   return (
     <form onSubmit={submit}>
       <div>
-        <span className="eyebrow">SECURE ADMINISTRATION</span>
-        <h1>Welcome back</h1>
-        <p>Sign in to manage GATEVIA content and enquiries.</p>
+        <span className="eyebrow">{t('auth.secure')}</span>
+        <h1>{t('auth.welcome')}</h1>
+        <p>{t('auth.description')}</p>
       </div>
-      <Field label="Email">
+      <Field label={t('auth.email')}>
         <Input name="email" type="email" autoComplete="username" required />
       </Field>
-      <Field label="Password">
+      <Field label={t('auth.password')}>
         <Input
           name="password"
           type="password"
@@ -49,7 +51,7 @@ export function LoginForm() {
           {error}
         </div>
       )}
-      <Button disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</Button>
+      <Button disabled={busy}>{busy ? t('auth.signingIn') : t('auth.signIn')}</Button>
     </form>
   );
 }

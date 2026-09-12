@@ -3,13 +3,7 @@ import { Icon } from '@gatevia/ui';
 import { MediaImage } from '@/components/media-image';
 import { text, translation } from '@/lib/content';
 import { mediaFromMap, type MediaLike } from '@/lib/media';
-
-type Stage = {
-  key: string;
-  label: string;
-  motif: string;
-  items: Record<string, unknown>[];
-};
+import { groupServicesByCategory } from './home-services-grouping';
 
 type ServiceMedia = {
   item: MediaLike;
@@ -33,67 +27,11 @@ function mediaForService(item: Record<string, unknown>): ServiceMedia | undefine
   return undefined;
 }
 
-const stageCopy = {
-  en: [
-    { label: 'Market Access', motif: 'Gateway' },
-    { label: 'Execution', motif: 'Path' },
-    { label: 'Growth', motif: 'Expansion' },
-  ],
-  ar: [
-    { label: 'دخول السوق', motif: 'البوابة' },
-    { label: 'التنفيذ', motif: 'المسار' },
-    { label: 'النمو', motif: 'التوسع' },
-  ],
-} as const;
-
-function groupServices(items: Record<string, unknown>[], locale: string): Stage[] {
-  const copy = locale.toLowerCase().startsWith('ar') ? stageCopy.ar : stageCopy.en;
-  const groups = new Map<string, Record<string, unknown>[]>();
-
-  items.forEach((item, index) => {
-    const categoryId = text(item.categoryId, `group-${Math.min(Math.floor(index / 2), 2)}`);
-    const group = groups.get(categoryId) ?? [];
-    group.push(item);
-    groups.set(categoryId, group);
-  });
-
-  return [...groups.entries()].map(([key, groupedItems], index) => ({
-    key,
-    label:
-      copy[index]?.label ??
-      (locale.toLowerCase().startsWith('ar') ? `المسار ${index + 1}` : `Stage ${index + 1}`),
-    motif: copy[index]?.motif ?? '',
-    items: groupedItems,
-  }));
-}
-
-function StageIcon({ index }: { index: number }) {
-  const icons = [
-    // Market access: a global market with a clear point of entry.
-    <>
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M3.5 12h11M12 3.5c2.1 2.35 3.2 5.2 3.2 8.5M12 20.5C9.9 18.15 8.8 15.3 8.8 12" />
-      <path d="m15.5 16 2.5-2.5L20.5 16M18 13.5V20" />
-    </>,
-    // Execution: an actionable plan being completed.
-    <>
-      <path d="M9 5.5H6.5A1.5 1.5 0 0 0 5 7v12a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19V7a1.5 1.5 0 0 0-1.5-1.5H15" />
-      <rect x="9" y="3.5" width="6" height="4" rx="1" />
-      <path d="m8.5 14 2.25 2.25 4.75-5" />
-    </>,
-    // Growth: measurable upward business momentum.
-    <>
-      <path d="M4 20V8M4 20h16" />
-      <path d="m7 16 4-4 3 2.5L20 8.5" />
-      <path d="M16 8.5h4v4" />
-    </>,
-  ];
-
+function StageIcon({ category }: { category: Record<string, unknown> }) {
+  const icon = mediaFromMap(category.media, category.iconMediaId);
   return (
     <span className="home-services__stage-icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" focusable="false">
-        {icons[index] ?? icons[icons.length - 1]}
-      </svg>
+      {icon?.url ? <MediaImage media={icon} preset="logo" fill sizes="3rem" /> : <Icon name="plus" />}
     </span>
   );
 }
@@ -101,13 +39,15 @@ function StageIcon({ index }: { index: number }) {
 export function HomeServicesShowcase({
   content,
   items,
+  categories,
   locale,
 }: {
   content: Record<string, unknown>;
   items: Record<string, unknown>[];
+  categories: Record<string, unknown>[];
   locale: string;
 }) {
-  const stages = groupServices(items, locale);
+  const stages = groupServicesByCategory(items, categories);
   const isArabic = locale.toLowerCase().startsWith('ar');
 
   return (
@@ -148,10 +88,10 @@ export function HomeServicesShowcase({
               <header className="home-services__stage-header">
                 <div className="home-services__stage-meta">
                   <span>{String(stageIndex + 1).padStart(2, '0')}</span>
-                  <small>{stage.motif}</small>
+                  <small>GTV / {String(stageIndex + 1).padStart(2, '0')}</small>
                 </div>
                 <h3>{stage.label}</h3>
-                <StageIcon index={stageIndex} />
+                <StageIcon category={stage.category} />
               </header>
               <ol className="home-services__items">
                 {stage.items.map((item, itemIndex) => {

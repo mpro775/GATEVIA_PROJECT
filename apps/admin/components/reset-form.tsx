@@ -3,7 +3,9 @@ import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Field, Input } from '@gatevia/ui';
 import { api } from '@/lib/api';
+import { useAdminI18n } from './admin-locale-provider';
 export function ResetForm({ invitation = false }: { invitation?: boolean }) {
+  const { t } = useAdminI18n();
   const query = useSearchParams();
   const router = useRouter();
   const [message, setMessage] = useState('');
@@ -13,7 +15,7 @@ export function ResetForm({ invitation = false }: { invitation?: boolean }) {
     setBusy(true);
     const data = new FormData(event.currentTarget);
     if (data.get('password') !== data.get('confirm')) {
-      setMessage('Passwords do not match.');
+      setMessage(t('auth.passwordMismatch'));
       setBusy(false);
       return;
     }
@@ -24,7 +26,7 @@ export function ResetForm({ invitation = false }: { invitation?: boolean }) {
       });
       router.replace('/login');
     } catch {
-      setMessage('This one-time link is invalid or expired.');
+      setMessage(t('auth.linkInvalid'));
     } finally {
       setBusy(false);
     }
@@ -33,9 +35,9 @@ export function ResetForm({ invitation = false }: { invitation?: boolean }) {
     <form onSubmit={submit}>
       <div>
         <span className="eyebrow">GATEVIA ADMIN</span>
-        <h1>{invitation ? 'Activate your account' : 'Reset password'}</h1>
+        <h1>{invitation ? t('auth.activate') : t('auth.resetPassword')}</h1>
       </div>
-      <Field label="New password" hint="Use at least 16 characters.">
+      <Field label={t('auth.newPassword')} hint={t('auth.passwordHint')}>
         <Input
           type="password"
           name="password"
@@ -44,7 +46,7 @@ export function ResetForm({ invitation = false }: { invitation?: boolean }) {
           autoComplete="new-password"
         />
       </Field>
-      <Field label="Confirm password">
+      <Field label={t('auth.confirmPassword')}>
         <Input type="password" name="confirm" minLength={16} required autoComplete="new-password" />
       </Field>
       {message && (
@@ -52,7 +54,7 @@ export function ResetForm({ invitation = false }: { invitation?: boolean }) {
           {message}
         </div>
       )}
-      <Button disabled={busy}>{busy ? 'Saving…' : 'Set password'}</Button>
+      <Button disabled={busy}>{busy ? t('action.saving') : t('auth.setPassword')}</Button>
     </form>
   );
 }

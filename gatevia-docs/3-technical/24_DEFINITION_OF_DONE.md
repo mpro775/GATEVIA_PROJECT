@@ -79,6 +79,9 @@ It does **not** mean:
 - [ ] Page Sections.
 - [ ] Services.
 - [ ] Service Categories.
+- [ ] Service Categories own reusable name, description, icon, and cover image.
+- [ ] Home/About category pillars reference categories by ID without cloned category content.
+- [ ] public Services expose a real scalar category ID and never infer category from item index.
 - [ ] Industries.
 - [ ] Case Studies.
 - [ ] Insights.

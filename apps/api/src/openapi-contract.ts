@@ -298,6 +298,7 @@ const responseContracts: Record<string, Schema> = {
   'POST /api/v1/admin/media/{id}/replace-session': envelope(ref('UploadSession')),
   'POST /api/v1/admin/media/finalize': envelope(ref('Media')),
   'PATCH /api/v1/admin/media/{id}': envelope(ref('Media')),
+  'GET /api/v1/admin/media/{id}': envelope(ref('Media')),
   'GET /api/v1/admin/media/{id}/usages': envelope(arrayOf(ref('MediaUsage'))),
   'POST /api/v1/admin/media/{id}/archive': envelope(ref('Media')),
   'POST /api/v1/admin/media/{id}/retry': envelope(ref('Media')),

@@ -23,6 +23,7 @@ export interface CmsRelation {
   foreignKey: string;
   many?: boolean;
   required?: boolean;
+  publicId?: boolean;
 }
 export interface CmsDefinition {
   model: string;
@@ -61,7 +62,8 @@ const relation = (
   foreignKey: string,
   many = true,
   required = false,
-): CmsRelation => ({ resource, foreignKey, many, required });
+  options: { publicId?: boolean } = {},
+): CmsRelation => ({ resource, foreignKey, many, required, ...options });
 export const cmsDefinitions: Record<string, CmsDefinition> = {
   pages: {
     model: 'page',
@@ -75,7 +77,7 @@ export const cmsDefinitions: Record<string, CmsDefinition> = {
     model: 'serviceCategory',
     parent: 'categoryId',
     permission: 'services',
-    fields: { iconMediaId: f('media'), sortOrder: f('number') },
+    fields: { iconMediaId: f('media'), coverMediaId: f('media'), sortOrder: f('number') },
     translations: { ...named, description: f('long') },
     relations: {},
   },
@@ -98,7 +100,7 @@ export const cmsDefinitions: Record<string, CmsDefinition> = {
       ...seo,
     },
     relations: {
-      categoryId: relation('service-categories', 'id', false, true),
+      categoryId: relation('service-categories', 'id', false, true, { publicId: true }),
       industries: relation('industries', 'industryId'),
       caseStudies: relation('case-studies', 'caseStudyId'),
       insights: relation('insights', 'insightId'),

@@ -105,6 +105,8 @@ Use for:
 - insights.
 - trust sections.
 
+Category-aware Home views consume canonical `ServiceCategory` records. Pillar and Hero rail labels use category translations, pillar photography uses `coverMediaId`, and service-stage icons use `iconMediaId`. Featured services group strictly by the scalar `Service.categoryId`, ordered by category `sortOrder`; display index is never a category inference rule.
+
 ### Client Components only for:
 - interactive navigation.
 - forms.

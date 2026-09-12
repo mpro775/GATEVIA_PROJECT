@@ -109,6 +109,7 @@ Examples:
 
 Fields:
 - icon.
+- cover image.
 - sort_order.
 - status.
 
@@ -420,6 +421,7 @@ Allowed `section_type` values:
 - services_grid.
 - industries_grid.
 - process.
+- service_category_pillars.
 - timeline.
 - testimonials.
 - case_studies.
@@ -429,6 +431,8 @@ Allowed `section_type` values:
 - form.
 
 No arbitrary HTML builder.
+
+`ServiceCategory` is the single source of truth for reusable category name, description, icon and cover image. A `service_category_pillars` page section stores only section-level copy and unique `categoryIds`; it must not clone category copy or media.
 
 ## 27. Rich Text
 

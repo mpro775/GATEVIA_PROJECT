@@ -93,6 +93,8 @@ Use:
 - Media picker.
 - Sticky save bar if useful.
 
+Service Category forms expose distinct **Icon** and **Cover image** media fields. The Home `Service Category Pillars` editor exposes only Eyebrow, Heading, and a locale-aware Service Categories relation picker; it has no per-pillar copy or image fields.
+
 ## 6. Publishing Controls
 
 Actions:

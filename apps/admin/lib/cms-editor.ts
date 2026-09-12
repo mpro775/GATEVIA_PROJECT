@@ -1,5 +1,21 @@
 import { fieldSchema, normalizeCmsFieldRecord, type CmsDefinition } from '@gatevia/contracts';
 
+export function relationOptionLabel(
+  row: { id: string; displayName?: string; translations?: Array<Record<string, unknown>> },
+  locale: string,
+) {
+  const translations = row.translations ?? [];
+  const translation =
+    translations.find((item) => item.locale === locale) ?? translations[0] ?? {};
+  return String(
+    translation.title ??
+      translation.name ??
+      translation.question ??
+      row.displayName ??
+      row.id,
+  );
+}
+
 export type TranslationMap = Record<string, Record<string, unknown>>;
 
 interface EditorSection {

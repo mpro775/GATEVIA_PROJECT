@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { text } from '@/lib/content';
+import { text, translation } from '@/lib/content';
 import type { MediaLike } from '@/lib/media';
 import { MediaFrame } from '../brand/media-frame';
 import { HeroGatewayScene } from './hero-gateway-scene';
@@ -14,21 +14,19 @@ function DirectionCue() {
 
 export function HomeHero({
   content,
-  locale,
   mediaItem,
-  railSteps,
+  railCategories,
 }: {
   content: Record<string, unknown>;
-  locale: string;
   mediaItem: MediaLike | undefined;
-  railSteps: Record<string, unknown>[];
+  railCategories: Record<string, unknown>[];
 }) {
   const primary = content.primaryCta as Record<string, unknown> | undefined;
   const secondary = content.secondaryCta as Record<string, unknown> | undefined;
-  const fallbackLabels = locale.toLowerCase().startsWith('ar')
-    ? ['دخول السوق', 'التنفيذ', 'النمو']
-    : ['Market Access', 'Execution', 'Growth'];
-  const labels = fallbackLabels.map((fallback, index) => text(railSteps[index]?.title, fallback));
+  const labels = [...railCategories]
+    .sort((a, b) => Number(a.sortOrder ?? 0) - Number(b.sortOrder ?? 0))
+    .map((category) => text(translation(category).name))
+    .filter(Boolean);
 
   return (
     <section className="home-hero" data-home-section="hero">
@@ -83,18 +81,20 @@ export function HomeHero({
           )}
         </div>
 
-        <ol
-          className="home-gateway-rail"
-          data-reveal="up"
-          style={{ '--reveal-delay': '420ms' } as React.CSSProperties}
-        >
-          {labels.map((label, index) => (
-            <li key={label}>
-              <span>{String(index + 1).padStart(2, '0')}</span>
-              <strong>{label}</strong>
-            </li>
-          ))}
-        </ol>
+        {labels.length > 0 ? (
+          <ol
+            className="home-gateway-rail"
+            data-reveal="up"
+            style={{ '--reveal-delay': '420ms' } as React.CSSProperties}
+          >
+            {labels.map((label, index) => (
+              <li key={label}>
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                <strong>{label}</strong>
+              </li>
+            ))}
+          </ol>
+        ) : null}
       </div>
     </section>
   );

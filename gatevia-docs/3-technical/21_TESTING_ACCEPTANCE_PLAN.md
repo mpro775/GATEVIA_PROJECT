@@ -22,6 +22,8 @@ For:
 - media validation.
 - UTM parsing.
 - schema validation.
+- unique `service_category_pillars.categoryIds` validation.
+- category-aware service grouping with shuffled and uneven service counts.
 
 ## Integration
 For:
@@ -33,6 +35,8 @@ For:
 - lead persistence.
 - media finalize.
 - publish flows.
+- Service publication rejection when its category is not public in every authored locale.
+- Home category collection/media resolution and scalar Service `categoryId` serialization.
 
 ## E2E
 Playwright:

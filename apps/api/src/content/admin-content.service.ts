@@ -378,6 +378,23 @@ export class AdminContentService {
       throw new ConflictException('Confirmed consent is required.');
     if (resource === 'trust-metrics' && !row.evidenceNoteInternal)
       throw new ConflictException('Document evidence before publishing.');
+    if (resource === 'services') {
+      const categoryId = typeof row.categoryId === 'string' ? row.categoryId : '';
+      const authoredLocales = translations.map((translation) => String(translation.locale));
+      const category = categoryId
+        ? await this.prisma.serviceCategory.findFirst({
+            where: {
+              id: categoryId,
+              status: 'published',
+            },
+            include: { translations: { where: { locale: { in: authoredLocales } } } },
+          })
+        : null;
+      if (!category || category.translations.length !== authoredLocales.length)
+        throw new ConflictException(
+          'Publish the service category with matching active translations before publishing this service.',
+        );
+    }
   }
   async transition(
     resource: string,

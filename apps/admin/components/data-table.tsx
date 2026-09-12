@@ -6,6 +6,19 @@ import { cmsDefinitions } from '@gatevia/contracts';
 import { apiEnvelope } from '@/lib/api';
 import { api } from '@/lib/api';
 import { useAdminAuth } from './auth-context';
+import { useAdminI18n } from './admin-locale-provider';
+import { AdminFilterBar } from './admin-filter-bar';
+import type { TranslationKey } from '@/lib/i18n';
+
+const resourceTitleKeys: Partial<Record<string, TranslationKey>> = {
+  pages: 'nav.pages', services: 'nav.services', 'service-categories': 'nav.serviceCategories',
+  industries: 'nav.industries', 'case-studies': 'nav.caseStudies', insights: 'nav.insights',
+  faqs: 'nav.faqs', 'team-members': 'nav.team', clients: 'nav.clients', partners: 'nav.partners',
+  brands: 'nav.brands', products: 'nav.products', testimonials: 'nav.testimonials',
+  certifications: 'nav.certifications', 'trust-metrics': 'nav.trustMetrics', leads: 'nav.leads',
+  users: 'nav.users', roles: 'nav.roles', languages: 'nav.languages', redirects: 'nav.redirects',
+  'audit-logs': 'nav.audit',
+};
 
 interface Props {
   title: string;
@@ -41,6 +54,9 @@ type DomainFilter = {
 
 export function DataTable({ title, resource, basePath, kind = 'content', source }: Props) {
   const { can } = useAdminAuth();
+  const { t, formatDate, formatNumber } = useAdminI18n();
+  const titleKey = resourceTitleKeys[resource];
+  const localizedTitle = titleKey ? t(titleKey, title) : title;
   const definition = cmsDefinitions[resource];
   const isCmsContent = kind === 'content' && Boolean(definition);
   const [page, setPage] = useState(1);
@@ -178,8 +194,14 @@ export function DataTable({ title, resource, basePath, kind = 'content', source 
             : `${permissionDomain}.create`;
   const canCreate = !['lead', 'audit'].includes(kind) && can(createPermission);
   const canBulkArchive = isCmsContent && can(`${permissionDomain}.archive`);
+  const advancedCount = [featured, completeness, locale, ...Object.values(domainValues)].filter(Boolean).length;
+  const hasActiveFilters = Boolean(q || statusFilter || sort !== '-updatedAt' || advancedCount);
+  function resetFilters() {
+    setQ(''); setStatusFilter(''); setSort('-updatedAt'); setFeatured('');
+    setCompleteness(''); setLocale(''); setDomainValues({}); setPage(1);
+  }
   async function archiveSelected() {
-    if (!selected.length || !confirm(`Archive ${selected.length} selected record(s)?`)) return;
+    if (!selected.length || !confirm(`${t('action.archiveSelected')} (${formatNumber(selected.length)})`)) return;
     await Promise.all(
       selected.map((id) => api(`/admin/${resource}/${id}/archive`, { method: 'POST' })),
     );
@@ -193,144 +215,78 @@ export function DataTable({ title, resource, basePath, kind = 'content', source 
     <>
       <div className="page-title">
         <div>
-          <h1>{title}</h1>
-          <p>Search, filter and manage records with server-side pagination.</p>
+          <h1>{localizedTitle}</h1>
+          <p>{t('filter.description')}</p>
         </div>
         {canCreate && (
           <Link className="gv-button" href={`${basePath}/new`}>
             {kind === 'user'
-              ? 'Invite user'
+              ? t('action.inviteUser')
               : kind === 'role'
-                ? 'Create role'
+                ? t('action.createRole')
                 : kind === 'language'
-                  ? 'Add language'
-                  : 'Create record'}
+                  ? t('action.addLanguage')
+                  : t('action.createRecord')}
           </Link>
         )}
       </div>
 
-      <div className="toolbar">
+      <AdminFilterBar
+        activeAdvancedCount={advancedCount}
+        hasActiveFilters={hasActiveFilters}
+        onReset={resetFilters}
+        advanced={isCmsContent ? <>
+          {definition?.fields.featured && <select className="gv-input admin-filter-bar__control" aria-label="Featured filter" value={featured} onChange={(event) => { setFeatured(event.target.value); setPage(1); }}><option value="">{t('filter.allRecords')}</option><option value="true">{t('filter.featured')}</option><option value="false">{t('filter.notFeatured')}</option></select>}
+          {domainFilters.map((filter) => <select key={filter.key} className="gv-input admin-filter-bar__control" aria-label={`${filter.label} filter`} value={domainValues[filter.key] ?? ''} onChange={(event) => { setDomainValues((previous) => ({ ...previous, [filter.key]: event.target.value })); setPage(1); }}><option value="">All {filter.label.toLowerCase()} records</option>{(domainOptions[filter.key] ?? []).map((row) => <option key={String(row.id)} value={String(row.id)}>{display(row)}</option>)}</select>)}
+          <select className="gv-input admin-filter-bar__control" aria-label="Translation locale" value={locale} onChange={(event) => { setLocale(event.target.value); setPage(1); }}><option value="">{t('filter.anyLanguage')}</option>{languages.map((language) => <option key={language.code} value={language.code}>{language.nativeName}</option>)}</select>
+          <select className="gv-input admin-filter-bar__control" aria-label="Translation completeness" value={completeness} onChange={(event) => { setCompleteness(event.target.value); setPage(1); }} disabled={!locale}><option value="">{t('filter.anyCompleteness')}</option><option value="complete">{t('filter.complete')}</option><option value="partial">{t('filter.partial')}</option><option value="missing">{t('filter.missing')}</option></select>
+        </> : undefined}
+        actions={canBulkArchive && selected.length > 0 ? <Button onClick={() => void archiveSelected()}>{t('action.archive')} ({formatNumber(selected.length)})</Button> : undefined}
+      >
         <input
-          className="gv-input search-input"
+          className="gv-input admin-filter-bar__search"
           type="search"
           value={q}
           onChange={(e) => handleSearch(e.target.value)}
-          placeholder="Search"
+          placeholder={t('action.search')}
         />
         {statusOptions.length > 0 && (
           <select
-            className="gv-input"
-            aria-label="Status filter"
+            className="gv-input admin-filter-bar__control"
+            aria-label={t('filter.status')}
             value={statusFilter}
             onChange={(e) => handleStatus(e.target.value)}
           >
-            <option value="">All statuses</option>
+            <option value="">{t('filter.allStatuses')}</option>
             {statusOptions.map((value) => (
               <option key={value} value={value}>
-                {value.replaceAll('_', ' ')}
+                {t(`status.${value}` as Parameters<typeof t>[0], value.replaceAll('_', ' '))}
               </option>
             ))}
           </select>
         )}
         {(isCmsContent || kind === 'lead' || kind === 'user') && (
           <select
-            className="gv-input"
-            aria-label="Sort"
+            className="gv-input admin-filter-bar__control"
+            aria-label={t('filter.sort')}
             value={sort}
             onChange={(event) => {
               setSort(event.target.value);
               setPage(1);
             }}
           >
-            <option value="-updatedAt">Recently updated</option>
-            <option value="updatedAt">Oldest updated</option>
-            <option value="-createdAt">Newest created</option>
-            <option value="createdAt">Oldest created</option>
+            <option value="-updatedAt">{t('filter.recentlyUpdated')}</option>
+            <option value="updatedAt">{t('filter.oldestUpdated')}</option>
+            <option value="-createdAt">{t('filter.newestCreated')}</option>
+            <option value="createdAt">{t('filter.oldestCreated')}</option>
           </select>
         )}
-        {isCmsContent && (
-          <>
-            {definition?.fields.featured && (
-              <select
-                className="gv-input"
-                aria-label="Featured filter"
-                value={featured}
-                onChange={(event) => {
-                  setFeatured(event.target.value);
-                  setPage(1);
-                }}
-              >
-                <option value="">All records</option>
-                <option value="true">Featured</option>
-                <option value="false">Not featured</option>
-              </select>
-            )}
-            {domainFilters.map((filter) => (
-              <select
-                key={filter.key}
-                className="gv-input"
-                aria-label={`${filter.label} filter`}
-                value={domainValues[filter.key] ?? ''}
-                onChange={(event) => {
-                  setDomainValues((previous) => ({
-                    ...previous,
-                    [filter.key]: event.target.value,
-                  }));
-                  setPage(1);
-                }}
-              >
-                <option value="">All {filter.label.toLowerCase()} records</option>
-                {(domainOptions[filter.key] ?? []).map((row) => (
-                  <option key={String(row.id)} value={String(row.id)}>
-                    {display(row)}
-                  </option>
-                ))}
-              </select>
-            ))}
-            <select
-              className="gv-input"
-              aria-label="Translation locale"
-              value={locale}
-              onChange={(event) => {
-                setLocale(event.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">Any language</option>
-              {languages.map((language) => (
-                <option key={language.code} value={language.code}>
-                  {language.nativeName}
-                </option>
-              ))}
-            </select>
-            <select
-              className="gv-input"
-              aria-label="Translation completeness"
-              value={completeness}
-              onChange={(event) => {
-                setCompleteness(event.target.value);
-                setPage(1);
-              }}
-              disabled={!locale}
-            >
-              <option value="">Any completeness</option>
-              <option value="complete">Complete</option>
-              <option value="partial">Partial</option>
-              <option value="missing">Missing</option>
-            </select>
-          </>
-        )}
-        {canBulkArchive && selected.length > 0 && (
-          <Button onClick={() => void archiveSelected()}>
-            Archive selected ({selected.length})
-          </Button>
-        )}
-      </div>
+      </AdminFilterBar>
 
       {error ? (
         <ErrorState
-          title="Unable to load records"
-          description="Check your connection or access permissions."
+          title={t('state.loadRecordsFailed')}
+          description={t('state.connectionHelp')}
         />
       ) : !state ? (
         <div className="panel">
@@ -340,8 +296,8 @@ export function DataTable({ title, resource, basePath, kind = 'content', source 
         </div>
       ) : state.rows.length === 0 ? (
         <EmptyState
-          title="No records yet"
-          description="Create the first approved record when content is ready."
+          title={t('state.noRecords')}
+          description={t('state.noRecordsDescription')}
         />
       ) : (
         <>
@@ -353,7 +309,7 @@ export function DataTable({ title, resource, basePath, kind = 'content', source 
                     <th>
                       <input
                         type="checkbox"
-                        aria-label="Select all visible records"
+                      aria-label={t('table.selectAll')}
                         checked={
                           Boolean(state.rows.length) &&
                           state.rows.every((row) => selected.includes(String(row.id)))
@@ -366,10 +322,10 @@ export function DataTable({ title, resource, basePath, kind = 'content', source 
                       />
                     </th>
                   )}
-                  <th>Name</th>
-                  <th>Status / Type</th>
-                  <th>Translations</th>
-                  <th>Updated</th>
+                  <th>{t('table.name')}</th>
+                  <th>{t('table.statusType')}</th>
+                  <th>{t('table.translations')}</th>
+                  <th>{t('table.updated')}</th>
                   <th />
                 </tr>
               </thead>
@@ -380,7 +336,7 @@ export function DataTable({ title, resource, basePath, kind = 'content', source 
                       <td>
                         <input
                           type="checkbox"
-                          aria-label={`Select ${display(row)}`}
+                          aria-label={`${t('table.selectRecord')}: ${display(row)}`}
                           checked={selected.includes(String(row.id))}
                           onChange={(event) =>
                             setSelected((previous) =>
@@ -408,20 +364,18 @@ export function DataTable({ title, resource, basePath, kind = 'content', source 
                               : 'neutral'
                         }
                       >
-                        {String(row.status ?? row.sourceType ?? row.action ?? 'active')}
+                        {t(`status.${String(row.status ?? 'active')}` as Parameters<typeof t>[0], String(row.status ?? row.sourceType ?? row.action ?? 'active'))}
                       </Badge>
                     </td>
                     <td>{Array.isArray(row.translations) ? row.translations.length : '—'}</td>
                     <td>
                       {row.updatedAt || row.createdAt
-                        ? new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(
-                            new Date(String(row.updatedAt ?? row.createdAt)),
-                          )
+                        ? formatDate(String(row.updatedAt ?? row.createdAt))
                         : '—'}
                     </td>
                     <td>
                       <Link className="text-link" href={`${basePath}/${String(row.id)}`}>
-                        {kind === 'audit' ? 'View' : 'Open'}
+                        {kind === 'audit' ? t('action.view') : t('action.open')}
                       </Link>
                     </td>
                   </tr>

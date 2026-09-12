@@ -16,6 +16,7 @@ describe('controlled page sections', () => {
         'logo_cloud',
         'process',
         'rich_text',
+        'service_category_pillars',
         'services_grid',
         'stats',
         'testimonials',

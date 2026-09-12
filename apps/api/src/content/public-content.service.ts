@@ -56,6 +56,9 @@ export class PublicContentService {
         ? { publicVisibility: true }
         : {}),
       ...(resource === 'testimonials' ? { consentConfirmed: true } : {}),
+      ...(resource === 'services'
+        ? { category: { is: { status: 'published', translations: { some: { locale } } } } }
+        : {}),
       translations: { some: { locale } },
     };
   }
@@ -187,13 +190,20 @@ export class PublicContentService {
         : typeof row[key] === 'string'
           ? [row[key]]
           : [];
-      if (!ids.length) continue;
+      if (!ids.length) {
+        if (!r.many) related[key] = null;
+        continue;
+      }
       const records = await this.list(r.resource, { locale, ids: ids.join(','), pageSize: '100' });
-      related[key] = records.data;
+      if (r.many) {
+        related[key] = records.data;
+        output[key] = records.data;
+      } else {
+        related[key] = records.data[0] ?? null;
+      }
     }
     if (resource === 'case-studies' && row.anonymized) delete related.clientId;
     output.related = related;
-    Object.assign(output, related);
     if (resource === 'insights' && typeof row.authorUserId === 'string') {
       const author = await this.prisma.user.findUnique({
         where: { id: row.authorUserId },
@@ -223,6 +233,7 @@ export class PublicContentService {
               faqIds: 'faqs',
               brandIds: 'brands',
               productIds: 'products',
+              categoryIds: 'service-categories',
             })) {
               const ids = content[key] as string[] | undefined;
               if (ids?.length) {
@@ -232,9 +243,10 @@ export class PublicContentService {
                   pageSize: '100',
                   ...(content.featuredOnly ? { featured: 'true' } : {}),
                 });
-                collections[target] = ids
-                  .map((id) => result.data.find((r) => r.id === id))
-                  .filter(Boolean);
+                collections[target] =
+                  target === 'service-categories'
+                    ? result.data
+                    : ids.map((id) => result.data.find((r) => r.id === id)).filter(Boolean);
               } else if (ids && content.featuredOnly) {
                 collections[target] = (
                   await this.list(target, { locale, featured: 'true', pageSize: '12' })
@@ -269,14 +281,21 @@ export class PublicContentService {
         .filter((k) => k !== 'evidenceNoteInternal' && k !== 'consentConfirmed')
         .map((k) => [k, row[k]]),
     );
+    const publicRelationIds = Object.fromEntries(
+      Object.entries(def.relations)
+        .filter(([, relation]) => !relation.many && relation.publicId)
+        .filter(([key]) => typeof row[key] === 'string')
+        .map(([key]) => [key, row[key]]),
+    );
     return {
       id: row.id,
       ...fields,
+      ...publicRelationIds,
       publishedAt: row.publishedAt,
       updatedAt: row.updatedAt,
       translations: [Object.fromEntries(Object.keys(def.translations).map((k) => [k, tr[k]]))],
       alternates,
-      media: await this.resolveMedia({ ...fields, ...tr }, locale),
+      media: await this.resolveMedia({ ...fields, ...publicRelationIds, ...tr }, locale),
     };
   }
   async media(id: string, locale: string) {

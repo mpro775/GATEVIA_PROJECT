@@ -49,6 +49,13 @@ export const sectionSchemas = {
       )
       .max(12),
   }),
+  service_category_pillars: base.extend({
+    categoryIds: z
+      .array(z.string().uuid())
+      .min(1)
+      .max(6)
+      .refine((ids) => new Set(ids).size === ids.length, 'Duplicate category.'),
+  }),
   timeline: base.extend({
     steps: z
       .array(

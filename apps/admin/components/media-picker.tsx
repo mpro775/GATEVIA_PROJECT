@@ -1,114 +1,49 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import type { Media } from '@gatevia/api-client';
-import { Button, EmptyState, Input } from '@gatevia/ui';
-import { apiEnvelope } from '@/lib/api';
-type MediaRow = Pick<
-  Media,
-  'id' | 'originalFilename' | 'mimeType' | 'status' | 'translations' | 'url'
->;
-export function MediaPicker({
-  value,
-  onSelect,
-  acceptMimePrefix,
-}: {
-  value?: string;
-  onSelect: (id: string) => void;
-  acceptMimePrefix?: string | undefined;
-}) {
+import { Button, Input } from '@gatevia/ui';
+import { api } from '@/lib/api';
+import { MediaBrowser } from './media-browser';
+import { useAdminI18n } from './admin-locale-provider';
+
+export function MediaPicker({ value, onSelect, acceptMimePrefix }: { value?: string; onSelect: (id: string) => void; acceptMimePrefix?: string | undefined }) {
+  const { t } = useAdminI18n();
   const dialog = useRef<HTMLDialogElement>(null);
-  const [rows, setRows] = useState<MediaRow[]>([]);
-  const [q, setQ] = useState('');
+  const [open, setOpen] = useState(false);
+  const [current, setCurrent] = useState<Media | null>(null);
+  const [pending, setPending] = useState<Media | null>(null);
+
   useEffect(() => {
-    if (dialog.current?.open)
-      void apiEnvelope<MediaRow>(
-        `/admin/media?pageSize=100&status=ready&q=${encodeURIComponent(q)}`,
-      ).then((result) => setRows(result.data));
-  }, [q]);
-  function open() {
-    dialog.current?.showModal();
-    void apiEnvelope<MediaRow>('/admin/media?pageSize=100&status=ready').then((result) =>
-      setRows(result.data),
-    );
+    if (!value) { setCurrent(null); return; }
+    let active = true;
+    void api<Media>(`/admin/media/${encodeURIComponent(value)}`).then((row) => { if (active) setCurrent(row); }).catch(() => { if (active) setCurrent(null); });
+    return () => { active = false; };
+  }, [value]);
+
+  function show() {
+    setPending(current); setOpen(true);
+    window.requestAnimationFrame(() => dialog.current?.showModal());
   }
-  const visibleRows = acceptMimePrefix
-    ? rows.filter((row) => row.mimeType.startsWith(acceptMimePrefix))
-    : rows;
-  const selected = rows.find((row) => row.id === value);
-  return (
-    <div>
-      <div className="toolbar">
-        {selected?.url && selected.mimeType.startsWith('image/') ? (
-          // The admin picker displays source thumbnails and does not need Next image optimization.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={selected.url}
-            alt=""
-            width={56}
-            height={40}
-            style={{ objectFit: 'cover', borderRadius: '.35rem' }}
-          />
-        ) : null}
-        <Input
-          readOnly
-          value={selected?.originalFilename ?? value ?? ''}
-          placeholder="No media selected"
-        />
-        <Button type="button" onClick={open}>
-          Choose media
-        </Button>
-        {value ? (
-          <Button type="button" variant="secondary" onClick={() => onSelect('')}>
-            Clear
-          </Button>
-        ) : null}
-      </div>
-      <dialog ref={dialog} className="panel">
-        <div className="page-title">
-          <h2>Media picker</h2>
-          <button className="text-link" onClick={() => dialog.current?.close()}>
-            Close
-          </button>
-        </div>
-        <Input
-          type="search"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search media"
-        />
-        {visibleRows.length ? (
-          <div className="media-grid">
-            {visibleRows.map((row) => (
-              <button
-                className="media-tile"
-                key={row.id}
-                onClick={() => {
-                  onSelect(row.id);
-                  dialog.current?.close();
-                }}
-              >
-                {row.url && row.mimeType.startsWith('image/') ? (
-                  // The admin picker displays source thumbnails and does not need Next image optimization.
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={row.url}
-                    alt=""
-                    loading="lazy"
-                    style={{ width: '100%', aspectRatio: '16 / 10', objectFit: 'cover' }}
-                  />
-                ) : null}
-                <strong>{row.originalFilename}</strong>
-                <span className="cell-meta">{row.translations?.[0]?.altText ?? row.status}</span>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            title="No ready media found"
-            description="Upload an approved asset in the Media Library first."
-          />
-        )}
-      </dialog>
+  function close() { dialog.current?.close(); setOpen(false); }
+  function confirm(row = pending) {
+    if (!row) return;
+    onSelect(row.id); setCurrent(row); close();
+  }
+
+  return <div className="media-picker-field">
+    <div className="media-picker-field__selection">
+      {current?.url && current.mimeType.startsWith('image/') && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={current.url} alt="" width={72} height={48}/>
+      )}
+      <Input readOnly value={current?.originalFilename ?? value ?? ''} placeholder={t('media.noSelection')}/>
+      <Button type="button" onClick={show}>{t('action.chooseMedia')}</Button>
+      {value && <Button type="button" variant="secondary" onClick={() => { onSelect(''); setCurrent(null); }}>{t('action.clear')}</Button>}
     </div>
-  );
+    <dialog ref={dialog} className="media-picker-dialog" onClose={() => setOpen(false)}>
+      <div className="media-picker-dialog__header"><div><h2>{t('media.pickerTitle')}</h2>{acceptMimePrefix && <span className="cell-meta">{acceptMimePrefix}*</span>}</div><button type="button" className="text-link" onClick={close} aria-label={t('action.close')}>✕</button></div>
+      <div className="media-picker-dialog__body">{open && <MediaBrowser {...(pending?.id ? { selectedId: pending.id } : {})} onSelected={setPending} onConfirm={confirm} {...(acceptMimePrefix ? { mimePrefix: acceptMimePrefix } : {})} pageSize={24}/>}</div>
+      <div className="media-picker-dialog__footer"><span className="cell-meta">{pending ? pending.originalFilename : t('media.noSelection')}</span><div><Button type="button" variant="secondary" onClick={close}>{t('action.cancel')}</Button><Button type="button" disabled={!pending} onClick={() => confirm()}>{t('action.select')}</Button></div></div>
+    </dialog>
+  </div>;
 }

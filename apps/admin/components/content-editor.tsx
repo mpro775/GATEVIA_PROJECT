@@ -14,6 +14,7 @@ import { api } from '@/lib/api';
 import {
   formatCmsValidationError,
   makeCmsEditorPayload,
+  relationOptionLabel,
   validateCmsEditorFields,
   type TranslationMap,
 } from '@/lib/cms-editor';
@@ -79,6 +80,15 @@ const SECTION_FIELDS: Record<SectionType, SectionField[]> = {
     ...BASE_SECTION_FIELDS,
     { key: 'steps', label: 'Process steps', kind: 'process_steps' },
   ],
+  service_category_pillars: [
+    ...BASE_SECTION_FIELDS,
+    {
+      key: 'categoryIds',
+      label: 'Service categories',
+      kind: 'relation',
+      resource: 'service-categories',
+    },
+  ],
   timeline: [...BASE_SECTION_FIELDS, { key: 'steps', label: 'Timeline steps', kind: 'json' }],
   testimonials: [
     ...BASE_SECTION_FIELDS,
@@ -130,6 +140,13 @@ function humanize(value: string) {
     .replaceAll('-', ' ')
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
+const MEDIA_FIELD_LABELS: Record<string, string> = {
+  iconMediaId: 'Icon',
+  coverMediaId: 'Cover image',
+  heroMediaId: 'Hero image',
+  ogMediaId: 'Social share image',
+};
+
 function normalizeTranslations(value: unknown): TranslationMap {
   if (Array.isArray(value))
     return Object.fromEntries(
@@ -160,16 +177,15 @@ function normalizeSections(value: unknown): PageSection[] {
     };
   });
 }
-async function loadOptions(resource: string): Promise<RelOption[]> {
+async function loadOptions(resource: string, locale: string): Promise<RelOption[]> {
   try {
     const rows = await api<
       Array<{ id: string; displayName?: string; translations?: Array<Record<string, unknown>> }>
     >(`/admin/${resource}?pageSize=100`);
     return rows.map((row) => {
-      const tr = row.translations?.[0] ?? {};
       return {
         id: row.id,
-        label: String(tr.title ?? tr.name ?? tr.question ?? row.displayName ?? row.id),
+        label: relationOptionLabel(row, locale),
       };
     });
   } catch {
@@ -380,7 +396,7 @@ function ContractField({
   value: unknown;
   onChange: (value: unknown) => void;
 }) {
-  const label = `${humanize(name)}${field.required ? ' *' : ''}`;
+  const label = `${MEDIA_FIELD_LABELS[name] ?? humanize(name)}${field.required ? ' *' : ''}`;
   if (field.kind === 'media')
     return (
       <Field label={label}>
@@ -768,6 +784,7 @@ export function ContentEditor({
   }, [id, resource]);
   useEffect(() => {
     if (!definition) return;
+    let cancelled = false;
     const resources = new Set(
       Object.values(definition.relations).map((relation) => relation.resource),
     );
@@ -778,11 +795,15 @@ export function ContentEditor({
           if (field.kind === 'relation') resources.add(field.resource);
         });
     resources.forEach((relationResource) => {
-      void loadOptions(relationResource).then((rows) =>
-        setOptions((previous) => ({ ...previous, [relationResource]: rows })),
-      );
+      void loadOptions(relationResource, locale).then((rows) => {
+        if (!cancelled)
+          setOptions((previous) => ({ ...previous, [relationResource]: rows }));
+      });
     });
-  }, [definition, resource]);
+    return () => {
+      cancelled = true;
+    };
+  }, [definition, resource, locale]);
 
   const translations = normalizeTranslations(record.translations);
   const current = translations[locale] ?? {};

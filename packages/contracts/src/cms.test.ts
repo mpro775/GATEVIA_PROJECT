@@ -13,6 +13,15 @@ describe('CMS field storage contracts', () => {
     expect(fieldSchema(industry.translations.canonicalUrl!).safeParse(null).success).toBe(true);
     expect(fieldSchema(industry.translations.ogMediaId!).safeParse(null).success).toBe(true);
     expect(fieldSchema(industry.fields.heroMediaId!).safeParse(null).success).toBe(true);
+    expect(
+      fieldSchema(cmsDefinitions['service-categories']!.fields.coverMediaId!).safeParse(null)
+        .success,
+    ).toBe(true);
+    expect(
+      fieldSchema(cmsDefinitions['service-categories']!.fields.coverMediaId!).safeParse(
+        '5b7d69a8-43e5-4d08-a0c8-fb9bc173ba0e',
+      ).success,
+    ).toBe(true);
     expect(fieldSchema(cmsDefinitions.partners!.fields.startDate!).safeParse(null).success).toBe(
       true,
     );

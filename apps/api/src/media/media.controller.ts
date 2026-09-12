@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { ApiCookieAuth, ApiTags } from '@nestjs/swagger';
+import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { ApiCookieAuth, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { SessionGuard, PermissionGuard } from '../common/auth.guard';
 import { CsrfGuard } from '../common/csrf.guard';
 import { RequirePermissions } from '../common/permissions';
@@ -15,19 +15,27 @@ export class MediaController {
     private readonly media: MediaService,
     private readonly prisma: PrismaService,
   ) {}
-  @Get('media') @RequirePermissions('media.read') async list(
+  @Get('media')
+  @RequirePermissions('media.read')
+  @ApiQuery({ name: 'mimePrefix', required: false, example: 'image/' })
+  async list(
     @Query('page') p = '1',
     @Query('pageSize') s = '20',
     @Query('q') q?: string,
     @Query('status') status?: string,
     @Query('folderId') folderId?: string,
+    @Query('mimePrefix') mimePrefix?: string,
   ) {
+    if (mimePrefix && (!/^[a-z][a-z0-9.+-]*\/$/.test(mimePrefix) || mimePrefix.length > 64)) {
+      throw new BadRequestException('mimePrefix must be a valid MIME type prefix ending in /.');
+    }
     return this.media.list(
       Math.max(1, Number(p) || 1),
       Math.min(100, Math.max(1, Number(s) || 20)),
       q,
       status,
       folderId,
+      mimePrefix,
     );
   }
   @Post('media/upload-session') @RequirePermissions('media.upload') async session(
@@ -62,6 +70,9 @@ export class MediaController {
     @Req() req: GateviaRequest,
   ) {
     return { data: await this.media.update(id, body, req.user!.id) };
+  }
+  @Get('media/:id') @RequirePermissions('media.read') async get(@Param('id') id: string) {
+    return { data: await this.media.get(id) };
   }
   @Get('media/:id/usages') @RequirePermissions('media.read') async usages(@Param('id') id: string) {
     return { data: await this.media.usages(id) };

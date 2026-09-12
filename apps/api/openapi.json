@@ -805,7 +805,16 @@
     "/api/v1/admin/media": {
       "get": {
         "operationId": "MediaController_list",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "mimePrefix",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "image/"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful response",
@@ -988,6 +997,48 @@
     "/api/v1/admin/media/{id}": {
       "patch": {
         "operationId": "MediaController_update",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Media"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Problem Details error response",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "admin/media"
+        ]
+      },
+      "get": {
+        "operationId": "MediaController_get",
         "parameters": [],
         "responses": {
           "200": {

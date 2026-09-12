@@ -213,12 +213,13 @@ export class MediaService {
       entityType: 'media',
       entityId: media.id,
     });
-    return this.present(media as unknown as Record<string, unknown>);
+    return this.present(media);
   }
-  async list(page = 1, pageSize = 20, q?: string, status?: string, folderId?: string) {
-    const where = {
+  async list(page = 1, pageSize = 20, q?: string, status?: string, folderId?: string, mimePrefix?: string) {
+    const where: Prisma.MediaWhereInput = {
       ...(status ? { status: status as 'ready' } : {}),
       ...(folderId ? { folderId } : {}),
+      ...(mimePrefix ? { mimeType: { startsWith: mimePrefix } } : {}),
       ...(q
         ? {
             OR: [
@@ -242,6 +243,14 @@ export class MediaService {
       data: data.map((row) => this.present(row as unknown as Record<string, unknown>)),
       meta: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
     };
+  }
+  async get(id: string) {
+    const media = await this.prisma.media.findUnique({
+      where: { id },
+      include: { translations: true, variants: true, folder: true },
+    });
+    if (!media) throw new NotFoundException('Media was not found.');
+    return this.present(media);
   }
   async usages(id: string) {
     const media = await this.prisma.media.findUnique({ where: { id } });
@@ -438,7 +447,7 @@ export class MediaService {
       entityId: id,
       summary: { usageCount: usages.length },
     });
-    return this.present(row as unknown as Record<string, unknown>);
+    return this.present(row);
   }
   async update(
     id: string,
@@ -486,6 +495,6 @@ export class MediaService {
       entityType: 'media',
       entityId: id,
     });
-    return this.present(row as unknown as Record<string, unknown>);
+    return this.present(row);
   }
 }

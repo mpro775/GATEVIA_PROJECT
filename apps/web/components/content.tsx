@@ -110,11 +110,12 @@ export async function SectionRenderer({
 }) {
   const rows = list(sections) as Record<string, unknown>[];
   const homePillarRow =
-    variant === 'home' ? rows.find((row) => text(row.sectionType) === 'process') : undefined;
-  const homePillarTranslation = Array.isArray(homePillarRow?.translations)
-    ? (homePillarRow.translations[0] as { content?: Record<string, unknown> } | undefined)
-    : undefined;
-  const homePillarSteps = list(homePillarTranslation?.content?.steps) as Record<string, unknown>[];
+    variant === 'home'
+      ? rows.find((row) => text(row.sectionType) === 'service_category_pillars')
+      : undefined;
+  const homeCategories = ((homePillarRow?.collections as Record<string, unknown[]> | undefined)?.[
+    'service-categories'
+  ] ?? []) as Record<string, unknown>[];
 
   return (
     <>
@@ -136,9 +137,8 @@ export async function SectionRenderer({
                 <HomeHero
                   key={String(row.id)}
                   content={content}
-                  locale={locale}
                   mediaItem={mediaItem}
-                  railSteps={homePillarSteps}
+                  railCategories={homeCategories}
                 />
               );
             }
@@ -220,8 +220,17 @@ export async function SectionRenderer({
             );
           }
 
-          if (variant === 'home' && type === 'process') {
-            return <StrategicPillars key={String(row.id)} content={content} media={media} />;
+          if (type === 'service_category_pillars') {
+            const categories = ((row.collections as Record<string, unknown[]> | undefined)?.[
+              'service-categories'
+            ] ?? []) as Record<string, unknown>[];
+            return (
+              <StrategicPillars
+                key={String(row.id)}
+                content={content}
+                categories={categories}
+              />
+            );
           }
 
           if (variant === 'home' && type === 'timeline') {
@@ -332,11 +341,27 @@ export async function SectionRenderer({
             if (items.length === 0 && !content.title) return null; // hide empty optional section
 
             if (variant === 'home' && type === 'services_grid') {
+              const categoryIds = [
+                ...new Set(items.map((item) => text(item.categoryId)).filter(Boolean)),
+              ];
+              const knownIds = new Set(homeCategories.map((category) => text(category.id)));
+              const missingIds = categoryIds.filter((id) => !knownIds.has(id));
+              const additionalCategories = missingIds.length
+                ? await safe(
+                    getList(
+                      'service-categories',
+                      locale,
+                      `&ids=${encodeURIComponent(missingIds.join(','))}&pageSize=100`,
+                    ) as Promise<Record<string, unknown>[]>,
+                    [],
+                  )
+                : [];
               return (
                 <HomeServicesShowcase
                   key={String(row.id)}
                   content={content}
                   items={items}
+                  categories={[...homeCategories, ...additionalCategories]}
                   locale={locale}
                 />
               );

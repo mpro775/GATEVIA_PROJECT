@@ -5,7 +5,7 @@
  *
  * Canonical target order:
  *   hero            10
- *   process         20
+ *   service_category_pillars 20
  *   timeline        30
  *   services_grid   40
  *   industries_grid 50
@@ -33,7 +33,7 @@ const prisma = new PrismaClient();
 
 const CANONICAL: Record<string, number> = {
   hero: 10,
-  process: 20,
+  service_category_pillars: 20,
   timeline: 30,
   services_grid: 40,
   industries_grid: 50,
