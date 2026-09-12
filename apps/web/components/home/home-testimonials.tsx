@@ -51,23 +51,45 @@ export function HomeTestimonials({
   );
   const featured = items[featuredIndex]!;
   const secondary = items.filter((_, index) => index !== featuredIndex);
+  const total = String(items.length).padStart(2, '0');
 
   return (
     <section className="section home-testimonials" data-home-section="testimonials">
       <div className="container-wide home-testimonials__layout">
         <header className="home-testimonials__header" data-reveal="up">
-          {Boolean(content.eyebrow) && <span className="eyebrow">{text(content.eyebrow)}</span>}
-          {Boolean(content.title) && <h2>{text(content.title)}</h2>}
-          {demo && <span className="home-demo-badge">{t.demoContent}</span>}
+          <div className="home-testimonials__heading-copy">
+            {Boolean(content.eyebrow) && <span className="eyebrow">{text(content.eyebrow)}</span>}
+            {Boolean(content.title) && <h2>{text(content.title)}</h2>}
+            {demo && <span className="home-demo-badge">{t.demoContent}</span>}
+          </div>
+          <div className="home-testimonials__header-mark" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+          <span className="home-testimonials__count" aria-hidden="true">
+            <b>{total}</b>
+            <i />
+            <small>01</small>
+          </span>
         </header>
 
         <div className="home-testimonials__voices">
           <blockquote className="home-testimonials__featured" data-reveal="testimonial-quote">
+            <div className="home-testimonials__featured-top" aria-hidden="true">
+              <span>01</span>
+              <i />
+            </div>
             <span className="home-testimonials__quote-mark" aria-hidden="true">
               “
             </span>
             <p>{text(translation(featured).quote)}</p>
             <Attribution item={featured} />
+            <div className="home-testimonials__gate" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </div>
           </blockquote>
 
           {secondary.length > 0 && (
@@ -80,7 +102,12 @@ export function HomeTestimonials({
                     { '--reveal-delay': `${Math.min(index, 5) * 65}ms` } as React.CSSProperties
                   }
                 >
-                  <span aria-hidden="true">{String(index + 2).padStart(2, '0')}</span>
+                  <span className="home-testimonials__item-index" aria-hidden="true">
+                    {String(index + 2).padStart(2, '0')}
+                  </span>
+                  <span className="home-testimonials__mini-quote" aria-hidden="true">
+                    “
+                  </span>
                   <p>“{text(translation(item).quote)}”</p>
                   <Attribution item={item} />
                 </blockquote>
