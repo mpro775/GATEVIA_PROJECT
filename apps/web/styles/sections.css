@@ -145,7 +145,7 @@ html[dir='rtl'] .timeline::after {
   color: var(--color-text-secondary);
 }
 .rich-text h2 {
-  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  font-size: clamp(1.6rem, 2.5vw, 2.4rem);
   margin-block: 2.5rem 1rem;
 }
 .rich-text blockquote {
