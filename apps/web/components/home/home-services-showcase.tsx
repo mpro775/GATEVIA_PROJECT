@@ -67,12 +67,33 @@ function groupServices(items: Record<string, unknown>[], locale: string): Stage[
   }));
 }
 
-function StageMotif({ index }: { index: number }) {
+function StageIcon({ index }: { index: number }) {
+  const icons = [
+    // Market access: a global market with a clear point of entry.
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M3.5 12h11M12 3.5c2.1 2.35 3.2 5.2 3.2 8.5M12 20.5C9.9 18.15 8.8 15.3 8.8 12" />
+      <path d="m15.5 16 2.5-2.5L20.5 16M18 13.5V20" />
+    </>,
+    // Execution: an actionable plan being completed.
+    <>
+      <path d="M9 5.5H6.5A1.5 1.5 0 0 0 5 7v12a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19V7a1.5 1.5 0 0 0-1.5-1.5H15" />
+      <rect x="9" y="3.5" width="6" height="4" rx="1" />
+      <path d="m8.5 14 2.25 2.25 4.75-5" />
+    </>,
+    // Growth: measurable upward business momentum.
+    <>
+      <path d="M4 20V8M4 20h16" />
+      <path d="m7 16 4-4 3 2.5L20 8.5" />
+      <path d="M16 8.5h4v4" />
+    </>,
+  ];
+
   return (
-    <span className={`home-services__motif home-services__motif--${index + 1}`} aria-hidden="true">
-      <i />
-      <i />
-      <i />
+    <span className="home-services__stage-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" focusable="false">
+        {icons[index] ?? icons[icons.length - 1]}
+      </svg>
     </span>
   );
 }
@@ -130,7 +151,7 @@ export function HomeServicesShowcase({
                   <small>{stage.motif}</small>
                 </div>
                 <h3>{stage.label}</h3>
-                <StageMotif index={stageIndex} />
+                <StageIcon index={stageIndex} />
               </header>
               <ol className="home-services__items">
                 {stage.items.map((item, itemIndex) => {

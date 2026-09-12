@@ -1588,85 +1588,27 @@ html[dir='rtl'] .home-journey__destination-flag::before {
   line-height: 1.08;
 }
 
-.home-services__motif {
+.home-services__stage-icon {
   position: absolute;
   inset-inline-end: 0;
   inset-block-end: 1.8rem;
-  width: 6.2rem;
+  display: grid;
+  width: 5rem;
   height: 5rem;
-  opacity: 0.7;
+  place-items: center;
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 26%, transparent);
+  border-radius: 50%;
 }
 
-.home-services__motif i {
-  position: absolute;
-  display: block;
-  border-color: var(--color-accent);
-  transition:
-    transform var(--motion-duration-base) var(--motion-ease-enter),
-    opacity var(--motion-duration-fast);
-}
-
-.home-services__motif--1 i {
-  inset-block: 0;
-  width: 2.6rem;
-  border: 1px solid var(--color-accent);
-  border-block-end: 0;
-}
-.home-services__motif--1 i:nth-child(1) {
-  inset-inline-start: 0;
-}
-.home-services__motif--1 i:nth-child(2) {
-  inset-inline-start: 1.2rem;
-  opacity: 0.55;
-}
-.home-services__motif--1 i:nth-child(3) {
-  inset-inline-start: 2.4rem;
-  opacity: 0.25;
-}
-
-.home-services__motif--2 i:first-child {
-  inset: 50% 0 auto;
-  border-block-start: 1px solid var(--color-accent);
-}
-.home-services__motif--2 i:nth-child(2),
-.home-services__motif--2 i:nth-child(3) {
-  top: calc(50% - 0.25rem);
-  width: 0.5rem;
-  height: 0.5rem;
-  background: var(--color-accent);
-  transform: rotate(45deg);
-}
-.home-services__motif--2 i:nth-child(2) {
-  inset-inline-start: 0;
-}
-.home-services__motif--2 i:nth-child(3) {
-  inset-inline-end: 0;
-}
-
-.home-services__motif--3 i:first-child {
-  inset-inline-start: 0;
-  inset-block: 50% auto;
-  width: 58%;
-  border-block-start: 1px solid var(--color-accent);
-}
-.home-services__motif--3 i:nth-child(2),
-.home-services__motif--3 i:nth-child(3) {
-  inset-inline-end: 0;
-  width: 58%;
-  border-block-start: 1px solid var(--color-accent);
-  transform-origin: left center;
-}
-html[dir='rtl'] .home-services__motif--3 i:nth-child(2),
-html[dir='rtl'] .home-services__motif--3 i:nth-child(3) {
-  transform-origin: right center;
-}
-.home-services__motif--3 i:nth-child(2) {
-  inset-block-start: 50%;
-  transform: rotate(-28deg);
-}
-.home-services__motif--3 i:nth-child(3) {
-  inset-block-start: 50%;
-  transform: rotate(28deg);
+.home-services__stage-icon svg {
+  width: 2.65rem;
+  height: 2.65rem;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .home-services__items > li {
