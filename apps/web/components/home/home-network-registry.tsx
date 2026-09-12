@@ -124,7 +124,7 @@ export function HomeNetworkRegistry({
   if (clients.length === 0 && partners.length === 0) return null;
   const t = copy(locale);
   return (
-    <section className="section home-network">
+    <section className="section home-network" data-home-section="network">
       <div className="container-wide">
         <header className="home-section-header home-network__heading">
           <div data-reveal="up">

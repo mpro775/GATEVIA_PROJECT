@@ -11,7 +11,7 @@ export function HomeJourney({
   const isArabic = locale.toLowerCase().startsWith('ar');
 
   return (
-    <section className="section home-journey">
+    <section className="section home-journey" data-home-section="journey">
       <div className="container-wide home-journey__inner">
         <header className="home-section-header home-journey__header">
           <div>

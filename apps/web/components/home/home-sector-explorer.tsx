@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Icon } from '@gatevia/ui';
 import { useId, useState } from 'react';
 import { text, translation } from '@/lib/content';
+import { copy } from '@/lib/ui-copy';
 
 type MediaRecord = Record<string, { url?: string; translations?: Array<{ altText?: string }> }>;
 
@@ -37,16 +38,18 @@ export function HomeSectorExplorer({
   content,
   items,
   locale,
+  demo,
 }: {
   content: Record<string, unknown>;
   items: Record<string, unknown>[];
   locale: string;
+  demo: boolean;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const id = useId();
-  const isArabic = locale.toLowerCase().startsWith('ar');
+  const previewId = useId();
   if (items.length === 0) return null;
 
+  const t = copy(locale);
   const safeIndex = Math.min(activeIndex, items.length - 1);
   const activeItem = items[safeIndex]!;
   const activeTranslation = translation(activeItem);
@@ -56,13 +59,14 @@ export function HomeSectorExplorer({
   const slug = text(activeTranslation.slug);
 
   return (
-    <section className="section home-sector-explorer">
+    <section className="section home-sector-explorer" data-home-section="sectors">
       <div className="container-wide">
         <header className="home-section-header home-sector-explorer__header">
           <div data-reveal="up">
             {Boolean(content.eyebrow) && <span className="eyebrow">{text(content.eyebrow)}</span>}
             {Boolean(content.title) && <h2>{text(content.title)}</h2>}
             {Boolean(content.body) && <p>{text(content.body)}</p>}
+            {demo && <span className="home-demo-badge">{t.demoContent}</span>}
           </div>
           <span className="home-sector-explorer__count" data-reveal="fade" aria-hidden="true">
             {String(items.length).padStart(2, '0')} / SECTORS
@@ -70,12 +74,12 @@ export function HomeSectorExplorer({
         </header>
 
         <div className="home-sector-explorer__surface" data-reveal="up">
+          {/* Preview region — labelled by the active sector heading */}
           <div
             className="home-sector-explorer__preview"
-            id={`${id}-panel-${safeIndex}`}
-            role="tabpanel"
-            aria-labelledby={`${id}-tab-${safeIndex}`}
-            tabIndex={0}
+            id={previewId}
+            aria-live="polite"
+            aria-atomic="true"
           >
             <div
               className="home-sector-explorer__visual"
@@ -96,19 +100,20 @@ export function HomeSectorExplorer({
               </span>
             </div>
             <div className="home-sector-explorer__active-copy">
-              <span className="eyebrow">{isArabic ? 'القطاع النشط' : 'Active sector'}</span>
+              <span className="eyebrow">{t.activeSector}</span>
               <h3>{title}</h3>
               {description && <p>{description}</p>}
               {slug && (
                 <Link href={`/${locale}/industries/${slug}`}>
-                  {isArabic ? 'استكشف القطاع' : 'Explore sector'}
+                  {t.exploreSector}
                   <Icon name="arrow" />
                 </Link>
               )}
             </div>
           </div>
 
-          <div className="home-sector-explorer__list" role="tablist" aria-orientation="vertical">
+          {/* Selector buttons — use aria-pressed (Option A) */}
+          <div className="home-sector-explorer__list" role="group" aria-label={text(content.title)}>
             {items.map((item, index) => {
               const tr = translation(item);
               const itemTitle = text(tr.name ?? tr.title);
@@ -116,13 +121,10 @@ export function HomeSectorExplorer({
               return (
                 <button
                   key={String(item.id ?? index)}
-                  id={`${id}-tab-${index}`}
                   className="home-sector-explorer__row"
                   type="button"
-                  role="tab"
-                  aria-selected={selected}
-                  aria-controls={selected ? `${id}-panel-${safeIndex}` : undefined}
-                  tabIndex={selected ? 0 : -1}
+                  aria-pressed={selected}
+                  aria-controls={previewId}
                   onClick={() => setActiveIndex(index)}
                   onFocus={() => setActiveIndex(index)}
                   onMouseEnter={() => setActiveIndex(index)}
@@ -137,7 +139,11 @@ export function HomeSectorExplorer({
                           : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) %
                             items.length;
                     setActiveIndex(next);
-                    document.getElementById(`${id}-tab-${next}`)?.focus();
+                    // Focus the next button in the list
+                    const buttons = document.querySelectorAll<HTMLButtonElement>(
+                      '.home-sector-explorer__row',
+                    );
+                    buttons[next]?.focus();
                   }}
                 >
                   <span>{String(index + 1).padStart(2, '0')}</span>

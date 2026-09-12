@@ -67,7 +67,7 @@ export function HomeInsights({
   const secondary = items.filter((_, index) => index !== featuredIndex);
 
   return (
-    <section className="section home-insights">
+    <section className="section home-insights" data-home-section="insights">
       <div className="container-wide">
         <header className="home-section-header home-insights__header">
           <div data-reveal="up">

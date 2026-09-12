@@ -187,7 +187,7 @@ export function CaseStudyCard({ item, locale }: { item: Record<string, unknown>;
       <div className="resource-card__body">
         <span className="eyebrow">{copy(locale).cases}</span>
         <h3>{text(tr.title ?? tr.name)}</h3>
-        <p>{text(tr.shortDescription ?? tr.excerpt)}</p>
+        <p>{text(tr.context ?? tr.challenge)}</p>
         {metrics.length > 0 && (
           <div className="case-card__metrics">
             {metrics.map((raw, i) => {

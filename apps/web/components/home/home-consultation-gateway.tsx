@@ -38,7 +38,7 @@ export function HomeConsultationGateway({
   const isArabic = locale.toLowerCase().startsWith('ar');
 
   return (
-    <section className="section home-consultation">
+    <section className="section home-consultation" data-home-section="consultation">
       <div className="container-wide home-consultation__layout">
         <div className="home-consultation__copy" data-reveal="up">
           <span className="eyebrow">

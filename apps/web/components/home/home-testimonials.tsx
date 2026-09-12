@@ -54,7 +54,7 @@ export function HomeTestimonials({
   const secondary = items.filter((_, index) => index !== featuredIndex);
 
   return (
-    <section className="section home-testimonials">
+    <section className="section home-testimonials" data-home-section="testimonials">
       <div className="container-wide home-testimonials__layout">
         <header className="home-testimonials__header" data-reveal="up">
           {Boolean(content.eyebrow) && <span className="eyebrow">{text(content.eyebrow)}</span>}

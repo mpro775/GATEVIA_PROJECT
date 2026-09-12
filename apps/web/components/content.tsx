@@ -273,7 +273,7 @@ export async function SectionRenderer({
           // ── Stats section ────────────────────────────────────────────────
           if (type === 'stats') {
             if (variant === 'home') {
-              return <HomeEvidenceLedger key={String(row.id)} content={content} />;
+              return <HomeEvidenceLedger key={String(row.id)} content={content} demo={demo} locale={locale} />;
             }
             return (
               <section className="section" key={String(row.id)}>
@@ -342,6 +342,7 @@ export async function SectionRenderer({
                   content={content}
                   items={items}
                   locale={locale}
+                  demo={demo}
                 />
               );
             }

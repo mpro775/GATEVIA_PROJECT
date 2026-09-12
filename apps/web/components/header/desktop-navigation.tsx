@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Icon } from '@gatevia/ui';
 import type { NavItem } from '@/lib/api';
+import { copy } from '@/lib/ui-copy';
 import { isRouteActive, resolveUrl } from './header-utils';
 import { MegaMenu } from './mega-menu';
 
@@ -30,7 +31,7 @@ export function DesktopNavigation({ links, locale, pathname }: { links: NavItem[
   }, []);
   useEffect(() => setOpenId(null), [pathname]);
   return (
-    <nav ref={navRef} className="desktop-nav" aria-label="Main navigation">
+    <nav ref={navRef} className="desktop-nav" aria-label={copy(locale).mainNavigation}>
       {links.map((item) => {
         const active = isRouteActive(pathname, item, locale);
         const hasChildren = Boolean(item.children?.length);

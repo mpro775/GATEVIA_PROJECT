@@ -6,14 +6,23 @@ import { copy } from '@/lib/ui-copy';
 
 type MediaRecord = Record<string, { url?: string; translations?: Array<{ altText?: string }> }>;
 type EcosystemKind = 'brand' | 'product';
+type MediaMode = 'cover' | 'logo';
 
-function identityMedia(item: Record<string, unknown>, kind: EcosystemKind) {
-  const media = item.media as MediaRecord | undefined;
-  const ids = kind === 'brand' ? [item.coverMediaId, item.logoMediaId] : [item.logoMediaId];
-  for (const id of ids) {
-    if (typeof id === 'string' && media?.[id]?.url) return media[id];
+function identityMedia(
+  item: Record<string, unknown>,
+  kind: EcosystemKind,
+): { media: MediaRecord[string] | undefined; mode: MediaMode } {
+  const mediaMap = item.media as MediaRecord | undefined;
+  // brand with cover image → cover presentation
+  if (kind === 'brand' && typeof item.coverMediaId === 'string' && mediaMap?.[item.coverMediaId]?.url) {
+    return { media: mediaMap[item.coverMediaId], mode: 'cover' };
   }
-  return undefined;
+  // brand logo-only OR product logo → logo presentation
+  const logoId = kind === 'brand' ? item.logoMediaId : item.logoMediaId;
+  if (typeof logoId === 'string' && mediaMap?.[logoId]?.url) {
+    return { media: mediaMap[logoId], mode: 'logo' };
+  }
+  return { media: undefined, mode: 'logo' };
 }
 
 function metadata(item: Record<string, unknown>, kind: EcosystemKind, locale: string) {
@@ -96,13 +105,15 @@ export function HomeEcosystemAtlas({
   const featuredName = text(featuredTr.name);
   const featuredSlug = text(featuredTr.slug);
   const featuredRoute = featured.kind === 'brand' ? 'brands' : 'products';
-  const featuredMedia = identityMedia(featured.item, featured.kind);
+  const featuredMediaResult = identityMedia(featured.item, featured.kind);
+  const featuredMedia = featuredMediaResult.media;
+  const featuredMediaMode = featuredMediaResult.mode;
   const featuredMeta = metadata(featured.item, featured.kind, locale);
   const visibleBrands = brands.filter((item) => item !== featured.item);
   const visibleProducts = products.filter((item) => item !== featured.item);
 
   return (
-    <section className="section home-ecosystem">
+    <section className="section home-ecosystem" data-home-section="ecosystem">
       <div className="container-wide">
         <header className="home-section-header home-ecosystem__header">
           <div data-reveal="up">
@@ -117,7 +128,7 @@ export function HomeEcosystemAtlas({
         </header>
 
         <article className="home-ecosystem__featured" data-reveal="ecosystem-feature">
-          <div className="home-ecosystem__identity">
+          <div className={`home-ecosystem__identity home-ecosystem__identity--${featuredMediaMode}`}>
             {featuredMedia?.url ? (
               <Image
                 src={featuredMedia.url}

@@ -99,6 +99,10 @@ const dictionaries = {
     privacyPolicy: 'Privacy policy',
     terms: 'Terms',
     cookies: 'Cookie policy',
+    mainNavigation: 'Main navigation',
+    brandHome: 'home',
+    activeSector: 'Active sector',
+    exploreSector: 'Explore sector',
   },
   'ar-SA': {
     skip: 'انتقل إلى المحتوى',
@@ -200,6 +204,10 @@ const dictionaries = {
     privacyPolicy: 'سياسة الخصوصية',
     terms: 'الشروط',
     cookies: 'سياسة ملفات الارتباط',
+    mainNavigation: 'التنقل الرئيسي',
+    brandHome: 'الرئيسية',
+    activeSector: 'القطاع النشط',
+    exploreSector: 'استكشف القطاع',
   },
 } as const;
 export type UiCopy = (typeof dictionaries)['en'];

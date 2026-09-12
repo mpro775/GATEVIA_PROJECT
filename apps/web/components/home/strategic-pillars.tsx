@@ -5,7 +5,7 @@ export function StrategicPillars({ content }: { content: Record<string, unknown>
   const steps = list(content.steps) as Record<string, unknown>[];
 
   return (
-    <section className="section strategic-pillars">
+    <section className="section strategic-pillars" data-home-section="pillars">
       <div className="container-wide strategic-pillars__inner">
         <header className="strategic-pillars__header">
           {Boolean(content.eyebrow) && (
@@ -31,7 +31,6 @@ export function StrategicPillars({ content }: { content: Record<string, unknown>
               <li
                 className="strategic-pillar"
                 key={index}
-                tabIndex={0}
                 data-reveal="up"
                 style={{ '--reveal-delay': `${160 + index * 80}ms` } as React.CSSProperties}
               >

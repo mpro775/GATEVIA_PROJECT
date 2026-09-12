@@ -1942,7 +1942,7 @@ async function seedDemoPageSections(input: {
   const homeSections = [
     [
       'stats',
-      47,
+      60,
       localized(
         {
           eyebrow: 'Demo proof points',
@@ -1968,7 +1968,7 @@ async function seedDemoPageSections(input: {
     ],
     [
       'industries_grid',
-      45,
+      50,
       localized(
         {
           eyebrow: 'Industries',
@@ -1984,7 +1984,7 @@ async function seedDemoPageSections(input: {
     ],
     [
       'case_studies',
-      100,
+      70,
       localized(
         {
           eyebrow: 'Case studies',
@@ -2000,7 +2000,7 @@ async function seedDemoPageSections(input: {
     ],
     [
       'testimonials',
-      110,
+      80,
       localized(
         {
           eyebrow: 'Client voice',
@@ -2016,7 +2016,7 @@ async function seedDemoPageSections(input: {
     ],
     [
       'logo_cloud',
-      120,
+      90,
       localized(
         {
           eyebrow: 'Network',
@@ -2034,7 +2034,7 @@ async function seedDemoPageSections(input: {
     ],
     [
       'ecosystem',
-      130,
+      100,
       localized(
         {
           eyebrow: 'Ecosystem',
@@ -2052,7 +2052,7 @@ async function seedDemoPageSections(input: {
     ],
     [
       'insights',
-      140,
+      110,
       localized(
         {
           eyebrow: 'Insights',

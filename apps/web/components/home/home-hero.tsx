@@ -32,7 +32,7 @@ export function HomeHero({
   const labels = fallbackLabels.map((fallback, index) => text(railSteps[index]?.title, fallback));
 
   return (
-    <section className="home-hero">
+    <section className="home-hero" data-home-section="hero">
       <div className="container-wide home-hero__canvas">
         <div className="home-hero__copy">
           {Boolean(content.eyebrow) && (

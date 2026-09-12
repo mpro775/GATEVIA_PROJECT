@@ -14,7 +14,7 @@ export function HomeFaq({
   const isArabic = locale.toLowerCase().startsWith('ar');
 
   return (
-    <section className="section home-faq">
+    <section className="section home-faq" data-home-section="faq">
       <div className="container-wide home-faq__layout">
         <aside className="home-faq__context" data-reveal="up">
           <span className="eyebrow">GATEVIA · FAQ</span>

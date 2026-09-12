@@ -1365,7 +1365,11 @@ html[dir='rtl'] .home-journey__node {
   inset-inline-end: 0;
   width: 58%;
   border-block-start: 1px solid var(--color-accent);
-  transform-origin: inline-start center;
+  transform-origin: left center;
+}
+html[dir='rtl'] .home-services__motif--3 i:nth-child(2),
+html[dir='rtl'] .home-services__motif--3 i:nth-child(3) {
+  transform-origin: right center;
 }
 .home-services__motif--3 i:nth-child(2) {
   inset-block-start: 50%;
@@ -1898,7 +1902,10 @@ html[lang^='ar'] .home-evidence__value {
   inset-inline: 0;
   inset-block-end: 0;
   border-block-end: 1px solid var(--color-border-default);
-  transform-origin: inline-start center;
+  transform-origin: left center;
+}
+html[dir='rtl'] .home-evidence__rule {
+  transform-origin: right center;
 }
 
 /* ─── Homepage sector explorer ─────────────────────────────────────────── */
@@ -2901,6 +2908,17 @@ html[dir='rtl'] .home-ecosystem__identity::after {
 }
 .home-ecosystem__identity img {
   object-fit: cover;
+}
+/* Cover mode: full bleed photography crop */
+.home-ecosystem__identity--cover img {
+  object-fit: cover;
+}
+/* Logo mode: contained identity with safe padding, no crop */
+.home-ecosystem__identity--logo img {
+  object-fit: contain;
+  padding: 1.5rem;
+  /* Ensure adequate contrast in light and dark themes */
+  mix-blend-mode: normal;
 }
 .home-ecosystem__identity > span {
   position: relative;

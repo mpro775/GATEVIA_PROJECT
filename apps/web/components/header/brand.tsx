@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { copy } from '@/lib/ui-copy';
 
 export function HeaderBrand({
   locale,
@@ -11,11 +12,12 @@ export function HeaderBrand({
   onNavigate?: () => void;
 }) {
   const markSrc = identity.logoUrl ?? '/brand/gatevia-mark.svg';
+  const t = copy(locale);
   return (
     <Link
       href={`/${locale}`}
       className="brand"
-      aria-label={`${identity.name} home`}
+      aria-label={`${identity.name} ${t.brandHome}`}
       {...(onNavigate ? { onClick: onNavigate } : {})}
     >
       <Image

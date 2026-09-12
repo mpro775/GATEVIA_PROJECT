@@ -7,7 +7,8 @@ import type { Language, NavItem } from '@/lib/api';
 import { HeaderBrand } from './brand';
 import { resolveUrl } from './header-utils';
 
-const FOCUSABLE = 'a[href], button:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
+const FOCUSABLE =
+  'a[href]:not([tabindex="-1"]), button:not([disabled]):not([tabindex="-1"]), summary:not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])';
 
 export function MobileNavigation({ active, mounted, locale, languages, links, identity, labels, onClose, onLanguage }: {
   active: boolean;

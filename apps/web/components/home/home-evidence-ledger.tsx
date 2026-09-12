@@ -1,16 +1,28 @@
 import { list, text } from '@/lib/content';
+import { copy } from '@/lib/ui-copy';
 
-export function HomeEvidenceLedger({ content }: { content: Record<string, unknown> }) {
+export function HomeEvidenceLedger({
+  content,
+  demo,
+  locale,
+}: {
+  content: Record<string, unknown>;
+  demo: boolean;
+  locale: string;
+}) {
   const items = list(content.items) as Record<string, unknown>[];
   if (items.length === 0) return null;
 
+  const t = copy(locale);
+
   return (
-    <section className="section home-evidence">
+    <section className="section home-evidence" data-home-section="evidence">
       <div className="container-wide home-evidence__layout">
         <header className="home-evidence__intro" data-reveal="up">
           {Boolean(content.eyebrow) && <span className="eyebrow">{text(content.eyebrow)}</span>}
           {Boolean(content.title) && <h2>{text(content.title)}</h2>}
           {Boolean(content.body) && <p>{text(content.body)}</p>}
+          {demo && <span className="home-demo-badge">{t.demoContent}</span>}
           <span className="home-evidence__folio" aria-hidden="true">
             GATEVIA / EVIDENCE
           </span>

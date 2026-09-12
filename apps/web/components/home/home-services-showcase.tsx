@@ -64,7 +64,7 @@ export function HomeServicesShowcase({
   const isArabic = locale.toLowerCase().startsWith('ar');
 
   return (
-    <section className="section home-services">
+    <section className="section home-services" data-home-section="services">
       <div className="container-wide home-services__inner">
         <header className="home-section-header home-services__header">
           <div>

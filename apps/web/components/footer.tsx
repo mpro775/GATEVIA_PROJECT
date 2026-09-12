@@ -129,7 +129,7 @@ export function Footer({
                 width={190}
                 height={58}
                 className="footer-logo"
-                unoptimized
+                unoptimized={!identity.logoUrl || (identity.logoUrl ?? '').endsWith('.svg')}
               />
             </div>
             <p>

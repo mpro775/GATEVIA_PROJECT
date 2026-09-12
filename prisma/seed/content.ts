@@ -270,6 +270,7 @@ function pageSections(key: string, serviceIds: Record<string, string>, faqIds: R
     return [
       {
         type: 'hero',
+        sortOrder: 10,
         tr: localized(
           { eyebrow: 'GATEVIA · SAUDI ARABIA', title: 'Your Gateway to the Saudi Market', body: 'Navigate market access, execution and growth with a structured partner for the Saudi market journey.', primaryCta: cta.en, secondaryCta: { label: 'Explore services', href: '/en/services' } },
           { eyebrow: 'GATEVIA · المملكة العربية السعودية', title: 'بوابتك لدخول السوق السعودي والنمو فيه', body: 'انتقل من دراسة السوق إلى التنفيذ والنمو عبر مسار منظم يدعم رحلتك في المملكة.', primaryCta: cta['ar-SA'], secondaryCta: { label: 'استكشف الخدمات', href: '/ar-sa/services' } },
@@ -277,6 +278,7 @@ function pageSections(key: string, serviceIds: Record<string, string>, faqIds: R
       },
       {
         type: 'process',
+        sortOrder: 20,
         tr: localized(
           { eyebrow: 'Three pillars', title: 'From opportunity to sustainable growth', steps: [
             { title: 'Market Access', body: 'Understand the market, validate the opportunity and define the right entry direction.' },
@@ -292,6 +294,7 @@ function pageSections(key: string, serviceIds: Record<string, string>, faqIds: R
       },
       {
         type: 'timeline',
+        sortOrder: 30,
         tr: localized(
           { eyebrow: 'Saudi market entry journey', title: 'A clear path from understanding to growth', steps: [
             { marker: '01', title: 'Understand', body: 'Clarify the opportunity, objectives and decision context.' },
@@ -313,6 +316,7 @@ function pageSections(key: string, serviceIds: Record<string, string>, faqIds: R
       },
       {
         type: 'services_grid',
+        sortOrder: 40,
         tr: localized(
           { title: 'Selected services', body: 'Start with the workstream that matches your current stage.', serviceIds: ['market-research', 'market-entry-strategy', 'company-formation-support', 'licensing-support', 'go-to-market-strategy', 'growth-consulting'].map((k) => serviceIds[k]!) },
           { title: 'خدمات مختارة', body: 'ابدأ بمسار العمل الذي يتوافق مع مرحلتك الحالية.', serviceIds: ['market-research', 'market-entry-strategy', 'company-formation-support', 'licensing-support', 'go-to-market-strategy', 'growth-consulting'].map((k) => serviceIds[k]!) },
@@ -320,6 +324,7 @@ function pageSections(key: string, serviceIds: Record<string, string>, faqIds: R
       },
       {
         type: 'faq',
+        sortOrder: 120,
         tr: localized(
           { title: 'Common questions', faqIds: Object.values(faqIds).slice(0, 6) },
           { title: 'أسئلة شائعة', faqIds: Object.values(faqIds).slice(0, 6) },
@@ -327,6 +332,7 @@ function pageSections(key: string, serviceIds: Record<string, string>, faqIds: R
       },
       {
         type: 'cta',
+        sortOrder: 130,
         tr: localized(
           { title: 'Planning your next move in Saudi Arabia?', body: 'Share your current stage and priorities. We will use them to focus the first conversation.', primaryCta: cta.en },
           { title: 'تخطط لخطوتك القادمة في السوق السعودي؟', body: 'شاركنا مرحلتك الحالية وأولوياتك لنركز المحادثة الأولى على ما يهمك.', primaryCta: cta['ar-SA'] },
@@ -570,8 +576,9 @@ async function ensurePage(page: PageDefinition, serviceIds: Record<string, strin
   const sections = pageSections(page.key, serviceIds, faqIds);
   for (let i = 0; i < sections.length; i += 1) {
     const section = sections[i]!;
-    const sortOrder = (i + 1) * 10;
-    const sectionId = stableUuid(`page:${page.key}:section:${i + 1}`);
+    // Use explicit sortOrder if provided; otherwise fall back to index-based.
+    const sortOrder = section.sortOrder ?? (i + 1) * 10;
+    const sectionId = stableUuid(`page:${page.key}:section:${String(sortOrder)}`);
     const stored = await prisma.pageSection.upsert({
       where: { pageId_sortOrder: { pageId: id, sortOrder } },
       create: { id: sectionId, pageId: id, sectionType: section.type, sortOrder, isVisible: true, settings: json({}) },

@@ -57,7 +57,7 @@ export function HomeCaseStudies({
   const supporting = items.filter((_, index) => index !== featuredIndex);
 
   return (
-    <section className="section home-cases">
+    <section className="section home-cases" data-home-section="case-studies">
       <div className="container-wide">
         <header className="home-section-header home-cases__header">
           <div data-reveal="up">
