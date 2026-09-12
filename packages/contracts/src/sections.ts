@@ -39,7 +39,15 @@ export const sectionSchemas = {
     featuredOnly: z.boolean().optional(),
   }),
   process: base.extend({
-    steps: z.array(z.object({ title: z.string().max(160), body: z.string().max(1000) })).max(12),
+    steps: z
+      .array(
+        z.object({
+          title: z.string().max(160),
+          body: z.string().max(1000),
+          mediaId: z.string().uuid().optional(),
+        }),
+      )
+      .max(12),
   }),
   timeline: base.extend({
     steps: z
@@ -59,7 +67,11 @@ export const sectionSchemas = {
     partnerIds: z.array(z.string().uuid()).max(30),
   }),
   faq: base.extend({ faqIds: z.array(z.string().uuid()).max(30) }),
-  cta: base.extend({ body: z.string().max(1000).optional(), primaryCta: link }),
+  cta: base.extend({
+    body: z.string().max(1000).optional(),
+    primaryCta: link,
+    mediaId: z.string().uuid().optional(),
+  }),
   insights: base.extend({ insightIds: z.array(z.string().uuid()).max(12) }),
   ecosystem: base.extend({
     brandIds: z.array(z.string().uuid()).max(12),

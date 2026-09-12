@@ -221,7 +221,7 @@ export async function SectionRenderer({
           }
 
           if (variant === 'home' && type === 'process') {
-            return <StrategicPillars key={String(row.id)} content={content} />;
+            return <StrategicPillars key={String(row.id)} content={content} media={media} />;
           }
 
           if (variant === 'home' && type === 'timeline') {
@@ -273,7 +273,14 @@ export async function SectionRenderer({
           // ── Stats section ────────────────────────────────────────────────
           if (type === 'stats') {
             if (variant === 'home') {
-              return <HomeEvidenceLedger key={String(row.id)} content={content} demo={demo} locale={locale} />;
+              return (
+                <HomeEvidenceLedger
+                  key={String(row.id)}
+                  content={content}
+                  demo={demo}
+                  locale={locale}
+                />
+              );
             }
             return (
               <section className="section" key={String(row.id)}>
@@ -490,7 +497,12 @@ export async function SectionRenderer({
           if (type === 'cta') {
             if (variant === 'home') {
               return (
-                <HomeConsultationGateway key={String(row.id)} content={content} locale={locale} />
+                <HomeConsultationGateway
+                  key={String(row.id)}
+                  content={content}
+                  locale={locale}
+                  mediaItem={mediaItem}
+                />
               );
             }
             const primaryCta = content.primaryCta as Record<string, unknown> | undefined;

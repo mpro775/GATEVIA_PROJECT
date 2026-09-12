@@ -32,4 +32,48 @@ describe('controlled page sections', () => {
         primaryCta: { label: 'Talk to us', href: '/contact' },
       }),
     ).not.toThrow());
+
+  it('accepts optional media for process steps and CTA sections', () => {
+    const mediaId = '11111111-1111-4111-8111-111111111111';
+    expect(() =>
+      validateSectionContent('process', {
+        title: 'Three pillars',
+        steps: [{ title: 'Access', body: 'Enter the market.', mediaId }],
+      }),
+    ).not.toThrow();
+    expect(() =>
+      validateSectionContent('cta', {
+        title: 'Next step',
+        primaryCta: { label: 'Talk to us', href: '/contact' },
+        mediaId,
+      }),
+    ).not.toThrow();
+  });
+
+  it('rejects invalid process-step and CTA media IDs', () => {
+    expect(() =>
+      validateSectionContent('process', {
+        steps: [{ title: 'Access', body: 'Enter the market.', mediaId: 'not-a-uuid' }],
+      }),
+    ).toThrow();
+    expect(() =>
+      validateSectionContent('cta', {
+        primaryCta: { label: 'Talk to us', href: '/contact' },
+        mediaId: 'not-a-uuid',
+      }),
+    ).toThrow();
+  });
+
+  it('keeps legacy process and CTA payloads valid without media', () => {
+    expect(() =>
+      validateSectionContent('process', {
+        steps: [{ title: 'Access', body: 'Enter the market.' }],
+      }),
+    ).not.toThrow();
+    expect(() =>
+      validateSectionContent('cta', {
+        primaryCta: { label: 'Talk to us', href: '/contact' },
+      }),
+    ).not.toThrow();
+  });
 });

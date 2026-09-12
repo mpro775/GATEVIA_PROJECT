@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { Icon } from '@gatevia/ui';
 import { text, translation } from '@/lib/content';
@@ -8,6 +9,28 @@ type Stage = {
   motif: string;
   items: Record<string, unknown>[];
 };
+
+type ServiceMedia = {
+  item: { url?: string; translations?: Array<{ altText?: string }> };
+  mode: 'cover' | 'contain';
+};
+
+function mediaForService(item: Record<string, unknown>): ServiceMedia | undefined {
+  const tr = translation(item);
+  const media = item.media as
+    Record<string, { url?: string; translations?: Array<{ altText?: string }> }> | undefined;
+  const candidates: Array<{ id: unknown; mode: ServiceMedia['mode'] }> = [
+    { id: item.heroMediaId, mode: 'cover' },
+    { id: item.iconMediaId, mode: 'contain' },
+    { id: tr.ogMediaId, mode: 'cover' },
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate.id === 'string' && media?.[candidate.id]?.url) {
+      return { item: media[candidate.id]!, mode: candidate.mode };
+    }
+  }
+  return undefined;
+}
 
 const stageCopy = {
   en: [
@@ -35,7 +58,9 @@ function groupServices(items: Record<string, unknown>[], locale: string): Stage[
 
   return [...groups.entries()].map(([key, groupedItems], index) => ({
     key,
-    label: copy[index]?.label ?? (locale.toLowerCase().startsWith('ar') ? `المسار ${index + 1}` : `Stage ${index + 1}`),
+    label:
+      copy[index]?.label ??
+      (locale.toLowerCase().startsWith('ar') ? `المسار ${index + 1}` : `Stage ${index + 1}`),
     motif: copy[index]?.motif ?? '',
     items: groupedItems,
   }));
@@ -69,7 +94,9 @@ export function HomeServicesShowcase({
         <header className="home-section-header home-services__header">
           <div>
             {Boolean(content.eyebrow) && (
-              <span className="eyebrow" data-reveal="fade">{text(content.eyebrow)}</span>
+              <span className="eyebrow" data-reveal="fade">
+                {text(content.eyebrow)}
+              </span>
             )}
             {Boolean(content.title) && (
               <h2 data-reveal="up" style={{ '--reveal-delay': '55ms' } as React.CSSProperties}>
@@ -110,17 +137,32 @@ export function HomeServicesShowcase({
                   const slug = text(tr.slug);
                   const href = slug ? `/${locale}/services/${slug}` : `/${locale}/services`;
                   const globalIndex = items.indexOf(item);
+                  const serviceMedia = mediaForService(item);
                   return (
                     <li key={String(item.id ?? `${stage.key}-${itemIndex}`)}>
                       <Link
-                        className="home-services__item"
+                        className={`home-services__item${serviceMedia?.item.url ? ' home-services__item--with-media' : ''}`}
                         href={href}
                         data-reveal="service-row"
-                        style={{ '--reveal-delay': `${250 + globalIndex * 60}ms` } as React.CSSProperties}
+                        style={
+                          { '--reveal-delay': `${250 + globalIndex * 60}ms` } as React.CSSProperties
+                        }
                       >
                         <span className="home-services__item-index">
                           {String(globalIndex + 1).padStart(2, '0')}
                         </span>
+                        {serviceMedia?.item.url ? (
+                          <span
+                            className={`home-services__item-media home-services__item-media--${serviceMedia.mode}`}
+                          >
+                            <Image
+                              src={serviceMedia.item.url}
+                              alt={serviceMedia.item.translations?.[0]?.altText ?? ''}
+                              fill
+                              sizes="(max-width: 834px) 6rem, 7rem"
+                            />
+                          </span>
+                        ) : null}
                         <span className="home-services__item-copy">
                           <strong>{text(tr.title ?? tr.name)}</strong>
                           {Boolean(tr.shortDescription ?? tr.excerpt) && (

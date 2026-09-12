@@ -38,6 +38,7 @@ const SEO_FIELDS = new Set([
 const SECTION_TYPES = Object.keys(sectionSchemas) as SectionType[];
 type SectionField =
   | { key: string; label: string; kind: 'text' | 'long' | 'boolean' | 'media' | 'json' }
+  | { key: string; label: string; kind: 'process_steps' }
   | { key: string; label: string; kind: 'select'; options: string[] }
   | { key: string; label: string; kind: 'relation'; resource: string };
 const BASE_SECTION_FIELDS: SectionField[] = [
@@ -70,7 +71,10 @@ const SECTION_FIELDS: Record<SectionType, SectionField[]> = {
     { key: 'industryIds', label: 'Industries', kind: 'relation', resource: 'industries' },
     { key: 'featuredOnly', label: 'Featured only', kind: 'boolean' },
   ],
-  process: [...BASE_SECTION_FIELDS, { key: 'steps', label: 'Process steps', kind: 'json' }],
+  process: [
+    ...BASE_SECTION_FIELDS,
+    { key: 'steps', label: 'Process steps', kind: 'process_steps' },
+  ],
   timeline: [...BASE_SECTION_FIELDS, { key: 'steps', label: 'Timeline steps', kind: 'json' }],
   testimonials: [
     ...BASE_SECTION_FIELDS,
@@ -93,6 +97,7 @@ const SECTION_FIELDS: Record<SectionType, SectionField[]> = {
     ...BASE_SECTION_FIELDS,
     { key: 'body', label: 'Body', kind: 'long' },
     { key: 'primaryCta', label: 'Primary CTA { label, href }', kind: 'json' },
+    { key: 'mediaId', label: 'CTA visual', kind: 'media' },
   ],
   insights: [
     ...BASE_SECTION_FIELDS,
@@ -252,6 +257,114 @@ function RelationSelect({
   );
 }
 
+type ProcessStep = { title: string; body: string; mediaId?: string };
+
+function ProcessStepsEditor({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: unknown;
+  onChange: (steps: ProcessStep[]) => void;
+}) {
+  const steps: ProcessStep[] = Array.isArray(value)
+    ? value.map((raw) => {
+        const step = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+        return {
+          title: String(step.title ?? ''),
+          body: String(step.body ?? ''),
+          ...(typeof step.mediaId === 'string' && step.mediaId ? { mediaId: step.mediaId } : {}),
+        };
+      })
+    : [];
+
+  function update(index: number, patch: Partial<ProcessStep>) {
+    onChange(steps.map((step, current) => (current === index ? { ...step, ...patch } : step)));
+  }
+  function move(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= steps.length) return;
+    const next = [...steps];
+    [next[index], next[target]] = [next[target]!, next[index]!];
+    onChange(next);
+  }
+
+  return (
+    <Field label={label}>
+      <div className="sections-editor">
+        {steps.map((step, index) => (
+          <div className="section-row" key={index} style={{ display: 'grid', gap: '.7rem' }}>
+            <Field label={`Step ${index + 1} title`}>
+              <Input
+                value={step.title}
+                onChange={(event) => update(index, { title: event.target.value })}
+              />
+            </Field>
+            <Field label={`Step ${index + 1} body`}>
+              <Textarea
+                value={step.body}
+                onChange={(event) => update(index, { body: event.target.value })}
+              />
+            </Field>
+            <Field label={`Step ${index + 1} image`}>
+              <MediaPicker
+                value={step.mediaId ?? ''}
+                acceptMimePrefix="image/"
+                onSelect={(mediaId) => {
+                  if (mediaId) update(index, { mediaId });
+                  else {
+                    const next = steps.map((item, current) => {
+                      if (current !== index) return item;
+                      const withoutMedia = { ...item };
+                      delete withoutMedia.mediaId;
+                      return withoutMedia;
+                    });
+                    onChange(next);
+                  }
+                }}
+              />
+            </Field>
+            <div className="toolbar">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => move(index, -1)}
+                disabled={index === 0}
+              >
+                Move up
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => move(index, 1)}
+                disabled={index === steps.length - 1}
+              >
+                Move down
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => onChange(steps.filter((_, current) => current !== index))}
+              >
+                Remove
+              </Button>
+            </div>
+          </div>
+        ))}
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={steps.length >= 12}
+          onClick={() => onChange([...steps, { title: '', body: '' }])}
+        >
+          Add process step
+        </Button>
+      </div>
+    </Field>
+  );
+}
+
 function ContractField({
   name,
   field,
@@ -269,6 +382,7 @@ function ContractField({
       <Field label={label}>
         <MediaPicker
           value={typeof value === 'string' ? value : ''}
+          acceptMimePrefix={name === 'downloadableMediaId' ? undefined : 'image/'}
           onSelect={(mediaId) => onChange(mediaId || null)}
         />
       </Field>
@@ -488,9 +602,35 @@ function SectionsEditor({
                         <Field key={field.key} label={field.label}>
                           <MediaPicker
                             value={String(content[field.key] ?? '')}
-                            onSelect={(value) => updateContent(index, field.key, value)}
+                            acceptMimePrefix="image/"
+                            onSelect={(value) => {
+                              if (value) updateContent(index, field.key, value);
+                              else {
+                                mutate(index, (row) => {
+                                  const current = row.translations[locale]?.content ?? {};
+                                  const withoutMedia = { ...current };
+                                  delete withoutMedia[field.key];
+                                  return {
+                                    ...row,
+                                    translations: {
+                                      ...row.translations,
+                                      [locale]: { content: withoutMedia },
+                                    },
+                                  };
+                                });
+                              }
+                            }}
                           />
                         </Field>
+                      );
+                    if (field.kind === 'process_steps')
+                      return (
+                        <ProcessStepsEditor
+                          key={field.key}
+                          label={field.label}
+                          value={content[field.key]}
+                          onChange={(value) => updateContent(index, field.key, value)}
+                        />
                       );
                     if (field.kind === 'boolean')
                       return (

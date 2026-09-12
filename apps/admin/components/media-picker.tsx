@@ -3,13 +3,18 @@ import { useEffect, useRef, useState } from 'react';
 import type { Media } from '@gatevia/api-client';
 import { Button, EmptyState, Input } from '@gatevia/ui';
 import { apiEnvelope } from '@/lib/api';
-type MediaRow = Pick<Media, 'id' | 'originalFilename' | 'status' | 'translations'>;
+type MediaRow = Pick<
+  Media,
+  'id' | 'originalFilename' | 'mimeType' | 'status' | 'translations' | 'url'
+>;
 export function MediaPicker({
   value,
   onSelect,
+  acceptMimePrefix,
 }: {
   value?: string;
   onSelect: (id: string) => void;
+  acceptMimePrefix?: string | undefined;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [rows, setRows] = useState<MediaRow[]>([]);
@@ -26,13 +31,37 @@ export function MediaPicker({
       setRows(result.data),
     );
   }
+  const visibleRows = acceptMimePrefix
+    ? rows.filter((row) => row.mimeType.startsWith(acceptMimePrefix))
+    : rows;
+  const selected = rows.find((row) => row.id === value);
   return (
     <div>
       <div className="toolbar">
-        <Input readOnly value={value ?? ''} placeholder="No media selected" />
+        {selected?.url && selected.mimeType.startsWith('image/') ? (
+          // The admin picker displays source thumbnails and does not need Next image optimization.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={selected.url}
+            alt=""
+            width={56}
+            height={40}
+            style={{ objectFit: 'cover', borderRadius: '.35rem' }}
+          />
+        ) : null}
+        <Input
+          readOnly
+          value={selected?.originalFilename ?? value ?? ''}
+          placeholder="No media selected"
+        />
         <Button type="button" onClick={open}>
           Choose media
         </Button>
+        {value ? (
+          <Button type="button" variant="secondary" onClick={() => onSelect('')}>
+            Clear
+          </Button>
+        ) : null}
       </div>
       <dialog ref={dialog} className="panel">
         <div className="page-title">
@@ -47,9 +76,9 @@ export function MediaPicker({
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search media"
         />
-        {rows.length ? (
+        {visibleRows.length ? (
           <div className="media-grid">
-            {rows.map((row) => (
+            {visibleRows.map((row) => (
               <button
                 className="media-tile"
                 key={row.id}
@@ -58,6 +87,16 @@ export function MediaPicker({
                   dialog.current?.close();
                 }}
               >
+                {row.url && row.mimeType.startsWith('image/') ? (
+                  // The admin picker displays source thumbnails and does not need Next image optimization.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={row.url}
+                    alt=""
+                    loading="lazy"
+                    style={{ width: '100%', aspectRatio: '16 / 10', objectFit: 'cover' }}
+                  />
+                ) : null}
                 <strong>{row.originalFilename}</strong>
                 <span className="cell-meta">{row.translations?.[0]?.altText ?? row.status}</span>
               </button>
