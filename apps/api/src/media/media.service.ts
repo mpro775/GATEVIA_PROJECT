@@ -71,6 +71,10 @@ export class MediaService {
           : undefined,
       variants: variants.map((variant) => ({
         ...variant,
+        sizeBytes:
+          typeof variant.sizeBytes === 'bigint'
+            ? variant.sizeBytes.toString()
+            : variant.sizeBytes,
         url:
           this.publicBaseUrl && typeof variant.storageKey === 'string'
             ? `${this.publicBaseUrl}/${variant.storageKey}`
@@ -209,7 +213,7 @@ export class MediaService {
       entityType: 'media',
       entityId: media.id,
     });
-    return media;
+    return this.present(media as unknown as Record<string, unknown>);
   }
   async list(page = 1, pageSize = 20, q?: string, status?: string, folderId?: string) {
     const where = {
@@ -434,7 +438,7 @@ export class MediaService {
       entityId: id,
       summary: { usageCount: usages.length },
     });
-    return row;
+    return this.present(row as unknown as Record<string, unknown>);
   }
   async update(
     id: string,
@@ -482,6 +486,6 @@ export class MediaService {
       entityType: 'media',
       entityId: id,
     });
-    return row;
+    return this.present(row as unknown as Record<string, unknown>);
   }
 }
