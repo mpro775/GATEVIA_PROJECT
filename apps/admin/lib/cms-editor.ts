@@ -91,44 +91,62 @@ export function validateCmsEditorFields({
   definition,
   body,
   isCreate,
+  t,
 }: {
   definition: CmsDefinition;
   body: Record<string, unknown>;
   isCreate: boolean;
+  t: (key: any, fallback?: string) => string;
 }): string[] {
   const issues: string[] = [];
+  const humanize = (str: string) => str.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase());
+  
   for (const [key, field] of Object.entries(definition.fields)) {
     const value = body[key];
+    const fieldLabel = t(`field.${key}` as any) !== `field.${key}` ? t(`field.${key}` as any) : humanize(key);
     if (value === undefined) {
-      if (isCreate && field.required) issues.push(`${key}: Required`);
+      if (isCreate && field.required) issues.push(`${fieldLabel}: ${t('validation.required' as any)}`);
       continue;
     }
     const result = fieldSchema(field).safeParse(value);
     if (!result.success)
-      issues.push(...result.error.issues.map((issue) => `${key}: ${issue.message}`));
+      issues.push(...result.error.issues.map((issue) => {
+        let msg = issue.message;
+        if (msg === 'Required') msg = t('validation.required' as any);
+        if (msg === 'Use a local path or an approved URL protocol.') msg = t('validation.invalidUrl' as any);
+        if (msg === 'Choose an allowed value.') msg = t('validation.invalidValue' as any);
+        return `${fieldLabel}: ${msg}`;
+      }));
   }
   const translations = body.translations as TranslationMap;
   for (const [locale, values] of Object.entries(translations)) {
     if (!locale) {
-      issues.push('translations: Choose a locale before editing translations.');
+      issues.push(t('validation.chooseLocale' as any));
       continue;
     }
     for (const [key, value] of Object.entries(values)) {
       const field = definition.translations[key];
+      const fieldLabel = t(`field.${key}` as any) !== `field.${key}` ? t(`field.${key}` as any) : humanize(key);
       if (!field) {
-        issues.push(`${locale}.${key}: Unknown field`);
+        issues.push(`${locale} - ${fieldLabel}: ${t('validation.unknownField' as any)}`);
         continue;
       }
       const result = fieldSchema(field).safeParse(value);
       if (!result.success)
-        issues.push(...result.error.issues.map((issue) => `${locale}.${key}: ${issue.message}`));
+        issues.push(...result.error.issues.map((issue) => {
+          let msg = issue.message;
+          if (msg === 'Required') msg = t('validation.required' as any);
+          if (msg === 'Use a local path or an approved URL protocol.') msg = t('validation.invalidUrl' as any);
+          if (msg === 'Choose an allowed value.') msg = t('validation.invalidValue' as any);
+          return `${locale} - ${fieldLabel}: ${msg}`;
+        }));
     }
   }
   return issues;
 }
 
-export function formatCmsValidationError(issues: string[]): string {
-  const visible = issues.slice(0, 3).map((issue) => issue.replace(/([a-z])([A-Z])/g, '$1 $2'));
+export function formatCmsValidationError(issues: string[], t: (key: any) => string): string {
+  const visible = issues.slice(0, 3);
   const remaining = issues.length - visible.length;
-  return `Cannot save content. ${visible.join(' ')}${remaining > 0 ? ` (+${remaining} more)` : ''}`;
+  return `${t('contentEditor.cannotSave')} ${visible.join(' ')}${remaining > 0 ? ` (+${remaining})` : ''}`;
 }

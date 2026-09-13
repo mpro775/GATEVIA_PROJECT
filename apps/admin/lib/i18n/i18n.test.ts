@@ -13,7 +13,7 @@ describe('admin i18n', () => {
     expect(adminDirection('en')).toBe('ltr');
     expect(adminDirection('ar')).toBe('rtl');
   });
-  it('falls back to English when Arabic is missing', () => {
+  it('falls back to the explicit fallback or key name for unknown keys', () => {
     const key = 'missing.key' as unknown as keyof typeof en;
     expect(translate('ar', key, 'Fallback')).toBe('Fallback');
     expect(translate('ar', key)).toBe('missing.key');

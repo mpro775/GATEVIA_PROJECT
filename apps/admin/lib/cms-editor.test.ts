@@ -114,7 +114,7 @@ describe('CMS editor payloads', () => {
     const { definition, body } = industryPayload();
     expect(body.heroMediaId).toBe(heroMediaId);
     expect((body.translations as Record<string, Record<string, unknown>>).en!.seoTitle).toBeNull();
-    expect(validateCmsEditorFields({ definition, body, isCreate: false })).toEqual([]);
+    expect(validateCmsEditorFields({ definition, body, isCreate: false, t: (key) => key as string })).toEqual([]);
   });
 
   it('keeps explicit text and media clears in the payload as null', () => {
@@ -135,14 +135,14 @@ describe('CMS editor payloads', () => {
     expect(
       (cleared.translations as Record<string, Record<string, unknown>>).en!.seoTitle,
     ).toBeNull();
-    expect(validateCmsEditorFields({ definition, body: cleared, isCreate: false })).toEqual([]);
+    expect(validateCmsEditorFields({ definition, body: cleared, isCreate: false, t: (key) => key as string })).toEqual([]);
   });
 
   it('returns field-addressed validation feedback instead of failing silently', () => {
     const { definition, body } = industryPayload();
     (body.translations as Record<string, Record<string, unknown>>).en!.seoTitle = 42;
-    const issues = validateCmsEditorFields({ definition, body, isCreate: false });
-    expect(issues[0]).toContain('en.seoTitle');
-    expect(formatCmsValidationError(issues)).toMatch(/^Cannot save content\. en\.seo Title:/);
+    const issues = validateCmsEditorFields({ definition, body, isCreate: false, t: (key) => key as string });
+    expect(issues[0]).toContain('en - Seo Title');
+    expect(formatCmsValidationError(issues, (key) => key as string)).toMatch(/^contentEditor\.cannotSave en - Seo Title:/);
   });
 });

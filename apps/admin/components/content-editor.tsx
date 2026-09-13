@@ -54,80 +54,80 @@ const BASE_SECTION_FIELDS: SectionField[] = [
 const SECTION_FIELDS: Record<SectionType, SectionField[]> = {
   hero: [
     ...BASE_SECTION_FIELDS,
-    { key: 'body', label: 'Body', kind: 'long' },
-    { key: 'primaryCta', label: 'Primary CTA { label, href }', kind: 'json' },
-    { key: 'secondaryCta', label: 'Secondary CTA { label, href }', kind: 'json' },
-    { key: 'mediaId', label: 'Hero media', kind: 'media' },
+    { key: 'body', label: 'field.body', kind: 'long' },
+    { key: 'primaryCta', label: 'field.primaryCtaJson', kind: 'json' },
+    { key: 'secondaryCta', label: 'field.secondaryCtaJson', kind: 'json' },
+    { key: 'mediaId', label: 'field.heroMedia', kind: 'media' },
   ],
-  rich_text: [{ key: 'blocks', label: 'Structured content blocks', kind: 'json' }],
+  rich_text: [{ key: 'blocks', label: 'field.blocks', kind: 'json' }],
   text_image: [
     ...BASE_SECTION_FIELDS,
-    { key: 'body', label: 'Body', kind: 'long' },
-    { key: 'mediaId', label: 'Media', kind: 'media' },
-    { key: 'mediaPosition', label: 'Media position', kind: 'select', options: ['start', 'end'] },
+    { key: 'body', label: 'field.body', kind: 'long' },
+    { key: 'mediaId', label: 'field.media', kind: 'media' },
+    { key: 'mediaPosition', label: 'field.mediaPosition', kind: 'select', options: ['start', 'end'] },
   ],
-  stats: [...BASE_SECTION_FIELDS, { key: 'items', label: 'Stats items', kind: 'json' }],
+  stats: [...BASE_SECTION_FIELDS, { key: 'items', label: 'field.statsItems', kind: 'json' }],
   services_grid: [
     ...BASE_SECTION_FIELDS,
-    { key: 'serviceIds', label: 'Services', kind: 'relation', resource: 'services' },
-    { key: 'featuredOnly', label: 'Featured only', kind: 'boolean' },
+    { key: 'serviceIds', label: 'field.services', kind: 'relation', resource: 'services' },
+    { key: 'featuredOnly', label: 'field.featuredOnly', kind: 'boolean' },
   ],
   industries_grid: [
     ...BASE_SECTION_FIELDS,
-    { key: 'industryIds', label: 'Industries', kind: 'relation', resource: 'industries' },
-    { key: 'featuredOnly', label: 'Featured only', kind: 'boolean' },
+    { key: 'industryIds', label: 'field.industries', kind: 'relation', resource: 'industries' },
+    { key: 'featuredOnly', label: 'field.featuredOnly', kind: 'boolean' },
   ],
   process: [
     ...BASE_SECTION_FIELDS,
-    { key: 'steps', label: 'Process steps', kind: 'process_steps' },
+    { key: 'steps', label: 'field.processSteps', kind: 'process_steps' },
   ],
   service_category_pillars: [
     ...BASE_SECTION_FIELDS,
     {
       key: 'categoryIds',
-      label: 'Service categories',
+      label: 'field.serviceCategories',
       kind: 'relation',
       resource: 'service-categories',
     },
   ],
-  timeline: [...BASE_SECTION_FIELDS, { key: 'steps', label: 'Timeline steps', kind: 'json' }],
+  timeline: [...BASE_SECTION_FIELDS, { key: 'steps', label: 'field.timelineSteps', kind: 'json' }],
   testimonials: [
     ...BASE_SECTION_FIELDS,
-    { key: 'testimonialIds', label: 'Testimonials', kind: 'relation', resource: 'testimonials' },
+    { key: 'testimonialIds', label: 'field.testimonials', kind: 'relation', resource: 'testimonials' },
   ],
   case_studies: [
     ...BASE_SECTION_FIELDS,
-    { key: 'caseStudyIds', label: 'Case studies', kind: 'relation', resource: 'case-studies' },
+    { key: 'caseStudyIds', label: 'field.caseStudies', kind: 'relation', resource: 'case-studies' },
   ],
   logo_cloud: [
     ...BASE_SECTION_FIELDS,
-    { key: 'clientIds', label: 'Clients', kind: 'relation', resource: 'clients' },
-    { key: 'partnerIds', label: 'Partners', kind: 'relation', resource: 'partners' },
+    { key: 'clientIds', label: 'field.clients', kind: 'relation', resource: 'clients' },
+    { key: 'partnerIds', label: 'field.partners', kind: 'relation', resource: 'partners' },
   ],
   faq: [
     ...BASE_SECTION_FIELDS,
-    { key: 'faqIds', label: 'FAQs', kind: 'relation', resource: 'faqs' },
+    { key: 'faqIds', label: 'field.faqs', kind: 'relation', resource: 'faqs' },
   ],
   cta: [
     ...BASE_SECTION_FIELDS,
-    { key: 'body', label: 'Body', kind: 'long' },
-    { key: 'primaryCta', label: 'Primary CTA { label, href }', kind: 'json' },
-    { key: 'mediaId', label: 'CTA visual', kind: 'media' },
+    { key: 'body', label: 'field.body', kind: 'long' },
+    { key: 'primaryCta', label: 'field.primaryCtaJson', kind: 'json' },
+    { key: 'mediaId', label: 'field.ctaVisual', kind: 'media' },
   ],
   insights: [
     ...BASE_SECTION_FIELDS,
-    { key: 'insightIds', label: 'Insights', kind: 'relation', resource: 'insights' },
+    { key: 'insightIds', label: 'field.insights', kind: 'relation', resource: 'insights' },
   ],
   ecosystem: [
     ...BASE_SECTION_FIELDS,
-    { key: 'brandIds', label: 'Brands', kind: 'relation', resource: 'brands' },
-    { key: 'productIds', label: 'Products', kind: 'relation', resource: 'products' },
+    { key: 'brandIds', label: 'field.brands', kind: 'relation', resource: 'brands' },
+    { key: 'productIds', label: 'field.products', kind: 'relation', resource: 'products' },
   ],
   form: [
     ...BASE_SECTION_FIELDS,
     {
       key: 'formType',
-      label: 'Form type',
+      label: 'field.formType',
       kind: 'select',
       options: ['contact', 'consultation', 'assessment'],
     },
@@ -142,10 +142,14 @@ function humanize(value: string) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 const MEDIA_FIELD_LABELS: Record<string, string> = {
-  iconMediaId: 'field.heroMedia', // fallback if needed
-  coverMediaId: 'field.heroMedia',
+  iconMediaId: 'field.iconMedia',
+  coverMediaId: 'field.coverMedia',
   heroMediaId: 'field.heroMedia',
-  ogMediaId: 'field.heroMedia',
+  ogMediaId: 'field.ogMedia',
+  downloadableMediaId: 'field.downloadableMedia',
+  photoMediaId: 'field.photoMedia',
+  logoMediaId: 'field.logoMedia',
+  mediaId: 'field.media',
 };
 
 function normalizeTranslations(value: unknown): TranslationMap {
@@ -401,7 +405,13 @@ function ContractField({
   onChange: (value: unknown) => void;
 }) {
   const { t } = useAdminI18n();
-  const baseLabel = MEDIA_FIELD_LABELS[name] ? t(MEDIA_FIELD_LABELS[name] as Parameters<typeof t>[0]) : humanize(name);
+  const baseLabel = MEDIA_FIELD_LABELS[name] 
+    ? t(MEDIA_FIELD_LABELS[name] as Parameters<typeof t>[0]) 
+    : (t(`field.${name}` as Parameters<typeof t>[0]) !== `field.${name}` 
+        ? t(`field.${name}` as Parameters<typeof t>[0]) 
+        : (t(`relation.${name}` as Parameters<typeof t>[0]) !== `relation.${name}` 
+            ? t(`relation.${name}` as Parameters<typeof t>[0]) 
+            : humanize(name)));
   const label = `${baseLabel}${field.required ? ' *' : ''}`;
   if (field.kind === 'media')
     return (
@@ -610,7 +620,9 @@ function SectionsEditor({
                     {t('contentEditor.visible')}
                   </label>
                   {(SECTION_FIELDS[section.sectionType] ?? []).map((field) => {
-                    const fieldLabel = t(field.label as Parameters<typeof t>[0]) ?? field.label;
+                    const fieldLabel = t(field.label as Parameters<typeof t>[0]) !== field.label 
+                      ? t(field.label as Parameters<typeof t>[0]) 
+                      : field.label;
                     if (field.kind === 'relation')
                       return (
                         <RelationSelect
@@ -873,7 +885,7 @@ export function ContentEditor({
     });
   }
   function validate(body: Record<string, unknown>) {
-    const issues = validateCmsEditorFields({ definition: activeDefinition, body, isCreate: !id });
+    const issues = validateCmsEditorFields({ definition: activeDefinition, body, isCreate: !id, t });
     for (const section of (body.sections as PageSection[] | undefined) ?? [])
       for (const [translationLocale, tr] of Object.entries(section.translations)) {
         const result = sectionSchemas[section.sectionType].safeParse(tr.content);
@@ -885,7 +897,7 @@ export function ContentEditor({
             ),
           );
       }
-    if (issues.length > 0) throw new Error(formatCmsValidationError(issues));
+    if (issues.length > 0) throw new Error(formatCmsValidationError(issues, t));
   }
   async function save(publish = false): Promise<Record<string, unknown> | undefined> {
     setBusy(true);
@@ -971,7 +983,19 @@ export function ContentEditor({
       <div className="page-title">
         <div>
           <h1>
-            {id ? t('action.edit') : t('action.create')} {humanize(resource)}
+            {id ? t('action.edit') : t('action.create')} {
+              t((
+                {
+                  pages: 'nav.pages', services: 'nav.services', 'service-categories': 'nav.serviceCategories',
+                  industries: 'nav.industries', 'case-studies': 'nav.caseStudies', insights: 'nav.insights',
+                  faqs: 'nav.faqs', 'team-members': 'nav.team', clients: 'nav.clients', partners: 'nav.partners',
+                  brands: 'nav.brands', products: 'nav.products', testimonials: 'nav.testimonials',
+                  certifications: 'nav.certifications', 'trust-metrics': 'nav.trustMetrics', leads: 'nav.leads',
+                  users: 'nav.users', roles: 'nav.roles', languages: 'nav.languages', redirects: 'nav.redirects',
+                  'audit-logs': 'nav.audit',
+                } as Record<string, Parameters<typeof t>[0]>
+              )[resource] ?? (humanize(resource) as Parameters<typeof t>[0]))
+            }
           </h1>
           <p>{t('contentEditor.fieldsGenerated')}</p>
         </div>
@@ -1046,13 +1070,13 @@ export function ContentEditor({
                     relation.many ? (
                       <RelationSelect
                         key={key}
-                        label={humanize(key)}
+                        label={t(`relation.${key}` as Parameters<typeof t>[0]) !== `relation.${key}` ? t(`relation.${key}` as Parameters<typeof t>[0]) : humanize(key)}
                         options={options[relation.resource] ?? []}
                         selectedIds={relationIds(key, relation.foreignKey)}
                         onChange={(ids) => updateRoot(key, ids)}
                       />
                     ) : (
-                      <Field key={key} label={`${humanize(key)}${relation.required ? ' *' : ''}`}>
+                      <Field key={key} label={`${t(`relation.${key}` as Parameters<typeof t>[0]) !== `relation.${key}` ? t(`relation.${key}` as Parameters<typeof t>[0]) : humanize(key)}${relation.required ? ' *' : ''}`}>
                         <select
                           className="gv-input"
                           value={String(record[key] ?? '')}

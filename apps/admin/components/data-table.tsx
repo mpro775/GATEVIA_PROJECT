@@ -343,7 +343,7 @@ export function DataTable({ title, titleKey, resource, basePath, kind = 'content
                       <td>
                         <input
                           type="checkbox"
-                          aria-label={`${t('table.selectRecord')}: ${display(row)}`}
+                          aria-label={`${t('table.selectRecord')}: ${display(row, t('common.untitled'))}`}
                           checked={selected.includes(String(row.id))}
                           onChange={(event) =>
                             setSelected((previous) =>
