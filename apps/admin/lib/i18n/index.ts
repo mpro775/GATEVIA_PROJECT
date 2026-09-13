@@ -4,6 +4,10 @@ import { adminIntlLocale, type AdminLocale } from './config';
 
 export type TranslationKey = keyof typeof en;
 
+export function isTranslationKey(key: string): key is TranslationKey {
+  return key in en;
+}
+
 export function translate(locale: AdminLocale, key: TranslationKey, fallback?: string): string {
   return (locale === 'ar' ? ar[key] : undefined) ?? en[key] ?? fallback ?? key;
 }
