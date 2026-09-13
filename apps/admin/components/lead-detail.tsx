@@ -109,11 +109,11 @@ export function LeadDetail({ id }: { id: string }) {
   if (error)
     return (
       <ErrorState
-        title="Lead unavailable"
-        description="The record does not exist or you cannot access it."
+        title={t('leads.notFound') ?? 'Lead unavailable'}
+        description={t('leads.notFoundDesc') ?? 'The record does not exist or you cannot access it.'}
       />
     );
-  if (!lead) return <p className="cell-meta">Loading…</p>;
+  if (!lead) return <p className="cell-meta">{t('common.loading') ?? 'Loading…'}</p>;
 
   const assessments = (lead.assessments as Array<Record<string, unknown>>) ?? [];
   const activities = (lead.activities as Array<Record<string, unknown>>) ?? [];
@@ -147,7 +147,7 @@ export function LeadDetail({ id }: { id: string }) {
     const form = new FormData(event.currentTarget);
     const body = String(form.get('body') ?? '').trim();
     if (!body) {
-      setNoteError('Note cannot be empty.');
+      setNoteError(t('leads.noteEmpty') ?? 'Note cannot be empty.');
       return;
     }
     try {
@@ -155,7 +155,7 @@ export function LeadDetail({ id }: { id: string }) {
       event.currentTarget.reset();
       void load();
     } catch (e) {
-      setNoteError(e instanceof Error ? e.message : 'Failed to save note.');
+      setNoteError(e instanceof Error ? e.message : t('leads.noteFailed') ?? 'Failed to save note.');
     }
   }
 
@@ -181,7 +181,7 @@ export function LeadDetail({ id }: { id: string }) {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
-          <Badge tone={STATUS_TONES[String(lead.status)] ?? 'neutral'}>{t(`status.${String(lead.status)}` as any) ?? String(lead.status)}</Badge>
+          <Badge tone={STATUS_TONES[String(lead.status)] ?? 'neutral'}>{t(`status.${String(lead.status)}` as Parameters<typeof t>[0]) ?? String(lead.status)}</Badge>
           <Badge>{String(lead.sourceType)}</Badge>
           {Boolean(lead.duplicateOfId) && <Badge tone="danger">{t('leads.possibleDuplicate') ?? 'Possible duplicate'}</Badge>}
         </div>
@@ -199,7 +199,7 @@ export function LeadDetail({ id }: { id: string }) {
                 aria-selected={activeTab === tab}
                 onClick={() => setActiveTab(tab)}
               >
-                {t(`leads.tab${tab.charAt(0).toUpperCase() + tab.slice(1)}` as any) ?? (tab.charAt(0).toUpperCase() + tab.slice(1))}
+                {t(`leads.tab${tab.charAt(0).toUpperCase() + tab.slice(1)}` as Parameters<typeof t>[0]) ?? (tab.charAt(0).toUpperCase() + tab.slice(1))}
                 {tab === 'notes' && notes.length > 0 && (
                   <>
                     {' '}
@@ -356,7 +356,7 @@ export function LeadDetail({ id }: { id: string }) {
                       <strong>{String(item.type).replaceAll('_', ' ')}</strong>
                       <div className="cell-meta">
                         {new Date(String(item.createdAt)).toLocaleString()}
-                        {Boolean(item.actorUserId) && ` · by user`}
+                        {Boolean(item.actorUserId) && ` · ${t('leads.byUser') ?? 'by user'}`}
                       </div>
                       {Boolean(item.payload) &&
                         typeof item.payload === 'object' &&
@@ -393,7 +393,7 @@ export function LeadDetail({ id }: { id: string }) {
               >
                 {STATUSES.map((s) => (
                   <option key={s} value={s}>
-                    {t(`status.${s}` as any) ?? (s.charAt(0).toUpperCase() + s.slice(1))}
+                    {t(`status.${s}` as Parameters<typeof t>[0]) ?? (s.charAt(0).toUpperCase() + s.slice(1))}
                   </option>
                 ))}
               </select>

@@ -205,6 +205,7 @@ function StructuredField({
   expected: 'array' | 'object-or-array';
   onChange: (value: unknown) => void;
 }) {
+  const { t } = useAdminI18n();
   const formatted = useMemo(
     () => JSON.stringify(value ?? (expected === 'array' ? [] : {}), null, 2),
     [value, expected],
@@ -217,13 +218,13 @@ function StructuredField({
     try {
       const parsed: unknown = JSON.parse(next);
       if (expected === 'array' && !Array.isArray(parsed))
-        throw new Error('Value must be a JSON array.');
+        throw new Error(t('contentEditor.invalidJsonArray'));
       if (expected === 'object-or-array' && (!parsed || typeof parsed !== 'object'))
-        throw new Error('Value must be valid structured JSON.');
+        throw new Error(t('contentEditor.invalidJsonStructured'));
       setError('');
       onChange(parsed);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Invalid JSON.');
+      setError(cause instanceof Error ? cause.message : t('contentEditor.invalidJson'));
     }
   }
   return (
@@ -400,7 +401,7 @@ function ContractField({
   onChange: (value: unknown) => void;
 }) {
   const { t } = useAdminI18n();
-  const baseLabel = MEDIA_FIELD_LABELS[name] ? (t(MEDIA_FIELD_LABELS[name] as any) ?? humanize(name)) : humanize(name);
+  const baseLabel = MEDIA_FIELD_LABELS[name] ? (t(MEDIA_FIELD_LABELS[name] as Parameters<typeof t>[0]) ?? humanize(name)) : humanize(name);
   const label = `${baseLabel}${field.required ? ' *' : ''}`;
   if (field.kind === 'media')
     return (
@@ -609,7 +610,7 @@ function SectionsEditor({
                     {t('contentEditor.visible')}
                   </label>
                   {(SECTION_FIELDS[section.sectionType] ?? []).map((field) => {
-                    const fieldLabel = t(field.label as any) ?? field.label;
+                    const fieldLabel = t(field.label as Parameters<typeof t>[0]) ?? field.label;
                     if (field.kind === 'relation')
                       return (
                         <RelationSelect
@@ -917,7 +918,7 @@ export function ContentEditor({
       return result;
     } catch (error) {
       setMessageIsError(true);
-      setMessage(error instanceof Error ? error.message : 'Cannot save content.');
+      setMessage(error instanceof Error ? error.message : t('contentEditor.cannotSave'));
     } finally {
       setBusy(false);
     }
@@ -936,7 +937,7 @@ export function ContentEditor({
         translations: normalizeTranslations(result.translations),
         sections: normalizeSections(result.sections),
       });
-      setMessage(action === 'archive' ? 'Archived successfully.' : 'Moved to draft.');
+      setMessage(action === 'archive' ? t('contentEditor.archived') : t('contentEditor.movedToDraft'));
     } catch (error) {
       setMessageIsError(true);
       setMessage(error instanceof Error ? error.message : `Unable to ${action}.`);
@@ -957,7 +958,7 @@ export function ContentEditor({
       window.open(`${site.replace(/\/$/, '')}${result.path}`, '_blank', 'noopener,noreferrer');
     } catch (error) {
       setMessageIsError(true);
-      setMessage(error instanceof Error ? error.message : 'Preview could not be opened.');
+      setMessage(error instanceof Error ? error.message : t('contentEditor.previewError'));
     }
   }
   const contentFields = Object.entries(definition.translations).filter(
@@ -1111,7 +1112,7 @@ export function ContentEditor({
                       : 'neutral'
                 }
               >
-                {t(`status.${String(record.status ?? 'draft')}` as any) ?? String(record.status ?? 'draft')}
+                {t(`status.${String(record.status ?? 'draft')}` as Parameters<typeof t>[0]) ?? String(record.status ?? 'draft')}
               </Badge>
               {canEdit && record.status !== 'published' && record.status !== 'archived' && (
                 <Field label={t('contentEditor.workflowStatus')}>

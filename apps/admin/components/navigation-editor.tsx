@@ -110,7 +110,7 @@ export function NavigationEditor() {
       setSelected(normalizeMenu(full));
       setMessage('');
     } catch {
-      setMessage('Failed to load menu details.');
+      setMessage(t('navigation.loadFailed') ?? 'Failed to load menu details.');
     }
   }
 
@@ -191,10 +191,10 @@ export function NavigationEditor() {
       const normalized = normalizeMenu(saved);
       setMenus((prev) => prev.map((m) => (m.id === normalized.id ? normalized : m)));
       setSelected(normalized);
-      setMessage('Navigation saved.');
+      setMessage(t('navigation.saved') ?? 'Navigation saved.');
       return normalized;
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : 'Save failed.');
+      setMessage(e instanceof Error ? e.message : t('common.saveFailed') ?? 'Save failed.');
     } finally {
       setBusy(false);
     }
@@ -228,7 +228,7 @@ export function NavigationEditor() {
       <div className="page-title">
         <div>
           <h1>{t('navigation.builder')}</h1>
-          <p>Edit menus and their items. Changes take effect after saving and publishing.</p>
+          <p>{t('navigation.editInstructions') ?? 'Edit menus and their items. Changes take effect after saving and publishing.'}</p>
         </div>
         {selected && canManage && (
           <div className="toolbar">
@@ -270,7 +270,7 @@ export function NavigationEditor() {
                 >
                   {menu.key}{' '}
                   <Badge tone={menu.status === 'published' ? 'success' : 'neutral'}>
-                    {t(`status.${menu.status}` as any) ?? menu.status}
+                    {t(`status.${menu.status}` as Parameters<typeof t>[0]) ?? menu.status}
                   </Badge>
                 </button>
               ))}
@@ -485,7 +485,7 @@ export function NavigationEditor() {
               <h2>{selected.key}</h2>
               <p className="cell-meta">{selected.items.length} item(s)</p>
               <Badge tone={selected.status === 'published' ? 'success' : 'neutral'}>
-                {t(`status.${selected.status}` as any) ?? selected.status}
+                {t(`status.${selected.status}` as Parameters<typeof t>[0]) ?? selected.status}
               </Badge>
             </section>
           )}

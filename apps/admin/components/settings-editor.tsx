@@ -52,7 +52,7 @@ export function SettingsEditor() {
     setMessage('');
     const updates = Object.entries(changes);
     if (updates.length === 0) {
-      setMessage('No changes to save.');
+      setMessage(t('common.noChangesToSave') ?? 'No changes to save.');
       setBusy(false);
       return;
     }
@@ -69,9 +69,9 @@ export function SettingsEditor() {
         prev.map((s) => (changes[s.key] !== undefined ? { ...s, value: changes[s.key] } : s)),
       );
       setChanges({});
-      setMessage('Settings saved.');
+      setMessage(t('settings.saved') ?? 'Settings saved.');
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : 'Save failed.');
+      setMessage(e instanceof Error ? e.message : t('common.saveFailed') ?? 'Save failed.');
     } finally {
       setBusy(false);
     }

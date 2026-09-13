@@ -171,6 +171,15 @@ export default async function Workspace({ params }: { params: Promise<{ segments
     <main className="admin-content">
       <DataTable
         title={title}
+        titleKey={
+          key === 'consultation'
+            ? 'sales.consultation'
+            : key === 'assessments'
+              ? 'sales.assessments'
+              : resource === 'leads'
+                ? 'sales.leads'
+                : undefined
+        }
         resource={resource}
         basePath={basePath}
         kind={

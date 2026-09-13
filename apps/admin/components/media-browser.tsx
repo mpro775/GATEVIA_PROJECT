@@ -9,6 +9,7 @@ import { useAdminI18n } from './admin-locale-provider';
 export type MediaBrowserView = 'grid' | 'list';
 
 export function useMediaBrowser({ pageSize, initialStatus = '', mimePrefix }: { pageSize: number; initialStatus?: string; mimePrefix?: string }) {
+  const { t } = useAdminI18n();
   const [rows, setRows] = useState<Media[]>([]);
   const [folders, setFolders] = useState<MediaFolder[]>([]);
   const [q, setQ] = useState('');
@@ -40,10 +41,10 @@ export function useMediaBrowser({ pageSize, initialStatus = '', mimePrefix }: { 
     setLoading(true); setError('');
     void apiEnvelope<Media>(`/admin/media?${query}`, { signal: controller.signal })
       .then((result) => { setRows(result.data); setMeta(result.meta); })
-      .catch((reason: unknown) => { if (!(reason instanceof DOMException && reason.name === 'AbortError')) setError(reason instanceof Error ? reason.message : 'Request failed'); })
+      .catch((reason: unknown) => { if (!(reason instanceof DOMException && reason.name === 'AbortError')) setError(reason instanceof Error ? reason.message : t('common.requestFailed') ?? 'Request failed'); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [page, pageSize, debouncedQ, status, folderId, mimePrefix, reloadToken]);
+  }, [page, pageSize, debouncedQ, status, folderId, mimePrefix, reloadToken, t]);
 
   const setFolderId = useCallback((value: string | null) => { setFolderIdState(value); setPage(1); }, []);
   const search = useCallback((value: string) => { setQ(value); setPage(1); }, []);

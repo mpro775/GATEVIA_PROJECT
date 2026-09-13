@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { ResetForm } from '@/components/reset-form';
+import { AuthLoading } from '@/components/auth-loading';
 export default function Page() {
   return (
     <main className="login-page">
@@ -9,7 +10,7 @@ export default function Page() {
         </div>
       </section>
       <section className="login-form">
-        <Suspense fallback={<p>Loading…</p>}>
+        <Suspense fallback={<AuthLoading />}>
           <ResetForm />
         </Suspense>
       </section>

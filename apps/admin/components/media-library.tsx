@@ -169,7 +169,7 @@ function MediaDrawer({
         body: JSON.stringify({ filename: file.name, mimeType: file.type, sizeBytes: file.size }),
       });
       const res = await fetch(session.url, { method: 'PUT', headers: session.headers, body: file });
-      if (!res.ok) throw new Error('Upload failed');
+      if (!res.ok) throw new Error(t('media.uploadFailed') ?? 'Upload failed');
       await api('/admin/media/finalize', {
         method: 'POST',
         body: JSON.stringify({ uploadToken: session.uploadToken }),
@@ -534,7 +534,7 @@ export function MediaLibrary({
           headers: session.headers,
           body: file,
         });
-        if (!res.ok) throw new Error('Object upload failed');
+        if (!res.ok) throw new Error(t('media.uploadFailed') ?? 'Object upload failed');
         await api('/admin/media/finalize', {
           method: 'POST',
           body: JSON.stringify({ uploadToken: session.uploadToken, folderId }),

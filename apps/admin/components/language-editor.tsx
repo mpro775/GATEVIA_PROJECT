@@ -29,7 +29,7 @@ export function LanguageEditor({ id, returnPath }: { id?: string; returnPath: st
         else setMessage(t('language.notFound') ?? 'Language was not found.');
       });
     }
-  }, [id]);
+  }, [id, t]);
 
   async function save() {
     setBusy(true);

@@ -22,13 +22,14 @@ const resourceTitleKeys: Partial<Record<string, TranslationKey>> = {
 
 interface Props {
   title: string;
+  titleKey?: TranslationKey | undefined;
   resource: string;
   basePath: string;
   kind?: 'content' | 'lead' | 'audit' | 'language' | 'user' | 'role';
   source?: 'contact' | 'consultation' | 'assessment';
 }
 
-const display = (row: Record<string, unknown>) => {
+const display = (row: Record<string, unknown>, untitledFallback = 'Untitled') => {
   const tr = Array.isArray(row.translations)
     ? (row.translations[0] as Record<string, unknown> | undefined)
     : undefined;
@@ -42,21 +43,21 @@ const display = (row: Record<string, unknown>) => {
       row.key ??
       row.action ??
       row.originalFilename ??
-      'Untitled',
+      untitledFallback,
   );
 };
 
 type DomainFilter = {
   key: 'categoryId' | 'industryId' | 'serviceId';
-  label: string;
+  labelKey: TranslationKey;
   resource: string;
 };
 
-export function DataTable({ title, resource, basePath, kind = 'content', source }: Props) {
+export function DataTable({ title, titleKey, resource, basePath, kind = 'content', source }: Props) {
   const { can } = useAdminAuth();
   const { t, formatDate, formatNumber } = useAdminI18n();
-  const titleKey = resourceTitleKeys[resource];
-  const localizedTitle = titleKey ? t(titleKey, title) : title;
+  const effectiveTitleKey = titleKey ?? resourceTitleKeys[resource];
+  const localizedTitle = effectiveTitleKey ? t(effectiveTitleKey, title) : title;
   const definition = cmsDefinitions[resource];
   const isCmsContent = kind === 'content' && Boolean(definition);
   const [page, setPage] = useState(1);
@@ -80,15 +81,15 @@ export function DataTable({ title, resource, basePath, kind = 'content', source 
     if (!definition) return [];
     return (
       [
-        ['categoryId', 'Category'],
-        ['industryId', 'Industry'],
-        ['serviceId', 'Service'],
+        { key: 'categoryId', labelKey: 'filter.category' },
+        { key: 'industryId', labelKey: 'filter.industry' },
+        { key: 'serviceId', labelKey: 'filter.service' },
       ] as const
-    ).flatMap(([key, label]) => {
+    ).flatMap(({ key, labelKey }) => {
       const relation =
         definition.relations[key] ??
         Object.values(definition.relations).find((item) => item.many && item.foreignKey === key);
-      return relation ? [{ key, label, resource: relation.resource }] : [];
+      return relation ? [{ key, labelKey, resource: relation.resource }] : [];
     });
   }, [definition, isCmsContent]);
   const statusOptions =
@@ -236,10 +237,16 @@ export function DataTable({ title, resource, basePath, kind = 'content', source 
         hasActiveFilters={hasActiveFilters}
         onReset={resetFilters}
         advanced={isCmsContent ? <>
-          {definition?.fields.featured && <select className="gv-input admin-filter-bar__control" aria-label="Featured filter" value={featured} onChange={(event) => { setFeatured(event.target.value); setPage(1); }}><option value="">{t('filter.allRecords')}</option><option value="true">{t('filter.featured')}</option><option value="false">{t('filter.notFeatured')}</option></select>}
-          {domainFilters.map((filter) => <select key={filter.key} className="gv-input admin-filter-bar__control" aria-label={`${filter.label} filter`} value={domainValues[filter.key] ?? ''} onChange={(event) => { setDomainValues((previous) => ({ ...previous, [filter.key]: event.target.value })); setPage(1); }}><option value="">{t('filter.allRecords')}</option>{(domainOptions[filter.key] ?? []).map((row) => <option key={String(row.id)} value={String(row.id)}>{display(row)}</option>)}</select>)}
-          <select className="gv-input admin-filter-bar__control" aria-label="Translation locale" value={locale} onChange={(event) => { setLocale(event.target.value); setPage(1); }}><option value="">{t('filter.anyLanguage')}</option>{languages.map((language) => <option key={language.code} value={language.code}>{language.nativeName}</option>)}</select>
-          <select className="gv-input admin-filter-bar__control" aria-label="Translation completeness" value={completeness} onChange={(event) => { setCompleteness(event.target.value); setPage(1); }} disabled={!locale}><option value="">{t('filter.anyCompleteness')}</option><option value="complete">{t('filter.complete')}</option><option value="partial">{t('filter.partial')}</option><option value="missing">{t('filter.missing')}</option></select>
+          {definition?.fields.featured && <select className="gv-input admin-filter-bar__control" aria-label={t('filter.featured')} value={featured} onChange={(event) => { setFeatured(event.target.value); setPage(1); }}><option value="">{t('filter.allRecords')}</option><option value="true">{t('filter.featured')}</option><option value="false">{t('filter.notFeatured')}</option></select>}
+          {domainFilters.map((filter) => <select key={filter.key} className="gv-input admin-filter-bar__control" aria-label={t(filter.labelKey)} value={domainValues[filter.key] ?? ''} onChange={(event) => { setDomainValues((previous) => ({ ...previous, [filter.key]: event.target.value })); setPage(1); }}>
+            <option value="">{
+              filter.key === 'categoryId' ? t('filter.allCategories') :
+              filter.key === 'industryId' ? t('filter.allIndustries') :
+              t('filter.allServices')
+            }</option>
+            {(domainOptions[filter.key] ?? []).map((row) => <option key={String(row.id)} value={String(row.id)}>{display(row, t('common.untitled'))}</option>)}</select>)}
+          <select className="gv-input admin-filter-bar__control" aria-label={t('filter.anyLanguage')} value={locale} onChange={(event) => { setLocale(event.target.value); setPage(1); }}><option value="">{t('filter.anyLanguage')}</option>{languages.map((language) => <option key={language.code} value={language.code}>{language.nativeName}</option>)}</select>
+          <select className="gv-input admin-filter-bar__control" aria-label={t('filter.anyCompleteness')} value={completeness} onChange={(event) => { setCompleteness(event.target.value); setPage(1); }} disabled={!locale}><option value="">{t('filter.anyCompleteness')}</option><option value="complete">{t('filter.complete')}</option><option value="partial">{t('filter.partial')}</option><option value="missing">{t('filter.missing')}</option></select>
         </> : undefined}
         actions={canBulkArchive && selected.length > 0 ? <Button onClick={() => void archiveSelected()}>{t('action.archive')} ({formatNumber(selected.length)})</Button> : undefined}
       >
@@ -349,7 +356,7 @@ export function DataTable({ title, resource, basePath, kind = 'content', source 
                       </td>
                     )}
                     <td>
-                      <div className="cell-main">{display(row)}</div>
+                      <div className="cell-main">{display(row, t('common.untitled'))}</div>
                       <div className="cell-meta">
                         {String(row.email ?? row.entityType ?? row.id)}
                       </div>
@@ -383,7 +390,14 @@ export function DataTable({ title, resource, basePath, kind = 'content', source 
               </tbody>
             </table>
           </div>
-          <Pagination page={page} pageCount={state.pageCount || 1} onPage={setPage} />
+          <Pagination
+            page={page}
+            pageCount={state.pageCount || 1}
+            onPage={setPage}
+            previousLabel={t('action.previous')}
+            nextLabel={t('action.next')}
+            ariaLabel={t('pagination.label')}
+          />
         </>
       )}
     </>
