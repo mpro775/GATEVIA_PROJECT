@@ -177,6 +177,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile drawer */}
       <aside
+        id="mobile-sidebar"
         ref={drawerRef}
         className={`sidebar sidebar--mobile${mobileOpen ? ' sidebar--open' : ''}`}
         aria-label={t('app.mobileNavigation')}

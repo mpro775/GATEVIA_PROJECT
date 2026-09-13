@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { AdminAuthProvider, type AdminUser } from './auth-context';
+import { useAdminI18n } from './admin-locale-provider';
 const routePermissions: Array<[RegExp, string]> = [
   [/^\/dashboard/, 'dashboard.read'],
   [/^\/content\/pages/, 'pages.read'],
@@ -32,6 +33,7 @@ const routePermissions: Array<[RegExp, string]> = [
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const path = usePathname();
+  const { t } = useAdminI18n();
   const [user, setUser] = useState<AdminUser | null>(null);
   useEffect(() => {
     void api<AdminUser>('/auth/me')
@@ -41,7 +43,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (!user)
     return (
       <main className="admin-content" aria-busy="true">
-        Checking your session…
+        {t('auth.checkingSession') ?? 'Checking your session…'}
       </main>
     );
   const required = routePermissions.find(([pattern]) => pattern.test(path))?.[1];
@@ -49,8 +51,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     return (
       <main className="admin-content">
         <div className="form-status form-status--error">
-          <h1>Access denied</h1>
-          <p>You do not have permission to view this module.</p>
+          <h1>{t('auth.accessDenied') ?? 'Access denied'}</h1>
+          <p>{t('auth.noPermission') ?? 'You do not have permission to view this module.'}</p>
         </div>
       </main>
     );

@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import { Badge, Button, Field, Input } from '@gatevia/ui';
 import { api } from '@/lib/api';
 import { useAdminAuth } from './auth-context';
+import { useAdminI18n } from './admin-locale-provider';
 
 export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: string }) {
   const router = useRouter();
   const { can } = useAdminAuth();
+  const { t } = useAdminI18n();
   const canManage = can('redirects.manage');
   const [redirect, setRedirect] = useState<Partial<Redirect>>({
     statusCode: 301,
@@ -31,20 +33,20 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
       redirect.destinationPath &&
       redirect.sourcePath === redirect.destinationPath
     ) {
-      setMessage('Source and destination cannot be the same (redirect loop).');
+      setMessage(t('redirect.loopError') ?? 'Source and destination cannot be the same (redirect loop).');
       setBusy(false);
       return;
     }
     try {
       if (id) {
         await api(`/admin/redirects/${id}`, { method: 'PATCH', body: JSON.stringify(redirect) });
-        setMessage('Redirect updated.');
+        setMessage(t('redirect.updated') ?? 'Redirect updated.');
       } else {
         const saved = await api<Redirect>('/admin/redirects', {
           method: 'POST',
           body: JSON.stringify(redirect),
         });
-        setMessage('Redirect created.');
+        setMessage(t('redirect.created') ?? 'Redirect created.');
         router.replace(`${returnPath}/${saved.id}`);
       }
     } catch (e) {
@@ -55,27 +57,27 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
   }
 
   async function archive() {
-    if (!id || !confirm('Archive this redirect?')) return;
+    if (!id || !confirm(t('redirect.archiveConfirm') ?? 'Archive this redirect?')) return;
     await api(`/admin/redirects/${id}/archive`, { method: 'POST' });
     setRedirect((r) => ({ ...r, active: false }));
-    setMessage('Redirect archived.');
+    setMessage(t('redirect.archived') ?? 'Redirect archived.');
   }
 
   return (
     <>
       <div className="page-title">
         <div>
-          <h1>{id ? 'Edit Redirect' : 'Create Redirect'}</h1>
-          <p>Map a source path to a destination URL. Avoid redirect loops.</p>
+          <h1>{id ? t('redirect.edit') : t('redirect.create')}</h1>
+          <p>{t('redirect.description') ?? 'Map a source path to a destination URL. Avoid redirect loops.'}</p>
         </div>
         {canManage && (
           <div className="toolbar">
             <Button disabled={busy} onClick={save}>
-              Save redirect
+              {t('redirect.save') ?? 'Save redirect'}
             </Button>
             {id && redirect.active && (
               <button className="text-link" onClick={archive}>
-                Archive
+                {t('action.archive')}
               </button>
             )}
           </div>
@@ -87,7 +89,7 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
           <div className="editor-main">
             <section className="panel">
               <div className="field-stack">
-                <Field label="Source path (e.g. /old-page)">
+                <Field label={t('redirect.source') ?? "Source path (e.g. /old-page)"}>
                   <Input
                     dir="ltr"
                     value={redirect.sourcePath ?? ''}
@@ -96,7 +98,7 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
                     placeholder="/old-path"
                   />
                 </Field>
-                <Field label="Destination URL or path">
+                <Field label={t('redirect.destination') ?? "Destination URL or path"}>
                   <Input
                     dir="ltr"
                     value={redirect.destinationPath ?? ''}
@@ -107,7 +109,7 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
                     placeholder="/new-path or https://..."
                   />
                 </Field>
-                <Field label="HTTP status code">
+                <Field label={t('redirect.statusCode') ?? "HTTP status code"}>
                   <select
                     className="gv-input"
                     value={redirect.statusCode ?? 301}
@@ -124,7 +126,7 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
                     <option value={308}>308 — Permanent Redirect</option>
                   </select>
                 </Field>
-                <Field label="Locale (optional)">
+                <Field label={t('redirect.locale') ?? "Locale (optional)"}>
                   <Input
                     dir="ltr"
                     value={redirect.locale ?? ''}
@@ -149,7 +151,7 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
                       checked={Boolean(redirect.active)}
                       onChange={(e) => setRedirect((r) => ({ ...r, active: e.target.checked }))}
                     />{' '}
-                    Active (redirect is applied on the public site)
+                    {t('redirect.active') ?? 'Active (redirect is applied on the public site)'}
                   </label>
                 </div>
               </div>
@@ -158,9 +160,9 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
 
           <aside className="editor-side">
             <section className="panel">
-              <h2>Status</h2>
+              <h2>{t('users.status')}</h2>
               <Badge tone={redirect.active ? 'success' : 'neutral'}>
-                {redirect.active ? 'Active' : 'Inactive'}
+                {redirect.active ? t('status.active') ?? 'Active' : t('status.inactive') ?? 'Inactive'}
               </Badge>
               {redirect.statusCode && (
                 <p className="cell-meta" style={{ marginBlockStart: '.5rem' }}>

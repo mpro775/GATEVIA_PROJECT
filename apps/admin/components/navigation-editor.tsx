@@ -4,6 +4,7 @@ import type { Language as ApiLanguage } from '@gatevia/api-client';
 import { Badge, Button, Field, Input } from '@gatevia/ui';
 import { api } from '@/lib/api';
 import { useAdminAuth } from './auth-context';
+import { useAdminI18n } from './admin-locale-provider';
 
 type Language = Pick<ApiLanguage, 'code' | 'name'>;
 interface NavMenu {
@@ -65,6 +66,7 @@ const emptyItem = (): NavItem => ({
 
 export function NavigationEditor() {
   const { can } = useAdminAuth();
+  const { t } = useAdminI18n();
   const canManage = can('navigation.manage');
   const [menus, setMenus] = useState<NavMenu[]>([]);
   const [selected, setSelected] = useState<NavMenu | null>(null);
@@ -137,7 +139,7 @@ export function NavigationEditor() {
   }
 
   function removeItem(index: number) {
-    if (!selected || !confirm('Remove this item?')) return;
+    if (!selected || !confirm(t('action.delete') ?? 'Remove this item?')) return;
     const removedId = selected.items[index]?.id;
     const items = selected.items
       .filter((_, i) => i !== index)
@@ -225,27 +227,27 @@ export function NavigationEditor() {
     <>
       <div className="page-title">
         <div>
-          <h1>Navigation Builder</h1>
+          <h1>{t('navigation.builder')}</h1>
           <p>Edit menus and their items. Changes take effect after saving and publishing.</p>
         </div>
         {selected && canManage && (
           <div className="toolbar">
             <Button disabled={busy} onClick={save}>
-              Save navigation
+              {t('action.save')}
             </Button>
             {selected.status !== 'published' && (
               <Button disabled={busy} onClick={() => void transition('publish')}>
-                Publish
+                {t('contentEditor.publishing') ?? 'Publish'}
               </Button>
             )}
             {selected.status === 'published' && (
               <Button disabled={busy} onClick={() => void transition('unpublish')}>
-                Unpublish
+                {t('contentEditor.unpublish') ?? 'Unpublish'}
               </Button>
             )}
             {selected.status !== 'archived' && (
               <Button disabled={busy} onClick={() => void transition('archive')}>
-                Archive
+                {t('action.archive')}
               </Button>
             )}
           </div>
@@ -256,7 +258,7 @@ export function NavigationEditor() {
         <div className="editor-main">
           {/* Menu selector */}
           <section className="panel">
-            <h2>Menus</h2>
+            <h2>{t('navigation.menus')}</h2>
             <div className="tabs" role="tablist">
               {menus.map((menu) => (
                 <button
@@ -268,11 +270,11 @@ export function NavigationEditor() {
                 >
                   {menu.key}{' '}
                   <Badge tone={menu.status === 'published' ? 'success' : 'neutral'}>
-                    {menu.status}
+                    {t(`status.${menu.status}` as any) ?? menu.status}
                   </Badge>
                 </button>
               ))}
-              {menus.length === 0 && <span className="cell-meta">No navigation menus found.</span>}
+              {menus.length === 0 && <span className="cell-meta">{t('navigation.noMenus')}</span>}
             </div>
           </section>
 
@@ -289,7 +291,7 @@ export function NavigationEditor() {
                 </div>
 
                 <div className="sections-editor">
-                  {selected.items.length === 0 && <p className="cell-meta">No items yet.</p>}
+                  {selected.items.length === 0 && <p className="cell-meta">{t('navigation.noItems')}</p>}
                   {selected.items.map((item, i) => (
                     <div
                       key={item.id}
@@ -306,7 +308,7 @@ export function NavigationEditor() {
                           {item.itemType}
                         </Badge>
                         <Badge tone={item.visible ? 'success' : 'neutral'}>
-                          {item.visible ? 'Visible' : 'Hidden'}
+                          {item.visible ? t('contentEditor.visible') : t('contentEditor.hidden')}
                         </Badge>
                         <div className="section-actions">
                           <button
@@ -333,7 +335,7 @@ export function NavigationEditor() {
                             style={{ padding: '.2rem .4rem', minHeight: 'unset' }}
                             onClick={() => updateItem(i, '_expanded', !item._expanded)}
                           >
-                            {item._expanded ? 'Collapse' : 'Edit'}
+                            {item._expanded ? t('contentEditor.collapse') : t('action.edit')}
                           </button>
                           <button
                             type="button"
@@ -345,7 +347,7 @@ export function NavigationEditor() {
                             }}
                             onClick={() => removeItem(i)}
                           >
-                            Remove
+                            {t('action.delete')}
                           </button>
                         </div>
                       </div>
@@ -372,8 +374,8 @@ export function NavigationEditor() {
                               value={item.itemType}
                               onChange={(e) => updateItem(i, 'itemType', e.target.value)}
                             >
-                              <option value="internal">Internal Content</option>
-                              <option value="external">External URL</option>
+                              <option value="internal">{t('navigation.internalContent')}</option>
+                              <option value="external">{t('navigation.externalUrl')}</option>
                             </select>
                           </Field>
 
@@ -389,11 +391,11 @@ export function NavigationEditor() {
                                       updateItem(i, 'internalEntityId', '');
                                     }}
                                   >
-                                    <option value="pages">Pages</option>
-                                    <option value="services">Services</option>
-                                    <option value="industries">Industries</option>
-                                    <option value="case-studies">Case Studies</option>
-                                    <option value="insights">Insights</option>
+                                    <option value="pages">{t('navigation.pages')}</option>
+                                    <option value="services">{t('navigation.services')}</option>
+                                    <option value="industries">{t('navigation.industries')}</option>
+                                    <option value="case-studies">{t('navigation.caseStudies')}</option>
+                                    <option value="insights">{t('navigation.insights')}</option>
                                   </select>
                                 </Field>
                               </div>
@@ -406,7 +408,7 @@ export function NavigationEditor() {
                                       updateItem(i, 'internalEntityId', e.target.value)
                                     }
                                   >
-                                    <option value="">-- Select Item --</option>
+                                    <option value="">-- {t('navigation.selectItem')} --</option>
                                     {(entities[item.internalEntityType] || []).map((ent) => (
                                       <option key={ent.id} value={ent.id}>
                                         {ent.label}
@@ -435,7 +437,7 @@ export function NavigationEditor() {
                                 updateItem(i, 'parentId', event.target.value || null)
                               }
                             >
-                              <option value="">— Top level —</option>
+                              <option value="">— {t('navigation.topLevel')} —</option>
                               {selected.items
                                 .filter(
                                   (candidate) =>
@@ -483,7 +485,7 @@ export function NavigationEditor() {
               <h2>{selected.key}</h2>
               <p className="cell-meta">{selected.items.length} item(s)</p>
               <Badge tone={selected.status === 'published' ? 'success' : 'neutral'}>
-                {selected.status}
+                {t(`status.${selected.status}` as any) ?? selected.status}
               </Badge>
             </section>
           )}

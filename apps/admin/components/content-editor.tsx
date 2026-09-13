@@ -20,6 +20,7 @@ import {
 } from '@/lib/cms-editor';
 import { MediaPicker } from './media-picker';
 import { useAdminAuth } from './auth-context';
+import { useAdminI18n } from './admin-locale-provider';
 
 type RelOption = { id: string; label: string };
 interface PageSection {
@@ -47,8 +48,8 @@ type SectionField =
   | { key: string; label: string; kind: 'select'; options: string[] }
   | { key: string; label: string; kind: 'relation'; resource: string };
 const BASE_SECTION_FIELDS: SectionField[] = [
-  { key: 'eyebrow', label: 'Eyebrow', kind: 'text' },
-  { key: 'title', label: 'Heading', kind: 'text' },
+  { key: 'eyebrow', label: 'field.eyebrow', kind: 'text' },
+  { key: 'title', label: 'field.heading', kind: 'text' },
 ];
 const SECTION_FIELDS: Record<SectionType, SectionField[]> = {
   hero: [
@@ -141,10 +142,10 @@ function humanize(value: string) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 const MEDIA_FIELD_LABELS: Record<string, string> = {
-  iconMediaId: 'Icon',
-  coverMediaId: 'Cover image',
-  heroMediaId: 'Hero image',
-  ogMediaId: 'Social share image',
+  iconMediaId: 'field.heroMedia', // fallback if needed
+  coverMediaId: 'field.heroMedia',
+  heroMediaId: 'field.heroMedia',
+  ogMediaId: 'field.heroMedia',
 };
 
 function normalizeTranslations(value: unknown): TranslationMap {
@@ -248,10 +249,11 @@ function RelationSelect({
   selectedIds: string[];
   onChange: (ids: string[]) => void;
 }) {
+  const { t } = useAdminI18n();
   return (
     <Field label={label}>
       <div className="relation-chips">
-        {options.length === 0 && <span className="cell-meta">No options available.</span>}
+        {options.length === 0 && <span className="cell-meta">{t('contentEditor.noOptions')}</span>}
         {options.map((option) => {
           const selected = selectedIds.includes(option.id);
           return (
@@ -288,6 +290,7 @@ function ProcessStepsEditor({
   value: unknown;
   onChange: (steps: ProcessStep[]) => void;
 }) {
+  const { t } = useAdminI18n();
   const steps: ProcessStep[] = Array.isArray(value)
     ? value.map((raw) => {
         const step = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
@@ -352,7 +355,7 @@ function ProcessStepsEditor({
                 onClick={() => move(index, -1)}
                 disabled={index === 0}
               >
-                Move up
+                {t('contentEditor.moveUp')}
               </Button>
               <Button
                 type="button"
@@ -360,14 +363,14 @@ function ProcessStepsEditor({
                 onClick={() => move(index, 1)}
                 disabled={index === steps.length - 1}
               >
-                Move down
+                {t('contentEditor.moveDown')}
               </Button>
               <Button
                 type="button"
                 variant="secondary"
                 onClick={() => onChange(steps.filter((_, current) => current !== index))}
               >
-                Remove
+                {t('action.delete')}
               </Button>
             </div>
           </div>
@@ -378,7 +381,7 @@ function ProcessStepsEditor({
           disabled={steps.length >= 12}
           onClick={() => onChange([...steps, { title: '', body: '' }])}
         >
-          Add process step
+          {t('contentEditor.addSection')}
         </Button>
       </div>
     </Field>
@@ -396,7 +399,9 @@ function ContractField({
   value: unknown;
   onChange: (value: unknown) => void;
 }) {
-  const label = `${MEDIA_FIELD_LABELS[name] ?? humanize(name)}${field.required ? ' *' : ''}`;
+  const { t } = useAdminI18n();
+  const baseLabel = MEDIA_FIELD_LABELS[name] ? (t(MEDIA_FIELD_LABELS[name] as any) ?? humanize(name)) : humanize(name);
+  const label = `${baseLabel}${field.required ? ' *' : ''}`;
   if (field.kind === 'media')
     return (
       <Field label={label}>
@@ -430,7 +435,7 @@ function ContractField({
           value={String(value ?? '')}
           onChange={(event) => onChange(event.target.value)}
         >
-          <option value="">— Select —</option>
+          <option value="">{t('contentEditor.select')}</option>
           {field.options?.map((option) => (
             <option key={option} value={option}>
               {humanize(option)}
@@ -474,6 +479,7 @@ function SectionsEditor({
   options: Record<string, RelOption[]>;
   onChange: (next: PageSection[]) => void;
 }) {
+  const { t } = useAdminI18n();
   function mutate(index: number, mutation: (section: PageSection) => PageSection) {
     onChange(sections.map((section, current) => (current === index ? mutation(section) : section)));
   }
@@ -511,7 +517,7 @@ function SectionsEditor({
   return (
     <div>
       <div className="sections-editor">
-        {sections.length === 0 && <p className="cell-meta">No sections yet.</p>}
+        {sections.length === 0 && <p className="cell-meta">{t('contentEditor.noSections')}</p>}
         {sections.map((section, index) => {
           const content = section.translations[locale]?.content ?? {};
           return (
@@ -547,7 +553,7 @@ function SectionsEditor({
                     className="text-link"
                     onClick={() => mutate(index, (row) => ({ ...row, _expanded: !row._expanded }))}
                   >
-                    {section._expanded ? 'Collapse' : 'Edit'}
+                    {section._expanded ? t('contentEditor.collapse') : t('action.edit')}
                   </button>
                   <button
                     type="button"
@@ -555,13 +561,13 @@ function SectionsEditor({
                     style={{ color: 'var(--color-danger)' }}
                     onClick={() => onChange(sections.filter((_, current) => current !== index))}
                   >
-                    Delete
+                    {t('action.delete')}
                   </button>
                 </div>
               </div>
               {section._expanded && (
                 <div className="section-fields">
-                  <Field label="Section type">
+                  <Field label={t('contentEditor.sectionType')}>
                     <select
                       className="gv-input"
                       value={section.sectionType}
@@ -574,7 +580,7 @@ function SectionsEditor({
                       ))}
                     </select>
                   </Field>
-                  <Field label="Theme">
+                  <Field label={t('contentEditor.theme')}>
                     <select
                       className="gv-input"
                       value={section.settings.theme ?? 'default'}
@@ -588,8 +594,8 @@ function SectionsEditor({
                         }))
                       }
                     >
-                      <option value="default">Default</option>
-                      <option value="inverse">Inverse</option>
+                      <option value="default">{t('contentEditor.themeDefault')}</option>
+                      <option value="inverse">{t('contentEditor.themeInverse')}</option>
                     </select>
                   </Field>
                   <label>
@@ -600,14 +606,15 @@ function SectionsEditor({
                         mutate(index, (row) => ({ ...row, isVisible: event.target.checked }))
                       }
                     />{' '}
-                    Visible
+                    {t('contentEditor.visible')}
                   </label>
                   {(SECTION_FIELDS[section.sectionType] ?? []).map((field) => {
+                    const fieldLabel = t(field.label as any) ?? field.label;
                     if (field.kind === 'relation')
                       return (
                         <RelationSelect
                           key={field.key}
-                          label={field.label}
+                          label={fieldLabel}
                           options={options[field.resource] ?? []}
                           selectedIds={
                             Array.isArray(content[field.key])
@@ -619,7 +626,7 @@ function SectionsEditor({
                       );
                     if (field.kind === 'media')
                       return (
-                        <Field key={field.key} label={field.label}>
+                        <Field key={field.key} label={fieldLabel}>
                           <MediaPicker
                             value={String(content[field.key] ?? '')}
                             acceptMimePrefix="image/"
@@ -647,7 +654,7 @@ function SectionsEditor({
                       return (
                         <ProcessStepsEditor
                           key={field.key}
-                          label={field.label}
+                          label={fieldLabel}
                           value={content[field.key]}
                           onChange={(value) => updateContent(index, field.key, value)}
                         />
@@ -662,12 +669,12 @@ function SectionsEditor({
                               updateContent(index, field.key, event.target.checked)
                             }
                           />{' '}
-                          {field.label}
+                          {fieldLabel}
                         </label>
                       );
                     if (field.kind === 'select')
                       return (
-                        <Field key={field.key} label={field.label}>
+                        <Field key={field.key} label={fieldLabel}>
                           <select
                             className="gv-input"
                             value={String(content[field.key] ?? '')}
@@ -688,14 +695,14 @@ function SectionsEditor({
                       return (
                         <StructuredField
                           key={field.key}
-                          label={field.label}
+                          label={fieldLabel}
                           value={content[field.key]}
                           expected="object-or-array"
                           onChange={(value) => updateContent(index, field.key, value)}
                         />
                       );
                     return (
-                      <Field key={field.key} label={field.label}>
+                      <Field key={field.key} label={fieldLabel}>
                         {field.kind === 'long' ? (
                           <Textarea
                             value={String(content[field.key] ?? '')}
@@ -754,6 +761,7 @@ export function ContentEditor({
 }) {
   const router = useRouter();
   const { can } = useAdminAuth();
+  const { t } = useAdminI18n();
   const definition = cmsDefinitions[resource];
   const [languages, setLanguages] = useState<Language[]>([]);
   const [locale, setLocale] = useState('');
@@ -904,7 +912,7 @@ export function ContentEditor({
         translations: normalizeTranslations(result.translations),
         sections: normalizeSections(result.sections),
       });
-      setMessage(publish ? 'Published successfully.' : 'Saved successfully.');
+      setMessage(publish ? t('contentEditor.published') ?? 'Published successfully.' : t('media.saved') ?? 'Saved successfully.');
       if (!id) router.replace(`${returnPath}/${String(saved.id)}`);
       return result;
     } catch (error) {
@@ -962,34 +970,34 @@ export function ContentEditor({
       <div className="page-title">
         <div>
           <h1>
-            {id ? 'Edit' : 'Create'} {humanize(resource)}
+            {id ? t('action.edit') : t('action.create')} {humanize(resource)}
           </h1>
-          <p>Fields are generated from the authoritative CMS contract.</p>
+          <p>{t('contentEditor.fieldsGenerated')}</p>
         </div>
         <div className="toolbar">
           {canEdit && (
             <Button disabled={busy} onClick={() => void save(false)}>
-              Save
+              {t('action.save')}
             </Button>
           )}
           {canPublish && record.status !== 'published' && (
             <Button disabled={busy} onClick={() => void save(true)}>
-              Publish
+              {t('contentEditor.publishing')}
             </Button>
           )}
           {canPublish && record.status === 'published' && id && (
             <Button disabled={busy} onClick={() => void transition('unpublish')}>
-              Unpublish
+              {t('contentEditor.unpublish') ?? 'Unpublish'}
             </Button>
           )}
           {canArchive && record.status !== 'archived' && id && (
             <Button disabled={busy} onClick={() => void transition('archive')}>
-              Archive
+              {t('action.archive')}
             </Button>
           )}
           {(id || canEdit) && (
             <Button disabled={busy} onClick={() => void preview()}>
-              Preview
+              {t('action.view') ?? 'Preview'}
             </Button>
           )}
         </div>
@@ -1010,9 +1018,9 @@ export function ContentEditor({
                   >
                     {language.nativeName}{' '}
                     {translations[language.code] ? (
-                      <Badge tone="success">Authored</Badge>
+                      <Badge tone="success">{t('contentEditor.authored')}</Badge>
                     ) : (
-                      <Badge tone="warning">Missing</Badge>
+                      <Badge tone="warning">{t('contentEditor.missing')}</Badge>
                     )}
                   </button>
                 ))}
@@ -1031,7 +1039,7 @@ export function ContentEditor({
             </section>
             {Object.keys(definition.relations).length > 0 && (
               <section className="panel">
-                <h2>Relations</h2>
+                <h2>{t('contentEditor.relations')}</h2>
                 <div className="field-stack">
                   {Object.entries(definition.relations).map(([key, relation]) =>
                     relation.many ? (
@@ -1049,7 +1057,7 @@ export function ContentEditor({
                           value={String(record[key] ?? '')}
                           onChange={(event) => updateRoot(key, event.target.value || null)}
                         >
-                          <option value="">— None —</option>
+                          <option value="">{t('contentEditor.none')}</option>
                           {(options[relation.resource] ?? []).map((option) => (
                             <option key={option.id} value={option.id}>
                               {option.label}
@@ -1063,7 +1071,7 @@ export function ContentEditor({
               </section>
             )}
             <section className="panel">
-              <h2>Content settings</h2>
+              <h2>{t('contentEditor.contentSettings')}</h2>
               <div className="field-stack">
                 {Object.entries(definition.fields).map(([key, field]) => (
                   <ContractField
@@ -1078,10 +1086,9 @@ export function ContentEditor({
             </section>
             {resource === 'pages' && (
               <section className="panel">
-                <h2>Page sections — {locale}</h2>
+                <h2>{t('contentEditor.pageSections')} — {locale}</h2>
                 <p className="cell-meta">
-                  Each section is validated against the central section contract for the selected
-                  locale.
+                  {t('contentEditor.fieldsGenerated')}
                 </p>
                 <SectionsEditor
                   sections={sections}
@@ -1094,7 +1101,7 @@ export function ContentEditor({
           </div>
           <aside className="editor-side">
             <section className="panel">
-              <h2>Publishing</h2>
+              <h2>{t('contentEditor.publishing')}</h2>
               <Badge
                 tone={
                   record.status === 'published'
@@ -1104,17 +1111,17 @@ export function ContentEditor({
                       : 'neutral'
                 }
               >
-                {String(record.status ?? 'draft')}
+                {t(`status.${String(record.status ?? 'draft')}` as any) ?? String(record.status ?? 'draft')}
               </Badge>
               {canEdit && record.status !== 'published' && record.status !== 'archived' && (
-                <Field label="Workflow status">
+                <Field label={t('contentEditor.workflowStatus')}>
                   <select
                     className="gv-input"
                     value={record.status === 'review' ? 'review' : 'draft'}
                     onChange={(event) => updateRoot('status', event.target.value)}
                   >
-                    <option value="draft">Draft</option>
-                    <option value="review">Review</option>
+                    <option value="draft">{t('status.draft')}</option>
+                    <option value="review">{t('status.review')}</option>
                   </select>
                 </Field>
               )}

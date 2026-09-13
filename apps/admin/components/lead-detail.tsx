@@ -4,6 +4,7 @@ import type { User } from '@gatevia/api-client';
 import { Badge, Button, EmptyState, ErrorState, Field, Textarea } from '@gatevia/ui';
 import { api } from '@/lib/api';
 import { useAdminAuth } from './auth-context';
+import { useAdminI18n } from './admin-locale-provider';
 
 // ─── Readable nested object display ──────────────────────────────────────────
 
@@ -76,6 +77,7 @@ function Attribution({ lead }: { lead: Record<string, unknown> }) {
 
 export function LeadDetail({ id }: { id: string }) {
   const { can } = useAdminAuth();
+  const { t } = useAdminI18n();
   const canStatus = can('leads.update_status');
   const canAssign = can('leads.assign');
   const canNote = can('leads.note');
@@ -174,14 +176,14 @@ export function LeadDetail({ id }: { id: string }) {
         <div>
           <h1>{String(lead.fullName)}</h1>
           <p>
-            {String(lead.companyName ?? 'No company')} · {String(lead.email)}
+            {String(lead.companyName ?? t('leads.noCompany') ?? 'No company')} · {String(lead.email)}
             {Boolean(lead.phone) && ` · ${String(lead.phone)}`}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
-          <Badge tone={STATUS_TONES[String(lead.status)] ?? 'neutral'}>{String(lead.status)}</Badge>
+          <Badge tone={STATUS_TONES[String(lead.status)] ?? 'neutral'}>{t(`status.${String(lead.status)}` as any) ?? String(lead.status)}</Badge>
           <Badge>{String(lead.sourceType)}</Badge>
-          {Boolean(lead.duplicateOfId) && <Badge tone="danger">Possible duplicate</Badge>}
+          {Boolean(lead.duplicateOfId) && <Badge tone="danger">{t('leads.possibleDuplicate') ?? 'Possible duplicate'}</Badge>}
         </div>
       </div>
 
@@ -197,7 +199,7 @@ export function LeadDetail({ id }: { id: string }) {
                 aria-selected={activeTab === tab}
                 onClick={() => setActiveTab(tab)}
               >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {t(`leads.tab${tab.charAt(0).toUpperCase() + tab.slice(1)}` as any) ?? (tab.charAt(0).toUpperCase() + tab.slice(1))}
                 {tab === 'notes' && notes.length > 0 && (
                   <>
                     {' '}
@@ -217,7 +219,7 @@ export function LeadDetail({ id }: { id: string }) {
           {/* Tab: Details */}
           {activeTab === 'details' && (
             <section className="panel">
-              <h2>Contact &amp; attribution</h2>
+              <h2>{t('leads.contactAttribution') ?? 'Contact & attribution'}</h2>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                 <div>
                   <h3
@@ -228,7 +230,7 @@ export function LeadDetail({ id }: { id: string }) {
                       letterSpacing: '.06em',
                     }}
                   >
-                    Contact
+                    {t('leads.contact') ?? 'Contact'}
                   </h3>
                   <dl style={{ fontSize: '.88rem' }}>
                     {[
@@ -257,7 +259,7 @@ export function LeadDetail({ id }: { id: string }) {
                       letterSpacing: '.06em',
                     }}
                   >
-                    Attribution
+                    {t('leads.attribution') ?? 'Attribution'}
                   </h3>
                   <Attribution lead={lead} />
                 </div>
@@ -270,8 +272,8 @@ export function LeadDetail({ id }: { id: string }) {
             <>
               {assessments.length === 0 ? (
                 <EmptyState
-                  title="No assessment data"
-                  description="This lead did not submit an assessment form."
+                  title={t('leads.noAssessment') ?? "No assessment data"}
+                  description={t('leads.noAssessmentDesc') ?? "This lead did not submit an assessment form."}
                 />
               ) : (
                 assessments.map((assessment, index) => (
@@ -295,7 +297,7 @@ export function LeadDetail({ id }: { id: string }) {
             <>
               {canNote && (
                 <form className="panel field-stack" onSubmit={addNote}>
-                  <h2>Add internal note</h2>
+                  <h2>{t('leads.addInternalNote') ?? 'Add internal note'}</h2>
                   <Field label="Note (visible only to your team)">
                     <Textarea
                       name="body"
@@ -304,7 +306,7 @@ export function LeadDetail({ id }: { id: string }) {
                       placeholder="Add context, next steps or outcome…"
                     />
                   </Field>
-                  <Button type="submit">Add note</Button>
+                  <Button type="submit">{t('leads.addNote') ?? 'Add note'}</Button>
                   {noteError && (
                     <div className="form-status form-status--error" role="alert">
                       {noteError}
@@ -313,7 +315,7 @@ export function LeadDetail({ id }: { id: string }) {
                 </form>
               )}
               {notes.length === 0 ? (
-                <EmptyState title="No notes yet" description="Internal notes will appear here." />
+                <EmptyState title={t('leads.noNotes') ?? "No notes yet"} description={t('leads.noNotesDesc') ?? "Internal notes will appear here."} />
               ) : (
                 notes.map((note) => (
                   <section className="panel" key={String(note.id)}>
@@ -341,11 +343,11 @@ export function LeadDetail({ id }: { id: string }) {
           {/* Tab: Activity */}
           {activeTab === 'activity' && (
             <section className="panel">
-              <h2>Activity timeline</h2>
+              <h2>{t('leads.activityTimeline') ?? 'Activity timeline'}</h2>
               {activities.length === 0 ? (
                 <EmptyState
-                  title="No activity yet"
-                  description="Events will appear here as this lead progresses."
+                  title={t('leads.noActivity') ?? "No activity yet"}
+                  description={t('leads.noActivityDesc') ?? "Events will appear here as this lead progresses."}
                 />
               ) : (
                 <div className="timeline">
@@ -381,8 +383,8 @@ export function LeadDetail({ id }: { id: string }) {
         <aside className="editor-side">
           {/* Status */}
           <section className="panel">
-            <h2>Lead status</h2>
-            <Field label="Status">
+            <h2>{t('leads.leadStatus') ?? 'Lead status'}</h2>
+            <Field label={t('users.status') ?? "Status"}>
               <select
                 className="gv-input"
                 value={String(lead.status)}
@@ -391,7 +393,7 @@ export function LeadDetail({ id }: { id: string }) {
               >
                 {STATUSES.map((s) => (
                   <option key={s} value={s}>
-                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                    {t(`status.${s}` as any) ?? (s.charAt(0).toUpperCase() + s.slice(1))}
                   </option>
                 ))}
               </select>
@@ -400,20 +402,20 @@ export function LeadDetail({ id }: { id: string }) {
 
           {/* Assignment */}
           <section className="panel">
-            <h2>Assigned to</h2>
+            <h2>{t('leads.assignedTo') ?? 'Assigned to'}</h2>
             {assigned && (
               <p style={{ marginBlockStart: 0, fontSize: '.9rem' }}>
                 <strong>{assigned.displayName ?? assigned.email}</strong>
               </p>
             )}
-            <Field label="Assign to">
+            <Field label={t('leads.assignTo') ?? "Assign to"}>
               <select
                 className="gv-input"
                 value={assigned?.id ?? ''}
                 disabled={assignBusy || !canAssign}
                 onChange={(e) => void assign(e.target.value || null)}
               >
-                <option value="">— Unassigned —</option>
+                <option value="">{t('leads.unassigned') ?? '— Unassigned —'}</option>
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.displayName || u.email}
@@ -433,23 +435,23 @@ export function LeadDetail({ id }: { id: string }) {
                 disabled={assignBusy}
                 onClick={() => void assign(null)}
               >
-                Remove assignment
+                {t('leads.removeAssignment') ?? 'Remove assignment'}
               </button>
             )}
           </section>
 
           {/* Quick info */}
           <section className="panel">
-            <h2>Quick info</h2>
+            <h2>{t('leads.quickInfo') ?? 'Quick info'}</h2>
             <dl style={{ fontSize: '.85rem' }}>
-              <dt className="cell-meta">Created</dt>
+              <dt className="cell-meta">{t('leads.created') ?? 'Created'}</dt>
               <dd>{lead.createdAt ? new Date(String(lead.createdAt)).toLocaleString() : '—'}</dd>
               <dt className="cell-meta" style={{ marginBlockStart: '.4rem' }}>
-                Source
+                {t('leads.source') ?? 'Source'}
               </dt>
               <dd>{String(lead.sourceType)}</dd>
               <dt className="cell-meta" style={{ marginBlockStart: '.4rem' }}>
-                Source page
+                {t('leads.sourcePage') ?? 'Source page'}
               </dt>
               <dd style={{ wordBreak: 'break-all', fontSize: '.8rem' }}>
                 {String(lead.sourcePage ?? '—')}

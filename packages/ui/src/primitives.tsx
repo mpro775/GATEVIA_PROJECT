@@ -203,21 +203,27 @@ export function Pagination({
   page,
   pageCount,
   onPage,
+  previousLabel = 'Previous',
+  nextLabel = 'Next',
+  ariaLabel = 'Pagination',
 }: {
   page: number;
   pageCount: number;
   onPage?: (page: number) => void;
+  previousLabel?: string;
+  nextLabel?: string;
+  ariaLabel?: string;
 }) {
   return (
-    <nav className="gv-pagination" aria-label="Pagination">
+    <nav className="gv-pagination" aria-label={ariaLabel}>
       <Button variant="secondary" disabled={page <= 1} onClick={() => onPage?.(page - 1)}>
-        Previous
+        {previousLabel}
       </Button>
       <span>
         {page} / {pageCount}
       </span>
       <Button variant="secondary" disabled={page >= pageCount} onClick={() => onPage?.(page + 1)}>
-        Next
+        {nextLabel}
       </Button>
     </nav>
   );

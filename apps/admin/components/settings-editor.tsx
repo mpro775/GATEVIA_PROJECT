@@ -4,6 +4,7 @@ import type { Setting } from '@gatevia/api-client';
 import { Button, Field, Input, Textarea } from '@gatevia/ui';
 import { api } from '@/lib/api';
 import { useAdminAuth } from './auth-context';
+import { useAdminI18n } from './admin-locale-provider';
 
 const SETTING_GROUPS = [
   'company',
@@ -17,6 +18,7 @@ const SETTING_GROUPS = [
 
 export function SettingsEditor() {
   const { can } = useAdminAuth();
+  const { t } = useAdminI18n();
   const canManage = can('settings.manage');
   const [settings, setSettings] = useState<Setting[]>([]);
   const [changes, setChanges] = useState<Record<string, unknown>>({});
@@ -89,16 +91,16 @@ export function SettingsEditor() {
     <>
       <div className="page-title">
         <div>
-          <h1>Global Settings</h1>
+          <h1>{t('settings.globalSettings')}</h1>
           <p>
-            Manage site-wide configuration: company info, SEO defaults, social links and appearance.
+            {t('settings.description') ?? 'Manage site-wide configuration: company info, SEO defaults, social links and appearance.'}
           </p>
         </div>
         {canManage && (
           <div className="toolbar">
             <Button disabled={busy} onClick={save}>
-              Save{' '}
-              {Object.keys(changes).length > 0 ? `(${Object.keys(changes).length} changes)` : ''}
+              {t('action.save')}{' '}
+              {Object.keys(changes).length > 0 ? `(${Object.keys(changes).length})` : ''}
             </Button>
           </div>
         )}
@@ -125,7 +127,7 @@ export function SettingsEditor() {
             <fieldset disabled={!canManage} style={{ border: 0, padding: 0, margin: 0 }}>
               <div className="field-stack" style={{ marginBlockStart: '1rem' }}>
                 {visibleSettings.length === 0 && (
-                  <p className="cell-meta">No settings in this group.</p>
+                  <p className="cell-meta">{t('settings.noSettings')}</p>
                 )}
                 {visibleSettings.map((setting) => (
                   <Field
@@ -157,7 +159,7 @@ export function SettingsEditor() {
 
         <aside className="editor-side">
           <section className="panel">
-            <h2>Status</h2>
+            <h2>{t('users.status')}</h2>
             <p className="cell-meta">{settings.length} total settings loaded.</p>
             {Object.keys(changes).length > 0 && (
               <p className="cell-meta" style={{ color: 'var(--color-accent)' }}>

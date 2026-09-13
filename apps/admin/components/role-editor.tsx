@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import { Badge, Button, Field, Input } from '@gatevia/ui';
 import { api } from '@/lib/api';
 import { useAdminAuth } from './auth-context';
+import { useAdminI18n } from './admin-locale-provider';
 
 export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string }) {
   const router = useRouter();
   const { can } = useAdminAuth();
+  const { t } = useAdminI18n();
   const canManage = can('roles.manage');
   const [role, setRole] = useState<Partial<RoleData>>({});
   const [permissions, setPermissions] = useState<Permission[]>([]);
@@ -71,13 +73,13 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
     try {
       if (id) {
         await api(`/admin/roles/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
-        setMessage('Role updated.');
+        setMessage(t('role.updated') ?? 'Role updated.');
       } else {
         const saved = await api<RoleData>('/admin/roles', {
           method: 'POST',
           body: JSON.stringify(payload),
         });
-        setMessage('Role created.');
+        setMessage(t('role.created') ?? 'Role created.');
         router.replace(`${returnPath}/${saved.id}`);
       }
     } catch (e) {
@@ -99,13 +101,13 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
     <>
       <div className="page-title">
         <div>
-          <h1>{id ? 'Edit Role' : 'Create Role'}</h1>
-          <p>Name this role and assign its permission set.</p>
+          <h1>{id ? (t('role.edit') ?? 'Edit Role') : (t('role.create') ?? 'Create Role')}</h1>
+          <p>{t('role.description') ?? 'Name this role and assign its permission set.'}</p>
         </div>
         {canManage && (
           <div className="toolbar">
             <Button disabled={busy} onClick={save}>
-              Save role
+              {t('role.save') ?? 'Save role'}
             </Button>
           </div>
         )}
@@ -115,10 +117,10 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
         <div className="editor">
           <div className="editor-main">
             <section className="panel">
-              <h2>Role details</h2>
+              <h2>{t('role.details') ?? 'Role details'}</h2>
               <div className="field-stack">
                 {!id && (
-                  <Field label="Role key (system identifier)">
+                  <Field label={t('role.key') ?? "Role key (system identifier)"}>
                     <Input
                       value={role.key ?? ''}
                       onChange={(e) =>
@@ -132,7 +134,7 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
                     />
                   </Field>
                 )}
-                <Field label="Role name">
+                <Field label={t('role.name') ?? "Role name"}>
                   <Input
                     value={role.name ?? ''}
                     onChange={(e) => setRole((r) => ({ ...r, name: e.target.value }))}
@@ -143,8 +145,8 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
             </section>
 
             <section className="panel">
-              <h2>Permissions</h2>
-              {permissions.length === 0 && <p className="cell-meta">Loading permissions...</p>}
+              <h2>{t('role.permissions') ?? 'Permissions'}</h2>
+              {permissions.length === 0 && <p className="cell-meta">{t('role.loading') ?? 'Loading permissions...'}</p>}
               {Object.entries(groupedPermissions).map(([group, perms]) => {
                 const permIds = perms.map((p) => p.id);
                 const allGranted = permIds.every((p) => grants.has(p));
@@ -173,7 +175,7 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
                         style={{ padding: '.2rem .5rem', minHeight: 'unset', fontSize: '.8rem' }}
                         onClick={() => toggleGroup(permIds)}
                       >
-                        {allGranted ? 'Remove all' : 'Grant all'}
+                        {allGranted ? (t('role.removeAll') ?? 'Remove all') : (t('role.grantAll') ?? 'Grant all')}
                       </button>
                     </div>
                     <div className="relation-chips">
@@ -204,8 +206,8 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
 
           <aside className="editor-side">
             <section className="panel">
-              <h2>Summary</h2>
-              <p className="cell-meta">{grants.size} permissions granted</p>
+              <h2>{t('role.summary') ?? 'Summary'}</h2>
+              <p className="cell-meta">{grants.size} {t('role.granted') ?? 'permissions granted'}</p>
             </section>
             {message && (
               <div className="form-status" role="status">

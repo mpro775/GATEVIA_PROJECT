@@ -174,10 +174,10 @@ function MediaDrawer({
         method: 'POST',
         body: JSON.stringify({ uploadToken: session.uploadToken }),
       });
-      setMessage('File replaced. Processing…');
+      setMessage(t('media.replaced') ?? 'File replaced. Processing…');
       onRefresh();
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Replace failed.');
+      setMessage(err instanceof Error ? err.message : (t('media.replaceFailed') ?? 'Replace failed.'));
     } finally {
       setBusy(false);
       if (replaceRef.current) replaceRef.current.value = '';
@@ -468,8 +468,7 @@ function MediaDrawer({
           ) : (
             <div style={{ display: 'grid', gap: '.5rem' }}>
               <p className="cell-meta">
-                {formatNumber(usages.length)} blocking reference(s) found. Remove these usages before archiving
-                this media.
+                {formatNumber(usages.length)} {t('media.blockingReferences') ?? 'blocking reference(s) found. Remove these usages before archiving this media.'}
               </p>
               {usages.map((usage, i) => (
                 <div key={i} className="section-row" style={{ fontSize: '.85rem' }}>
@@ -541,7 +540,7 @@ export function MediaLibrary({
           body: JSON.stringify({ uploadToken: session.uploadToken, folderId }),
         });
       } catch {
-        setError(`Upload failed for ${file.name}.`);
+        setError((t('media.uploadFailedFor') ?? `Upload failed for {fileName}.`).replace('{fileName}', file.name));
       }
     }
     setBusy(false);
@@ -555,7 +554,7 @@ export function MediaLibrary({
       setSelected(null);
       void load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Archive failed.');
+      setError(e instanceof Error ? e.message : (t('media.archiveFailed') ?? 'Archive failed.'));
     }
   }
 
@@ -569,7 +568,7 @@ export function MediaLibrary({
       setNewFolderName('');
       void loadFolders();
     } catch {
-      setError('Failed to create folder.');
+      setError(t('media.createFolderFailed') ?? 'Failed to create folder.');
     }
   }
 
@@ -716,7 +715,7 @@ export function MediaLibrary({
                       </td>
                       <td>{formatBytes(row.sizeBytes)}</td>
                       <td>
-                        <Badge tone={statusTone(row.status)}>{row.status}</Badge>
+                        <Badge tone={statusTone(row.status)}>{t(`status.${row.status}` as Parameters<typeof t>[0], row.status)}</Badge>
                       </td>
                       <td>{row.folder?.name ?? '—'}</td>
                       <td>
