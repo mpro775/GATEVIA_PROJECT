@@ -319,19 +319,19 @@ function ProcessStepsEditor({
       <div className="sections-editor">
         {steps.map((step, index) => (
           <div className="section-row" key={index} style={{ display: 'grid', gap: '.7rem' }}>
-            <Field label={`Step ${index + 1} title`}>
+            <Field label={`${t('contentEditor.step')} ${index + 1} ${t('contentEditor.title')}`}>
               <Input
                 value={step.title}
                 onChange={(event) => update(index, { title: event.target.value })}
               />
             </Field>
-            <Field label={`Step ${index + 1} body`}>
+            <Field label={`${t('contentEditor.step')} ${index + 1} ${t('contentEditor.body')}`}>
               <Textarea
                 value={step.body}
                 onChange={(event) => update(index, { body: event.target.value })}
               />
             </Field>
-            <Field label={`Step ${index + 1} image`}>
+            <Field label={`${t('contentEditor.step')} ${index + 1} ${t('contentEditor.image')}`}>
               <MediaPicker
                 value={step.mediaId ?? ''}
                 acceptMimePrefix="image/"
@@ -401,7 +401,7 @@ function ContractField({
   onChange: (value: unknown) => void;
 }) {
   const { t } = useAdminI18n();
-  const baseLabel = MEDIA_FIELD_LABELS[name] ? (t(MEDIA_FIELD_LABELS[name] as Parameters<typeof t>[0]) ?? humanize(name)) : humanize(name);
+  const baseLabel = MEDIA_FIELD_LABELS[name] ? t(MEDIA_FIELD_LABELS[name] as Parameters<typeof t>[0]) : humanize(name);
   const label = `${baseLabel}${field.required ? ' *' : ''}`;
   if (field.kind === 'media')
     return (
@@ -530,7 +530,7 @@ function SectionsEditor({
               <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem' }}>
                 <span className="section-type">{humanize(section.sectionType)}</span>
                 <Badge tone={section.isVisible ? 'success' : 'neutral'}>
-                  {section.isVisible ? 'Visible' : 'Hidden'}
+                  {section.isVisible ? t('contentEditor.visible') : t('contentEditor.hidden')}
                 </Badge>
                 <div className="section-actions">
                   <button
@@ -683,7 +683,7 @@ function SectionsEditor({
                               updateContent(index, field.key, event.target.value)
                             }
                           >
-                            <option value="">— Select —</option>
+                            <option value="">{t('contentEditor.select')}</option>
                             {field.options.map((option) => (
                               <option key={option} value={option}>
                                 {humanize(option)}
@@ -744,7 +744,7 @@ function SectionsEditor({
             ])
           }
         >
-          + Add section
+          + {t('contentEditor.addSection')}
         </Button>
       </div>
     </div>
@@ -913,7 +913,7 @@ export function ContentEditor({
         translations: normalizeTranslations(result.translations),
         sections: normalizeSections(result.sections),
       });
-      setMessage(publish ? t('contentEditor.published') ?? 'Published successfully.' : t('media.saved') ?? 'Saved successfully.');
+      setMessage(publish ? t('contentEditor.published') : t('media.saved'));
       if (!id) router.replace(`${returnPath}/${String(saved.id)}`);
       return result;
     } catch (error) {
@@ -940,7 +940,7 @@ export function ContentEditor({
       setMessage(action === 'archive' ? t('contentEditor.archived') : t('contentEditor.movedToDraft'));
     } catch (error) {
       setMessageIsError(true);
-      setMessage(error instanceof Error ? error.message : `Unable to ${action}.`);
+      setMessage(action === 'archive' ? t('contentEditor.archiveFailed') : t('contentEditor.unpublishFailed'));
     } finally {
       setBusy(false);
     }
@@ -988,7 +988,7 @@ export function ContentEditor({
           )}
           {canPublish && record.status === 'published' && id && (
             <Button disabled={busy} onClick={() => void transition('unpublish')}>
-              {t('contentEditor.unpublish') ?? 'Unpublish'}
+              {t('contentEditor.unpublish')}
             </Button>
           )}
           {canArchive && record.status !== 'archived' && id && (
@@ -998,7 +998,7 @@ export function ContentEditor({
           )}
           {(id || canEdit) && (
             <Button disabled={busy} onClick={() => void preview()}>
-              {t('action.view') ?? 'Preview'}
+              {t('action.view')}
             </Button>
           )}
         </div>
@@ -1112,7 +1112,7 @@ export function ContentEditor({
                       : 'neutral'
                 }
               >
-                {t(`status.${String(record.status ?? 'draft')}` as Parameters<typeof t>[0]) ?? String(record.status ?? 'draft')}
+                {t(`status.${String(record.status ?? 'draft')}` as Parameters<typeof t>[0])}
               </Badge>
               {canEdit && record.status !== 'published' && record.status !== 'archived' && (
                 <Field label={t('contentEditor.workflowStatus')}>

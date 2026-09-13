@@ -3,5 +3,5 @@ import { useAdminI18n } from './admin-locale-provider';
 
 export function AuthLoading() {
   const { t } = useAdminI18n();
-  return <p>{t('common.loading') ?? 'Loading…'}</p>;
+  return <p>{t('common.loading')}</p>;
 }

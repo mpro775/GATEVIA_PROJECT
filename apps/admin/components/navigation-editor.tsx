@@ -110,7 +110,7 @@ export function NavigationEditor() {
       setSelected(normalizeMenu(full));
       setMessage('');
     } catch {
-      setMessage(t('navigation.loadFailed') ?? 'Failed to load menu details.');
+      setMessage(t('navigation.loadFailed'));
     }
   }
 
@@ -139,7 +139,7 @@ export function NavigationEditor() {
   }
 
   function removeItem(index: number) {
-    if (!selected || !confirm(t('action.delete') ?? 'Remove this item?')) return;
+    if (!selected || !confirm(t('action.delete'))) return;
     const removedId = selected.items[index]?.id;
     const items = selected.items
       .filter((_, i) => i !== index)
@@ -191,10 +191,10 @@ export function NavigationEditor() {
       const normalized = normalizeMenu(saved);
       setMenus((prev) => prev.map((m) => (m.id === normalized.id ? normalized : m)));
       setSelected(normalized);
-      setMessage(t('navigation.saved') ?? 'Navigation saved.');
+      setMessage(t('navigation.saved'));
       return normalized;
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : t('common.saveFailed') ?? 'Save failed.');
+      setMessage(t('navigation.saveFailed'));
     } finally {
       setBusy(false);
     }
@@ -214,10 +214,20 @@ export function NavigationEditor() {
       setSelected(full);
       setMenus((previous) => previous.map((menu) => (menu.id === full.id ? full : menu)));
       setMessage(
-        `Navigation ${action === 'publish' ? 'published' : action === 'unpublish' ? 'unpublished' : 'archived'}.`,
+        action === 'publish'
+          ? t('navigation.published')
+          : action === 'unpublish'
+            ? t('navigation.unpublished')
+            : t('navigation.archived'),
       );
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : `Unable to ${action} navigation.`);
+      setMessage(
+        action === 'publish'
+          ? t('navigation.publishFailed')
+          : action === 'unpublish'
+            ? t('navigation.unpublishFailed')
+            : t('navigation.archiveFailed'),
+      );
     } finally {
       setBusy(false);
     }
@@ -228,7 +238,7 @@ export function NavigationEditor() {
       <div className="page-title">
         <div>
           <h1>{t('navigation.builder')}</h1>
-          <p>{t('navigation.editInstructions') ?? 'Edit menus and their items. Changes take effect after saving and publishing.'}</p>
+          <p>{t('navigation.editInstructions')}</p>
         </div>
         {selected && canManage && (
           <div className="toolbar">
@@ -237,12 +247,12 @@ export function NavigationEditor() {
             </Button>
             {selected.status !== 'published' && (
               <Button disabled={busy} onClick={() => void transition('publish')}>
-                {t('contentEditor.publishing') ?? 'Publish'}
+                {t('contentEditor.publishing')}
               </Button>
             )}
             {selected.status === 'published' && (
               <Button disabled={busy} onClick={() => void transition('unpublish')}>
-                {t('contentEditor.unpublish') ?? 'Unpublish'}
+                {t('contentEditor.unpublish')}
               </Button>
             )}
             {selected.status !== 'archived' && (
@@ -270,7 +280,7 @@ export function NavigationEditor() {
                 >
                   {menu.key}{' '}
                   <Badge tone={menu.status === 'published' ? 'success' : 'neutral'}>
-                    {t(`status.${menu.status}` as Parameters<typeof t>[0]) ?? menu.status}
+                    {t(`status.${menu.status}` as Parameters<typeof t>[0])}
                   </Badge>
                 </button>
               ))}
@@ -285,9 +295,9 @@ export function NavigationEditor() {
               style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
             >
               <section className="panel">
-                <h2>Items — {selected.key}</h2>
+                <h2>{t('navigation.items')} — {selected.key}</h2>
                 <div style={{ marginBlockEnd: '.8rem' }}>
-                  <p className="cell-meta">Location: {selected.location}</p>
+                  <p className="cell-meta">{t('navigation.location')}: {selected.location}</p>
                 </div>
 
                 <div className="sections-editor">
@@ -302,7 +312,7 @@ export function NavigationEditor() {
                         <span style={{ flex: 1, fontWeight: 600, fontSize: '.9rem' }}>
                           {(languages[0]?.code
                             ? item.translations[languages[0].code]?.label
-                            : '') || '(untitled)'}
+                            : '') || t('common.untitled')}
                         </span>
                         <Badge tone={item.itemType === 'internal' ? 'warning' : 'neutral'}>
                           {item.itemType}
@@ -447,7 +457,7 @@ export function NavigationEditor() {
                                   <option key={candidate.id} value={candidate.id}>
                                     {(languages[0]?.code
                                       ? candidate.translations[languages[0].code]?.label
-                                      : '') || '(untitled)'}
+                                      : '') || t('common.untitled')}
                                   </option>
                                 ))}
                             </select>
@@ -460,7 +470,7 @@ export function NavigationEditor() {
                                 checked={item.visible}
                                 onChange={(e) => updateItem(i, 'visible', e.target.checked)}
                               />{' '}
-                              Visible in menu
+                              {t('navigation.visibleInMenu')}
                             </label>
                           </div>
                         </div>
@@ -471,7 +481,7 @@ export function NavigationEditor() {
 
                 <div style={{ marginBlockStart: '.8rem' }}>
                   <Button type="button" onClick={addItem}>
-                    + Add item
+                    + {t('navigation.addItem')}
                   </Button>
                 </div>
               </section>
@@ -483,9 +493,9 @@ export function NavigationEditor() {
           {selected && (
             <section className="panel">
               <h2>{selected.key}</h2>
-              <p className="cell-meta">{selected.items.length} item(s)</p>
+              <p className="cell-meta">{selected.items.length} {t('navigation.items')}</p>
               <Badge tone={selected.status === 'published' ? 'success' : 'neutral'}>
-                {t(`status.${selected.status}` as Parameters<typeof t>[0]) ?? selected.status}
+                {t(`status.${selected.status}` as Parameters<typeof t>[0])}
               </Badge>
             </section>
           )}

@@ -267,7 +267,7 @@ export function DataTable({ title, titleKey, resource, basePath, kind = 'content
             <option value="">{t('filter.allStatuses')}</option>
             {statusOptions.map((value) => (
               <option key={value} value={value}>
-                {t(`status.${value}` as Parameters<typeof t>[0], value.replaceAll('_', ' '))}
+                {t(`status.${value}` as Parameters<typeof t>[0])}
               </option>
             ))}
           </select>
@@ -371,7 +371,7 @@ export function DataTable({ title, titleKey, resource, basePath, kind = 'content
                               : 'neutral'
                         }
                       >
-                        {t(`status.${String(row.status ?? 'active')}` as Parameters<typeof t>[0], String(row.status ?? row.sourceType ?? row.action ?? 'active'))}
+                        {t(`status.${String(row.status ?? row.sourceType ?? row.action ?? 'active')}` as Parameters<typeof t>[0])}
                       </Badge>
                     </td>
                     <td>{Array.isArray(row.translations) ? row.translations.length : '—'}</td>

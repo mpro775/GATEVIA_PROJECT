@@ -9,6 +9,7 @@ import { useAdminI18n } from './admin-locale-provider';
 // ─── Readable nested object display ──────────────────────────────────────────
 
 function Readable({ value, label }: { value: unknown; label?: string }) {
+  const { t } = useAdminI18n();
   if (Array.isArray(value))
     return (
       <div>
@@ -28,7 +29,7 @@ function Readable({ value, label }: { value: unknown; label?: string }) {
         {Object.entries(value as Record<string, unknown>).map(([key, child]: [string, unknown]) => (
           <div key={key}>
             <dt style={{ fontWeight: 600, color: 'var(--color-text-muted)', fontSize: '.8rem' }}>
-              {key.replace(/([A-Z_])/g, ' $1').trim()}
+              {t(`field.${key}` as Parameters<typeof t>[0])}
             </dt>
             <dd style={{ margin: '0 0 .5rem 0' }}>
               <Readable value={child} />
@@ -43,15 +44,16 @@ function Readable({ value, label }: { value: unknown; label?: string }) {
 // ─── UTM attribution display ──────────────────────────────────────────────────
 
 function Attribution({ lead }: { lead: Record<string, unknown> }) {
+  const { t } = useAdminI18n();
   const rows: Array<[string, string]> = [
-    ['Source', String(lead.utmSource ?? '—')],
-    ['Medium', String(lead.utmMedium ?? '—')],
-    ['Campaign', String(lead.utmCampaign ?? '—')],
-    ['Term', String(lead.utmTerm ?? '—')],
-    ['Content', String(lead.utmContent ?? '—')],
-    ['Landing page', String(lead.landingPage ?? '—')],
-    ['Referrer', String(lead.referrer ?? '—')],
-    ['Source URL', String(lead.sourceUrl ?? '—')],
+    [t('leads.utmSource'), String(lead.utmSource ?? '—')],
+    [t('leads.utmMedium'), String(lead.utmMedium ?? '—')],
+    [t('leads.utmCampaign'), String(lead.utmCampaign ?? '—')],
+    [t('leads.utmTerm'), String(lead.utmTerm ?? '—')],
+    [t('leads.utmContent'), String(lead.utmContent ?? '—')],
+    [t('leads.utmLandingPage'), String(lead.landingPage ?? '—')],
+    [t('leads.utmReferrer'), String(lead.referrer ?? '—')],
+    [t('leads.utmSourceUrl'), String(lead.sourceUrl ?? '—')],
   ];
   return (
     <dl style={{ fontSize: '.88rem' }}>
@@ -77,7 +79,7 @@ function Attribution({ lead }: { lead: Record<string, unknown> }) {
 
 export function LeadDetail({ id }: { id: string }) {
   const { can } = useAdminAuth();
-  const { t } = useAdminI18n();
+  const { t, formatDate } = useAdminI18n();
   const canStatus = can('leads.update_status');
   const canAssign = can('leads.assign');
   const canNote = can('leads.note');
@@ -109,11 +111,11 @@ export function LeadDetail({ id }: { id: string }) {
   if (error)
     return (
       <ErrorState
-        title={t('leads.notFound') ?? 'Lead unavailable'}
-        description={t('leads.notFoundDesc') ?? 'The record does not exist or you cannot access it.'}
+        title={t('leads.notFound')}
+        description={t('leads.notFoundDesc')}
       />
     );
-  if (!lead) return <p className="cell-meta">{t('common.loading') ?? 'Loading…'}</p>;
+  if (!lead) return <p className="cell-meta">{t('common.loading')}</p>;
 
   const assessments = (lead.assessments as Array<Record<string, unknown>>) ?? [];
   const activities = (lead.activities as Array<Record<string, unknown>>) ?? [];
@@ -147,7 +149,7 @@ export function LeadDetail({ id }: { id: string }) {
     const form = new FormData(event.currentTarget);
     const body = String(form.get('body') ?? '').trim();
     if (!body) {
-      setNoteError(t('leads.noteEmpty') ?? 'Note cannot be empty.');
+      setNoteError(t('leads.noteEmpty'));
       return;
     }
     try {
@@ -155,7 +157,7 @@ export function LeadDetail({ id }: { id: string }) {
       event.currentTarget.reset();
       void load();
     } catch (e) {
-      setNoteError(e instanceof Error ? e.message : t('leads.noteFailed') ?? 'Failed to save note.');
+      setNoteError(t('leads.noteFailed'));
     }
   }
 
@@ -176,14 +178,14 @@ export function LeadDetail({ id }: { id: string }) {
         <div>
           <h1>{String(lead.fullName)}</h1>
           <p>
-            {String(lead.companyName ?? t('leads.noCompany') ?? 'No company')} · {String(lead.email)}
+            {String(lead.companyName || t('leads.noCompany'))} · {String(lead.email)}
             {Boolean(lead.phone) && ` · ${String(lead.phone)}`}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
-          <Badge tone={STATUS_TONES[String(lead.status)] ?? 'neutral'}>{t(`status.${String(lead.status)}` as Parameters<typeof t>[0]) ?? String(lead.status)}</Badge>
+          <Badge tone={STATUS_TONES[String(lead.status)] ?? 'neutral'}>{t(`status.${String(lead.status)}` as Parameters<typeof t>[0])}</Badge>
           <Badge>{String(lead.sourceType)}</Badge>
-          {Boolean(lead.duplicateOfId) && <Badge tone="danger">{t('leads.possibleDuplicate') ?? 'Possible duplicate'}</Badge>}
+          {Boolean(lead.duplicateOfId) && <Badge tone="danger">{t('leads.possibleDuplicate')}</Badge>}
         </div>
       </div>
 
@@ -199,7 +201,7 @@ export function LeadDetail({ id }: { id: string }) {
                 aria-selected={activeTab === tab}
                 onClick={() => setActiveTab(tab)}
               >
-                {t(`leads.tab${tab.charAt(0).toUpperCase() + tab.slice(1)}` as Parameters<typeof t>[0]) ?? (tab.charAt(0).toUpperCase() + tab.slice(1))}
+                {t(`leads.tab${tab.charAt(0).toUpperCase() + tab.slice(1)}` as Parameters<typeof t>[0])}
                 {tab === 'notes' && notes.length > 0 && (
                   <>
                     {' '}
@@ -219,7 +221,7 @@ export function LeadDetail({ id }: { id: string }) {
           {/* Tab: Details */}
           {activeTab === 'details' && (
             <section className="panel">
-              <h2>{t('leads.contactAttribution') ?? 'Contact & attribution'}</h2>
+              <h2>{t('leads.contactAttribution')}</h2>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                 <div>
                   <h3
@@ -230,16 +232,16 @@ export function LeadDetail({ id }: { id: string }) {
                       letterSpacing: '.06em',
                     }}
                   >
-                    {t('leads.contact') ?? 'Contact'}
+                    {t('leads.contact')}
                   </h3>
                   <dl style={{ fontSize: '.88rem' }}>
                     {[
-                      ['Email', lead.email],
-                      ['Phone', lead.phone ?? '—'],
-                      ['Country', lead.countryCode ?? '—'],
-                      ['Preferred locale', lead.preferredLocale ?? '—'],
-                      ['Company', lead.companyName ?? '—'],
-                      ['Message', lead.message ?? '—'],
+                      [t('users.email'), lead.email],
+                      [t('leads.phone'), lead.phone ?? '—'],
+                      [t('leads.country'), lead.countryCode ?? '—'],
+                      [t('leads.preferredLocale'), lead.preferredLocale ?? '—'],
+                      [t('leads.company'), lead.companyName ?? '—'],
+                      [t('leads.message'), lead.message ?? '—'],
                     ].map(([label, value]) => (
                       <div key={String(label)} style={{ marginBlockEnd: '.5rem' }}>
                         <dt style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>
@@ -259,7 +261,7 @@ export function LeadDetail({ id }: { id: string }) {
                       letterSpacing: '.06em',
                     }}
                   >
-                    {t('leads.attribution') ?? 'Attribution'}
+                    {t('leads.attribution')}
                   </h3>
                   <Attribution lead={lead} />
                 </div>
@@ -272,17 +274,17 @@ export function LeadDetail({ id }: { id: string }) {
             <>
               {assessments.length === 0 ? (
                 <EmptyState
-                  title={t('leads.noAssessment') ?? "No assessment data"}
-                  description={t('leads.noAssessmentDesc') ?? "This lead did not submit an assessment form."}
+                  title={t('leads.noAssessment')}
+                  description={t('leads.noAssessmentDesc')}
                 />
               ) : (
                 assessments.map((assessment, index) => (
                   <section className="panel" key={String(assessment.id)}>
-                    <h2>Assessment {index + 1}</h2>
+                    <h2>{t('leads.tabAssessment')} {index + 1}</h2>
                     <p className="cell-meta">
-                      Version: {String(assessment.formVersion ?? '—')} ·{' '}
+                      {t('leads.version')}: {String(assessment.formVersion ?? '—')} ·{' '}
                       {assessment.submittedAt
-                        ? new Date(String(assessment.submittedAt)).toLocaleString()
+                        ? formatDate(String(assessment.submittedAt))
                         : '—'}
                     </p>
                     <Readable value={assessment.answers} />
@@ -297,16 +299,16 @@ export function LeadDetail({ id }: { id: string }) {
             <>
               {canNote && (
                 <form className="panel field-stack" onSubmit={addNote}>
-                  <h2>{t('leads.addInternalNote') ?? 'Add internal note'}</h2>
-                  <Field label="Note (visible only to your team)">
+                  <h2>{t('leads.addInternalNote')}</h2>
+                  <Field label={t('leads.noteVisibleToTeam')}>
                     <Textarea
                       name="body"
                       required
                       maxLength={5000}
-                      placeholder="Add context, next steps or outcome…"
+                      placeholder={t('leads.addContext')}
                     />
                   </Field>
-                  <Button type="submit">{t('leads.addNote') ?? 'Add note'}</Button>
+                  <Button type="submit">{t('leads.addNote')}</Button>
                   {noteError && (
                     <div className="form-status form-status--error" role="alert">
                       {noteError}
@@ -315,7 +317,7 @@ export function LeadDetail({ id }: { id: string }) {
                 </form>
               )}
               {notes.length === 0 ? (
-                <EmptyState title={t('leads.noNotes') ?? "No notes yet"} description={t('leads.noNotesDesc') ?? "Internal notes will appear here."} />
+                <EmptyState title={t('leads.noNotes')} description={t('leads.noNotesDesc')} />
               ) : (
                 notes.map((note) => (
                   <section className="panel" key={String(note.id)}>
@@ -327,10 +329,10 @@ export function LeadDetail({ id }: { id: string }) {
                       }}
                     >
                       <strong>
-                        {String((note.author as Record<string, unknown>)?.displayName ?? 'System')}
+                        {String((note.author as Record<string, unknown>)?.displayName ?? t('leads.system'))}
                       </strong>
                       <span className="cell-meta">
-                        {new Date(String(note.createdAt)).toLocaleString()}
+                        {formatDate(String(note.createdAt))}
                       </span>
                     </div>
                     <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{String(note.body)}</p>
@@ -343,11 +345,11 @@ export function LeadDetail({ id }: { id: string }) {
           {/* Tab: Activity */}
           {activeTab === 'activity' && (
             <section className="panel">
-              <h2>{t('leads.activityTimeline') ?? 'Activity timeline'}</h2>
+              <h2>{t('leads.activityTimeline')}</h2>
               {activities.length === 0 ? (
                 <EmptyState
-                  title={t('leads.noActivity') ?? "No activity yet"}
-                  description={t('leads.noActivityDesc') ?? "Events will appear here as this lead progresses."}
+                  title={t('leads.noActivity')}
+                  description={t('leads.noActivityDesc')}
                 />
               ) : (
                 <div className="timeline">
@@ -355,8 +357,8 @@ export function LeadDetail({ id }: { id: string }) {
                     <article key={String(item.id)}>
                       <strong>{String(item.type).replaceAll('_', ' ')}</strong>
                       <div className="cell-meta">
-                        {new Date(String(item.createdAt)).toLocaleString()}
-                        {Boolean(item.actorUserId) && ` · ${t('leads.byUser') ?? 'by user'}`}
+                        {formatDate(String(item.createdAt))}
+                        {Boolean(item.actorUserId) && ` · ${t('leads.byUser')}`}
                       </div>
                       {Boolean(item.payload) &&
                         typeof item.payload === 'object' &&
@@ -383,8 +385,8 @@ export function LeadDetail({ id }: { id: string }) {
         <aside className="editor-side">
           {/* Status */}
           <section className="panel">
-            <h2>{t('leads.leadStatus') ?? 'Lead status'}</h2>
-            <Field label={t('users.status') ?? "Status"}>
+            <h2>{t('leads.leadStatus')}</h2>
+            <Field label={t('users.status')}>
               <select
                 className="gv-input"
                 value={String(lead.status)}
@@ -393,7 +395,7 @@ export function LeadDetail({ id }: { id: string }) {
               >
                 {STATUSES.map((s) => (
                   <option key={s} value={s}>
-                    {t(`status.${s}` as Parameters<typeof t>[0]) ?? (s.charAt(0).toUpperCase() + s.slice(1))}
+                    {t(`status.${s}` as Parameters<typeof t>[0])}
                   </option>
                 ))}
               </select>
@@ -402,20 +404,20 @@ export function LeadDetail({ id }: { id: string }) {
 
           {/* Assignment */}
           <section className="panel">
-            <h2>{t('leads.assignedTo') ?? 'Assigned to'}</h2>
+            <h2>{t('leads.assignedTo')}</h2>
             {assigned && (
               <p style={{ marginBlockStart: 0, fontSize: '.9rem' }}>
                 <strong>{assigned.displayName ?? assigned.email}</strong>
               </p>
             )}
-            <Field label={t('leads.assignTo') ?? "Assign to"}>
+            <Field label={t('leads.assignTo')}>
               <select
                 className="gv-input"
                 value={assigned?.id ?? ''}
                 disabled={assignBusy || !canAssign}
                 onChange={(e) => void assign(e.target.value || null)}
               >
-                <option value="">{t('leads.unassigned') ?? '— Unassigned —'}</option>
+                <option value="">{t('leads.unassigned')}</option>
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.displayName || u.email}
@@ -435,23 +437,23 @@ export function LeadDetail({ id }: { id: string }) {
                 disabled={assignBusy}
                 onClick={() => void assign(null)}
               >
-                {t('leads.removeAssignment') ?? 'Remove assignment'}
+                {t('leads.removeAssignment')}
               </button>
             )}
           </section>
 
           {/* Quick info */}
           <section className="panel">
-            <h2>{t('leads.quickInfo') ?? 'Quick info'}</h2>
+            <h2>{t('leads.quickInfo')}</h2>
             <dl style={{ fontSize: '.85rem' }}>
-              <dt className="cell-meta">{t('leads.created') ?? 'Created'}</dt>
-              <dd>{lead.createdAt ? new Date(String(lead.createdAt)).toLocaleString() : '—'}</dd>
+              <dt className="cell-meta">{t('leads.created')}</dt>
+              <dd>{lead.createdAt ? formatDate(String(lead.createdAt)) : '—'}</dd>
               <dt className="cell-meta" style={{ marginBlockStart: '.4rem' }}>
-                {t('leads.source') ?? 'Source'}
+                {t('leads.source')}
               </dt>
               <dd>{String(lead.sourceType)}</dd>
               <dt className="cell-meta" style={{ marginBlockStart: '.4rem' }}>
-                {t('leads.sourcePage') ?? 'Source page'}
+                {t('leads.sourcePage')}
               </dt>
               <dd style={{ wordBreak: 'break-all', fontSize: '.8rem' }}>
                 {String(lead.sourcePage ?? '—')}

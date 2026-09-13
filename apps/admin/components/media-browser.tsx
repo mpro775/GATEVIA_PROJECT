@@ -41,7 +41,7 @@ export function useMediaBrowser({ pageSize, initialStatus = '', mimePrefix }: { 
     setLoading(true); setError('');
     void apiEnvelope<Media>(`/admin/media?${query}`, { signal: controller.signal })
       .then((result) => { setRows(result.data); setMeta(result.meta); })
-      .catch((reason: unknown) => { if (!(reason instanceof DOMException && reason.name === 'AbortError')) setError(reason instanceof Error ? reason.message : t('common.requestFailed') ?? 'Request failed'); })
+      .catch((reason: unknown) => { if (!(reason instanceof DOMException && reason.name === 'AbortError')) setError(t('media.loadFailed')); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [page, pageSize, debouncedQ, status, folderId, mimePrefix, reloadToken, t]);
@@ -72,7 +72,7 @@ export function MediaBrowserTile({ row, selected, onSelect, onDoubleClick }: { r
       // eslint-disable-next-line @next/next/no-img-element
       <img src={src} alt="" loading="lazy" />
     ) : <span aria-hidden="true" className="media-browser-tile__icon">{row.mimeType.startsWith('video/') ? '🎬' : row.mimeType === 'application/pdf' ? 'PDF' : '📄'}</span>}</span>
-    <span className="media-browser-tile__body"><strong title={row.originalFilename}>{row.originalFilename}</strong><span className="cell-meta">{row.mimeType.split('/')[1]?.toUpperCase()} · <Badge tone={statusTone(row.status)}>{t(`status.${row.status}` as Parameters<typeof t>[0], row.status)}</Badge></span></span>
+    <span className="media-browser-tile__body"><strong title={row.originalFilename}>{row.originalFilename}</strong><span className="cell-meta">{row.mimeType.split('/')[1]?.toUpperCase()} · <Badge tone={statusTone(row.status)}>{t(`status.${row.status}` as Parameters<typeof t>[0])}</Badge></span></span>
     {selected && <span className="media-browser-tile__check" aria-label={t('media.selected')}>✓</span>}
   </button>;
 }

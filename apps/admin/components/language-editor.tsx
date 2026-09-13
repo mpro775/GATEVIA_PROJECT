@@ -26,7 +26,7 @@ export function LanguageEditor({ id, returnPath }: { id?: string; returnPath: st
       void api<LangData[]>('/admin/languages').then((rows) => {
         const selected = rows.find((row) => row.id === id);
         if (selected) setLang(selected);
-        else setMessage(t('language.notFound') ?? 'Language was not found.');
+        else setMessage(t('language.notFound'));
       });
     }
   }, [id, t]);
@@ -49,7 +49,7 @@ export function LanguageEditor({ id, returnPath }: { id?: string; returnPath: st
           method: 'POST',
         });
         if (lang.isDefault) await api(`/admin/languages/${id}/set-default`, { method: 'POST' });
-        setMessage(t('language.updated') ?? 'Language updated.');
+        setMessage(t('language.updated'));
       } else {
         const saved = await api<LangData>('/admin/languages', {
           method: 'POST',
@@ -62,10 +62,9 @@ export function LanguageEditor({ id, returnPath }: { id?: string; returnPath: st
           }),
         });
         if (!lang.isActive)
-          await api(`/admin/languages/${saved.id}/deactivate`, { method: 'POST' });
         if (lang.isDefault)
           await api(`/admin/languages/${saved.id}/set-default`, { method: 'POST' });
-        setMessage(t('language.created') ?? 'Language created.');
+        setMessage(t('language.created'));
         router.replace(`${returnPath}/${saved.id}`);
       }
     } catch (e) {
@@ -79,13 +78,13 @@ export function LanguageEditor({ id, returnPath }: { id?: string; returnPath: st
     <>
       <div className="page-title">
         <div>
-          <h1>{id ? (t('language.edit') ?? 'Edit Language') : (t('language.add') ?? 'Add Language')}</h1>
-          <p>{t('language.description') ?? 'Configure locale code, display names, text direction and enabled state.'}</p>
+          <h1>{id ? t('language.edit') : t('language.add')}</h1>
+          <p>{t('language.description')}</p>
         </div>
         {canManage && (
           <div className="toolbar">
             <Button disabled={busy} onClick={save}>
-              {t('language.save') ?? 'Save language'}
+              {t('language.save')}
             </Button>
           </div>
         )}
@@ -96,7 +95,7 @@ export function LanguageEditor({ id, returnPath }: { id?: string; returnPath: st
           <div className="editor-main">
             <section className="panel">
               <div className="field-stack">
-                <Field label={t('language.code') ?? "Locale code (e.g. en, ar-SA)"}>
+                <Field label={t('language.code')}>
                   <Input
                     dir="ltr"
                     value={lang.code ?? ''}
@@ -104,21 +103,21 @@ export function LanguageEditor({ id, returnPath }: { id?: string; returnPath: st
                     required
                   />
                 </Field>
-                <Field label={t('language.englishName') ?? "English name (e.g. Arabic)"}>
+                <Field label={t('language.englishName')}>
                   <Input
                     value={lang.name ?? ''}
                     onChange={(e) => setLang((l) => ({ ...l, name: e.target.value }))}
                     required
                   />
                 </Field>
-                <Field label={t('language.nativeName') ?? "Native name (e.g. العربية)"}>
+                <Field label={t('language.nativeName')}>
                   <Input
                     value={lang.nativeName ?? ''}
                     onChange={(e) => setLang((l) => ({ ...l, nativeName: e.target.value }))}
                     required
                   />
                 </Field>
-                <Field label={t('language.direction') ?? "Text direction"}>
+                <Field label={t('language.direction')}>
                   <select
                     className="gv-input"
                     value={lang.direction ?? 'ltr'}
@@ -126,11 +125,11 @@ export function LanguageEditor({ id, returnPath }: { id?: string; returnPath: st
                       setLang((l) => ({ ...l, direction: e.target.value as 'ltr' | 'rtl' }))
                     }
                   >
-                    <option value="ltr">{t('language.ltr') ?? 'Left-to-right (LTR)'}</option>
-                    <option value="rtl">{t('language.rtl') ?? 'Right-to-left (RTL)'}</option>
+                    <option value="ltr">{t('language.ltr')}</option>
+                    <option value="rtl">{t('language.rtl')}</option>
                   </select>
                 </Field>
-                <Field label={t('language.sortOrder') ?? "Sort order"}>
+                <Field label={t('language.sortOrder')}>
                   <Input
                     type="number"
                     value={String(lang.sortOrder ?? 0)}
@@ -150,7 +149,7 @@ export function LanguageEditor({ id, returnPath }: { id?: string; returnPath: st
                         }))
                       }
                     />{' '}
-                    {t('language.enabled') ?? 'Enabled (visible on public site)'}
+                    {t('language.enabled')}
                   </label>
                 </div>
                 <div>
@@ -161,8 +160,8 @@ export function LanguageEditor({ id, returnPath }: { id?: string; returnPath: st
                       disabled={!lang.isActive}
                       onChange={(e) => setLang((l) => ({ ...l, isDefault: e.target.checked }))}
                     />{' '}
-                    {t('language.default') ?? 'Default language'}{' '}
-                    <span className="cell-meta">{t('language.defaultNote') ?? '(only one language should be default)'}</span>
+                    {t('language.default')}{' '}
+                    <span className="cell-meta">{t('language.defaultNote')}</span>
                   </label>
                 </div>
               </div>
@@ -173,11 +172,11 @@ export function LanguageEditor({ id, returnPath }: { id?: string; returnPath: st
             <section className="panel">
               <h2>{t('users.status')}</h2>
               <Badge tone={lang.isActive ? 'success' : 'neutral'}>
-                {lang.isActive ? (t('status.active') ?? 'Active') : (t('status.inactive') ?? 'Inactive')}
+                {lang.isActive ? t('status.active') : t('status.inactive')}
               </Badge>
               {lang.isDefault && (
                 <div style={{ marginBlockStart: '.5rem' }}>
-                  <Badge tone="warning">{t('language.default') ?? 'Default'}</Badge>
+                  <Badge tone="warning">{t('language.default')}</Badge>
                 </div>
               )}
             </section>

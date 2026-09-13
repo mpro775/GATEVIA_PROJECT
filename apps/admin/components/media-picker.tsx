@@ -40,8 +40,8 @@ export function MediaPicker({ value, onSelect, acceptMimePrefix }: { value?: str
       <Button type="button" onClick={show}>{t('action.chooseMedia')}</Button>
       {value && <Button type="button" variant="secondary" onClick={() => { onSelect(''); setCurrent(null); }}>{t('action.clear')}</Button>}
     </div>
-    <dialog ref={dialog} className="media-picker-dialog" onClose={() => setOpen(false)}>
-      <div className="media-picker-dialog__header"><div><h2>{t('media.pickerTitle')}</h2>{acceptMimePrefix && <span className="cell-meta">{acceptMimePrefix}*</span>}</div><button type="button" className="text-link" onClick={close} aria-label={t('action.close')}>✕</button></div>
+    <dialog ref={dialog} className="media-picker-dialog" aria-labelledby="media-picker-title" onClose={() => setOpen(false)}>
+      <div className="media-picker-dialog__header"><div><h2 id="media-picker-title">{t('media.pickerTitle')}</h2>{acceptMimePrefix && <span className="cell-meta">{acceptMimePrefix}*</span>}</div><button type="button" className="text-link" onClick={close} aria-label={t('action.close')}>✕</button></div>
       <div className="media-picker-dialog__body">{open && <MediaBrowser {...(pending?.id ? { selectedId: pending.id } : {})} onSelected={setPending} onConfirm={confirm} {...(acceptMimePrefix ? { mimePrefix: acceptMimePrefix } : {})} pageSize={24}/>}</div>
       <div className="media-picker-dialog__footer"><span className="cell-meta">{pending ? pending.originalFilename : t('media.noSelection')}</span><div><Button type="button" variant="secondary" onClick={close}>{t('action.cancel')}</Button><Button type="button" disabled={!pending} onClick={() => confirm()}>{t('action.select')}</Button></div></div>
     </dialog>

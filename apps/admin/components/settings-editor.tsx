@@ -52,7 +52,7 @@ export function SettingsEditor() {
     setMessage('');
     const updates = Object.entries(changes);
     if (updates.length === 0) {
-      setMessage(t('common.noChangesToSave') ?? 'No changes to save.');
+      setMessage(t('common.noChangesToSave'));
       setBusy(false);
       return;
     }
@@ -69,9 +69,9 @@ export function SettingsEditor() {
         prev.map((s) => (changes[s.key] !== undefined ? { ...s, value: changes[s.key] } : s)),
       );
       setChanges({});
-      setMessage(t('settings.saved') ?? 'Settings saved.');
+      setMessage(t('settings.saved'));
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : t('common.saveFailed') ?? 'Save failed.');
+      setMessage(t('common.saveFailed'));
     } finally {
       setBusy(false);
     }
@@ -93,7 +93,7 @@ export function SettingsEditor() {
         <div>
           <h1>{t('settings.globalSettings')}</h1>
           <p>
-            {t('settings.description') ?? 'Manage site-wide configuration: company info, SEO defaults, social links and appearance.'}
+            {t('settings.description')}
           </p>
         </div>
         {canManage && (
@@ -119,7 +119,7 @@ export function SettingsEditor() {
                   onClick={() => setActiveGroup(g)}
                   style={{ textTransform: 'capitalize' }}
                 >
-                  {g}
+                  {t(`settings.groups.${g}` as Parameters<typeof t>[0]) || g}
                 </button>
               ))}
             </div>
@@ -147,7 +147,7 @@ export function SettingsEditor() {
                     )}
                     {changes[setting.key] !== undefined && (
                       <span className="cell-meta" style={{ color: 'var(--color-accent)' }}>
-                        Modified
+                        {t('settings.modified')}
                       </span>
                     )}
                   </Field>
@@ -160,10 +160,10 @@ export function SettingsEditor() {
         <aside className="editor-side">
           <section className="panel">
             <h2>{t('users.status')}</h2>
-            <p className="cell-meta">{settings.length} total settings loaded.</p>
+            <p className="cell-meta">{settings.length} {t('settings.totalLoaded')}</p>
             {Object.keys(changes).length > 0 && (
               <p className="cell-meta" style={{ color: 'var(--color-accent)' }}>
-                {Object.keys(changes).length} unsaved change(s).
+                {Object.keys(changes).length} {t('settings.unsavedChanges')}
               </p>
             )}
           </section>

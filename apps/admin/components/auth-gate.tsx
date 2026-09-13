@@ -43,7 +43,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (!user)
     return (
       <main className="admin-content" aria-busy="true">
-        {t('auth.checkingSession') ?? 'Checking your session…'}
+        {t('auth.checkingSession')}
       </main>
     );
   const required = routePermissions.find(([pattern]) => pattern.test(path))?.[1];
@@ -51,8 +51,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     return (
       <main className="admin-content">
         <div className="form-status form-status--error">
-          <h1>{t('auth.accessDenied') ?? 'Access denied'}</h1>
-          <p>{t('auth.noPermission') ?? 'You do not have permission to view this module.'}</p>
+          <h1>{t('auth.accessDenied')}</h1>
+          <p>{t('auth.noPermission')}</p>
         </div>
       </main>
     );

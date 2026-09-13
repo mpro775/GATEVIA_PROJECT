@@ -73,13 +73,13 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
     try {
       if (id) {
         await api(`/admin/roles/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
-        setMessage(t('role.updated') ?? 'Role updated.');
+        setMessage(t('role.updated'));
       } else {
         const saved = await api<RoleData>('/admin/roles', {
           method: 'POST',
           body: JSON.stringify(payload),
         });
-        setMessage(t('role.created') ?? 'Role created.');
+        setMessage(t('role.created'));
         router.replace(`${returnPath}/${saved.id}`);
       }
     } catch (e) {
@@ -101,13 +101,13 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
     <>
       <div className="page-title">
         <div>
-          <h1>{id ? (t('role.edit') ?? 'Edit Role') : (t('role.create') ?? 'Create Role')}</h1>
-          <p>{t('role.description') ?? 'Name this role and assign its permission set.'}</p>
+          <h1>{id ? t('role.edit') : t('role.create')}</h1>
+          <p>{t('role.description')}</p>
         </div>
         {canManage && (
           <div className="toolbar">
             <Button disabled={busy} onClick={save}>
-              {t('role.save') ?? 'Save role'}
+              {t('role.save')}
             </Button>
           </div>
         )}
@@ -117,10 +117,10 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
         <div className="editor">
           <div className="editor-main">
             <section className="panel">
-              <h2>{t('role.details') ?? 'Role details'}</h2>
+              <h2>{t('role.details')}</h2>
               <div className="field-stack">
                 {!id && (
-                  <Field label={t('role.key') ?? "Role key (system identifier)"}>
+                  <Field label={t('role.key')}>
                     <Input
                       value={role.key ?? ''}
                       onChange={(e) =>
@@ -134,7 +134,7 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
                     />
                   </Field>
                 )}
-                <Field label={t('role.name') ?? "Role name"}>
+                <Field label={t('role.name')}>
                   <Input
                     value={role.name ?? ''}
                     onChange={(e) => setRole((r) => ({ ...r, name: e.target.value }))}
@@ -145,8 +145,8 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
             </section>
 
             <section className="panel">
-              <h2>{t('role.permissions') ?? 'Permissions'}</h2>
-              {permissions.length === 0 && <p className="cell-meta">{t('role.loading') ?? 'Loading permissions...'}</p>}
+              <h2>{t('role.permissions')}</h2>
+              {permissions.length === 0 && <p className="cell-meta">{t('role.loading')}</p>}
               {Object.entries(groupedPermissions).map(([group, perms]) => {
                 const permIds = perms.map((p) => p.id);
                 const allGranted = permIds.every((p) => grants.has(p));
@@ -175,7 +175,7 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
                         style={{ padding: '.2rem .5rem', minHeight: 'unset', fontSize: '.8rem' }}
                         onClick={() => toggleGroup(permIds)}
                       >
-                        {allGranted ? (t('role.removeAll') ?? 'Remove all') : (t('role.grantAll') ?? 'Grant all')}
+                        {allGranted ? t('role.removeAll') : t('role.grantAll')}
                       </button>
                     </div>
                     <div className="relation-chips">
@@ -206,8 +206,8 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
 
           <aside className="editor-side">
             <section className="panel">
-              <h2>{t('role.summary') ?? 'Summary'}</h2>
-              <p className="cell-meta">{grants.size} {t('role.granted') ?? 'permissions granted'}</p>
+              <h2>{t('role.summary')}</h2>
+              <p className="cell-meta">{grants.size} {t('role.granted')}</p>
             </section>
             {message && (
               <div className="form-status" role="status">

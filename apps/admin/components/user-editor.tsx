@@ -50,13 +50,13 @@ export function UserEditor({ id, returnPath }: { id?: string; returnPath: string
     try {
       if (id) {
         await api(`/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
-        setMessage(t('users.updated') ?? 'User updated.');
+        setMessage(t('users.updated'));
       } else {
         const saved = await api<EditableUser>('/admin/users', {
           method: 'POST',
           body: JSON.stringify(payload),
         });
-        setMessage(t('users.invited') ?? 'User invited successfully.');
+        setMessage(t('users.invited'));
         router.replace(`${returnPath}/${saved.id}`);
       }
     } catch (e) {
@@ -67,13 +67,13 @@ export function UserEditor({ id, returnPath }: { id?: string; returnPath: string
   }
 
   async function deactivate() {
-    if (!id || !confirm(t('users.deactivateConfirm') ?? 'Deactivate this user?')) return;
+    if (!id || !confirm(t('users.deactivateConfirm'))) return;
     await api(`/admin/users/${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ status: 'suspended' }),
     });
     setUser((u) => ({ ...u, status: 'suspended' }));
-    setMessage(t('users.deactivated') ?? 'User deactivated.');
+    setMessage(t('users.deactivated'));
   }
 
   async function reactivate() {
@@ -83,7 +83,7 @@ export function UserEditor({ id, returnPath }: { id?: string; returnPath: string
       body: JSON.stringify({ status: 'active' }),
     });
     setUser((u) => ({ ...u, status: 'active' }));
-    setMessage(t('users.reactivated') ?? 'User reactivated.');
+    setMessage(t('users.reactivated'));
   }
 
   const toggleRole = (roleId: string) => {
@@ -96,26 +96,26 @@ export function UserEditor({ id, returnPath }: { id?: string; returnPath: string
     <>
       <div className="page-title">
         <div>
-          <h1>{id ? (t('users.edit') ?? 'Edit User') : (t('users.invite') ?? 'Invite User')}</h1>
+          <h1>{id ? t('users.edit') : t('users.invite')}</h1>
           <p>
             {id
-              ? (t('users.editDescription') ?? 'Manage account details, roles and access status.')
-              : (t('users.inviteDescription') ?? 'Send an invitation email to a new team member.')}
+              ? t('users.editDescription')
+              : t('users.inviteDescription')}
           </p>
         </div>
         {canManage && (
           <div className="toolbar">
             <Button disabled={busy} onClick={save}>
-              {id ? (t('users.save') ?? 'Save changes') : (t('users.sendInvite') ?? 'Send invitation')}
+              {id ? t('users.save') : t('users.sendInvite')}
             </Button>
             {id && user.status !== 'suspended' && (
               <button className="text-link" onClick={deactivate}>
-                {t('users.deactivate') ?? 'Deactivate'}
+                {t('users.deactivate')}
               </button>
             )}
             {id && user.status === 'suspended' && (
               <button className="text-link" onClick={reactivate}>
-                {t('users.reactivate') ?? 'Reactivate'}
+                {t('users.reactivate')}
               </button>
             )}
           </div>
@@ -126,9 +126,9 @@ export function UserEditor({ id, returnPath }: { id?: string; returnPath: string
         <div className="editor">
           <div className="editor-main">
             <section className="panel">
-              <h2>{t('users.accountDetails') ?? 'Account details'}</h2>
+              <h2>{t('users.accountDetails')}</h2>
               <div className="field-stack">
-                <Field label={t('users.email') ?? "Email"}>
+                <Field label={t('users.email')}>
                   <Input
                     type="email"
                     value={user.email ?? ''}
@@ -137,7 +137,7 @@ export function UserEditor({ id, returnPath }: { id?: string; returnPath: string
                     disabled={!!id} // Email cannot be changed after creation
                   />
                 </Field>
-                <Field label={t('users.displayName') ?? "Display name"}>
+                <Field label={t('users.displayName')}>
                   <Input
                     value={user.displayName ?? ''}
                     onChange={(e) => setUser((u) => ({ ...u, displayName: e.target.value }))}
@@ -148,9 +148,9 @@ export function UserEditor({ id, returnPath }: { id?: string; returnPath: string
             </section>
 
             <section className="panel">
-              <h2>{t('users.roles') ?? 'Roles'}</h2>
+              <h2>{t('users.roles')}</h2>
               <div className="relation-chips">
-                {allRoles.length === 0 && <span className="cell-meta">{t('users.noRoles') ?? 'No roles found.'}</span>}
+                {allRoles.length === 0 && <span className="cell-meta">{t('users.noRoles')}</span>}
                 {allRoles.map((role) => (
                   <label key={role.id} className="relation-chip" style={{ cursor: 'pointer' }}>
                     <input
@@ -170,9 +170,9 @@ export function UserEditor({ id, returnPath }: { id?: string; returnPath: string
 
           <aside className="editor-side">
             <section className="panel">
-              <h2>{t('users.status') ?? 'Status'}</h2>
+              <h2>{t('users.status')}</h2>
               {id ? (
-                <Field label={t('users.accountStatus') ?? "Account status"}>
+                <Field label={t('users.accountStatus')}>
                   <select
                     className="gv-input"
                     value={user.status ?? 'active'}
@@ -180,14 +180,14 @@ export function UserEditor({ id, returnPath }: { id?: string; returnPath: string
                       setUser((u) => ({ ...u, status: e.target.value as EditableUser['status'] }))
                     }
                   >
-                    <option value="active">{t('status.active') ?? 'Active'}</option>
-                    <option value="invited">{t('status.invited') ?? 'Invited'}</option>
-                    <option value="suspended">{t('status.suspended') ?? 'Suspended'}</option>
+                    <option value="active">{t('status.active')}</option>
+                    <option value="invited">{t('status.invited')}</option>
+                    <option value="suspended">{t('status.suspended')}</option>
                   </select>
                 </Field>
               ) : (
                 <p className="cell-meta">
-                  {t('users.invitedNote') ?? 'Status will be set to invited upon creation.'}
+                  {t('users.invitedNote')}
                 </p>
               )}
             </section>
