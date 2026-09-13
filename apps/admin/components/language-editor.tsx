@@ -61,14 +61,18 @@ export function LanguageEditor({ id, returnPath }: { id?: string; returnPath: st
             sortOrder: lang.sortOrder,
           }),
         });
-        if (!lang.isActive)
-        if (lang.isDefault)
+        if (!lang.isActive) {
+          await api(`/admin/languages/${saved.id}/deactivate`, { method: 'POST' });
+        }
+        if (lang.isDefault) {
           await api(`/admin/languages/${saved.id}/set-default`, { method: 'POST' });
+        }
         setMessage(t('language.created'));
         router.replace(`${returnPath}/${saved.id}`);
       }
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : 'Save failed.');
+      console.error(e);
+      setMessage(t('common.saveFailed'));
     } finally {
       setBusy(false);
     }

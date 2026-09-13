@@ -1,6 +1,6 @@
 import type { en } from './en';
 
-export const ar: Partial<Record<keyof typeof en, string>> = {
+export const ar: Record<keyof typeof en, string> = {
   'app.administration': 'الإدارة', 'app.mobileNavigation': 'التنقل على الجوال',
   'app.openNavigation': 'فتح التنقل', 'app.closeNavigation': 'إغلاق التنقل', 'app.signOut': 'تسجيل الخروج',
   'nav.content': 'المحتوى', 'nav.pages': 'الصفحات', 'nav.services': 'الخدمات',
@@ -138,6 +138,39 @@ export const ar: Partial<Record<keyof typeof en, string>> = {
   'navigation.insights': 'الرؤى',
   'navigation.selectItem': 'اختيار عنصر',
   'navigation.topLevel': 'المستوى الأعلى',
+  'navigation.label': 'التسمية',
+  'navigation.linkType': 'نوع الرابط',
+  'navigation.contentType': 'نوع المحتوى',
+  'navigation.targetItem': 'العنصر المستهدف',
+  'navigation.externalUrlLabel': 'الرابط الخارجي (يجب أن يبدأ بـ http:// أو https://)',
+  'navigation.parentItem': 'العنصر الرئيسي',
+
+  'sectionType.hero': 'بانر رئيسي',
+  'sectionType.rich_text': 'نص منسق',
+  'sectionType.text_image': 'نص وصورة',
+  'sectionType.stats': 'إحصائيات',
+  'sectionType.services_grid': 'شبكة الخدمات',
+  'sectionType.industries_grid': 'شبكة القطاعات',
+  'sectionType.process': 'العملية',
+  'sectionType.service_category_pillars': 'ركائز فئة الخدمة',
+  'sectionType.timeline': 'سجل زمني',
+  'sectionType.testimonials': 'آراء العملاء',
+  'sectionType.case_studies': 'دراسات الحالة',
+  'sectionType.logo_cloud': 'سحابة الشعارات',
+  'sectionType.faq': 'الأسئلة الشائعة',
+  'sectionType.cta': 'الدعوة لاتخاذ إجراء',
+  'sectionType.insights': 'الرؤى',
+  'sectionType.ecosystem': 'المنظومة',
+  'sectionType.form': 'نموذج',
+
+  'option.start': 'البداية',
+  'option.end': 'النهاية',
+  'option.contact': 'اتصال',
+  'option.consultation': 'استشارة',
+  'option.assessment': 'تقييم',
+
+  'activity.form_submission': 'تقديم النموذج',
+  'activity.email_sent': 'تم إرسال البريد الإلكتروني',
 
   'settings.globalSettings': 'الإعدادات العامة',
   'settings.description': 'إدارة البيانات الوصفية العامة، والنصوص البرمجية، والقيم الافتراضية.',
@@ -207,6 +240,10 @@ export const ar: Partial<Record<keyof typeof en, string>> = {
   'redirect.source': 'مسار المصدر (مثل /old-page)',
   'redirect.destination': 'رابط الوجهة أو المسار',
   'redirect.statusCode': 'رمز حالة HTTP',
+  'redirect.status301': '301 — نقل دائم',
+  'redirect.status302': '302 — موجود (مؤقت)',
+  'redirect.status307': '307 — إعادة توجيه مؤقتة',
+  'redirect.status308': '308 — إعادة توجيه دائمة',
   'redirect.locale': 'اللغة (اختياري)',
   'redirect.active': 'نشط (إعادة التوجيه مطبقة على الموقع العام)',
   'redirect.loopError': 'لا يمكن أن يكون المصدر والوجهة متطابقين (حلقة إعادة توجيه).',

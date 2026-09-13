@@ -8,6 +8,10 @@ import { useAdminI18n } from './admin-locale-provider';
 
 // ─── Readable nested object display ──────────────────────────────────────────
 
+function humanizeKey(key: string) {
+  return key.replace(/([a-z])([A-Z])/g, '$1 $2').replaceAll('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+}
+
 function Readable({ value, label }: { value: unknown; label?: string }) {
   const { t } = useAdminI18n();
   if (Array.isArray(value))
@@ -29,7 +33,7 @@ function Readable({ value, label }: { value: unknown; label?: string }) {
         {Object.entries(value as Record<string, unknown>).map(([key, child]: [string, unknown]) => (
           <div key={key}>
             <dt style={{ fontWeight: 600, color: 'var(--color-text-muted)', fontSize: '.8rem' }}>
-              {t(`field.${key}` as Parameters<typeof t>[0])}
+              {t(`field.${key}` as Parameters<typeof t>[0], humanizeKey(key))}
             </dt>
             <dd style={{ margin: '0 0 .5rem 0' }}>
               <Readable value={child} />
@@ -355,7 +359,7 @@ export function LeadDetail({ id }: { id: string }) {
                 <div className="timeline">
                   {activities.map((item) => (
                     <article key={String(item.id)}>
-                      <strong>{String(item.type).replaceAll('_', ' ')}</strong>
+                      <strong>{t(`activity.${String(item.type)}` as Parameters<typeof t>[0], humanizeKey(String(item.type)))}</strong>
                       <div className="cell-meta">
                         {formatDate(String(item.createdAt))}
                         {Boolean(item.actorUserId) && ` · ${t('leads.byUser')}`}

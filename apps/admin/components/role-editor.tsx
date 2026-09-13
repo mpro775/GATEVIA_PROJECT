@@ -83,7 +83,8 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
         router.replace(`${returnPath}/${saved.id}`);
       }
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : 'Save failed.');
+      console.error(e);
+      setMessage(t('common.saveFailed'));
     } finally {
       setBusy(false);
     }

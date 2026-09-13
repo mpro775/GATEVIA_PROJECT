@@ -18,6 +18,7 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
   });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [messageIsError, setMessageIsError] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -33,6 +34,7 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
       redirect.destinationPath &&
       redirect.sourcePath === redirect.destinationPath
     ) {
+      setMessageIsError(true);
       setMessage(t('redirect.loopError'));
       setBusy(false);
       return;
@@ -40,17 +42,21 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
     try {
       if (id) {
         await api(`/admin/redirects/${id}`, { method: 'PATCH', body: JSON.stringify(redirect) });
+        setMessageIsError(false);
         setMessage(t('redirect.updated'));
       } else {
         const saved = await api<Redirect>('/admin/redirects', {
           method: 'POST',
           body: JSON.stringify(redirect),
         });
+        setMessageIsError(false);
         setMessage(t('redirect.created'));
         router.replace(`${returnPath}/${saved.id}`);
       }
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : 'Save failed.');
+      console.error(e);
+      setMessageIsError(true);
+      setMessage(t('common.saveFailed'));
     } finally {
       setBusy(false);
     }
@@ -58,9 +64,16 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
 
   async function archive() {
     if (!id || !confirm(t('redirect.archiveConfirm'))) return;
-    await api(`/admin/redirects/${id}/archive`, { method: 'POST' });
-    setRedirect((r) => ({ ...r, active: false }));
-    setMessage(t('redirect.archived'));
+    try {
+      await api(`/admin/redirects/${id}/archive`, { method: 'POST' });
+      setRedirect((r) => ({ ...r, active: false }));
+      setMessageIsError(false);
+      setMessage(t('redirect.archived'));
+    } catch (e) {
+      console.error(e);
+      setMessageIsError(true);
+      setMessage(t('common.requestFailed'));
+    }
   }
 
   return (
@@ -120,10 +133,10 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
                       }))
                     }
                   >
-                    <option value={301}>301 — Moved Permanently</option>
-                    <option value={302}>302 — Found (Temporary)</option>
-                    <option value={307}>307 — Temporary Redirect</option>
-                    <option value={308}>308 — Permanent Redirect</option>
+                    <option value={301}>{t('redirect.status301')}</option>
+                    <option value={302}>{t('redirect.status302')}</option>
+                    <option value={307}>{t('redirect.status307')}</option>
+                    <option value={308}>{t('redirect.status308')}</option>
                   </select>
                 </Field>
                 <Field label={t('redirect.locale')}>
@@ -172,7 +185,7 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
             </section>
             {message && (
               <div
-                className={`form-status${message.includes('loop') || message.includes('failed') ? ' form-status--error' : ''}`}
+                className={`form-status${messageIsError ? ' form-status--error' : ''}`}
                 role="status"
               >
                 {message}

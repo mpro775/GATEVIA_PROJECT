@@ -439,7 +439,7 @@ function ContractField({
           <option value="">{t('contentEditor.select')}</option>
           {field.options?.map((option) => (
             <option key={option} value={option}>
-              {humanize(option)}
+              {t(`option.${option}` as Parameters<typeof t>[0]) || humanize(option)}
             </option>
           ))}
         </select>
@@ -528,7 +528,7 @@ function SectionsEditor({
               style={{ flexDirection: 'column', alignItems: 'stretch' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem' }}>
-                <span className="section-type">{humanize(section.sectionType)}</span>
+                <span className="section-type">{t(`sectionType.${section.sectionType}` as Parameters<typeof t>[0]) || humanize(section.sectionType)}</span>
                 <Badge tone={section.isVisible ? 'success' : 'neutral'}>
                   {section.isVisible ? t('contentEditor.visible') : t('contentEditor.hidden')}
                 </Badge>
@@ -576,7 +576,7 @@ function SectionsEditor({
                     >
                       {SECTION_TYPES.map((type) => (
                         <option key={type} value={type}>
-                          {humanize(type)}
+                          {t(`sectionType.${type}` as Parameters<typeof t>[0]) || humanize(type)}
                         </option>
                       ))}
                     </select>
@@ -686,7 +686,7 @@ function SectionsEditor({
                             <option value="">{t('contentEditor.select')}</option>
                             {field.options.map((option) => (
                               <option key={option} value={option}>
-                                {humanize(option)}
+                                {t(`option.${option}` as Parameters<typeof t>[0]) || humanize(option)}
                               </option>
                             ))}
                           </select>

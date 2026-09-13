@@ -368,7 +368,7 @@ export function NavigationEditor() {
                             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}
                           >
                             {languages.map((lang) => (
-                              <Field key={lang.code} label={`Label (${lang.code})`}>
+                              <Field key={lang.code} label={`${t('navigation.label')} (${lang.code})`}>
                                 <Input
                                   value={item.translations[lang.code]?.label || ''}
                                   onChange={(e) => updateTranslation(i, lang.code, e.target.value)}
@@ -378,7 +378,7 @@ export function NavigationEditor() {
                             ))}
                           </div>
 
-                          <Field label="Link Type">
+                          <Field label={t('navigation.linkType')}>
                             <select
                               className="gv-input"
                               value={item.itemType}
@@ -392,7 +392,7 @@ export function NavigationEditor() {
                           {item.itemType === 'internal' ? (
                             <div style={{ display: 'flex', gap: '1rem' }}>
                               <div style={{ flex: 1 }}>
-                                <Field label="Content Type">
+                                <Field label={t('navigation.contentType')}>
                                   <select
                                     className="gv-input"
                                     value={item.internalEntityType}
@@ -410,7 +410,7 @@ export function NavigationEditor() {
                                 </Field>
                               </div>
                               <div style={{ flex: 2 }}>
-                                <Field label="Target Item">
+                                <Field label={t('navigation.targetItem')}>
                                   <select
                                     className="gv-input"
                                     value={item.internalEntityId}
@@ -429,7 +429,7 @@ export function NavigationEditor() {
                               </div>
                             </div>
                           ) : (
-                            <Field label="External URL (must start with http:// or https://)">
+                            <Field label={t('navigation.externalUrlLabel')}>
                               <Input
                                 dir="ltr"
                                 type="url"
@@ -439,7 +439,7 @@ export function NavigationEditor() {
                             </Field>
                           )}
 
-                          <Field label="Parent item">
+                          <Field label={t('navigation.parentItem')}>
                             <select
                               className="gv-input"
                               value={item.parentId ?? ''}
