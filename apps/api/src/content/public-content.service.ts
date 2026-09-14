@@ -114,7 +114,10 @@ export class PublicContentService {
           { [def.fields.sortOrder ? 'sortOrder' : 'createdAt']: 'asc' },
           { id: 'asc' },
         ],
-        include: { translations: true },
+        include: {
+          translations: true,
+          ...(resource === 'services' ? { category: { select: { coverMediaId: true } } } : {}),
+        },
       }),
       delegate.count({ where }),
     ]);
@@ -170,7 +173,10 @@ export class PublicContentService {
       where: previewId
         ? { id: previewId }
         : { ...this.visible(resource, locale), translations: { some: { locale, slug } } },
-      include: contentInclude(resource),
+      include: {
+        ...contentInclude(resource),
+        ...(resource === 'services' ? { category: { select: { coverMediaId: true } } } : {}),
+      },
     });
     if (!row || !row.translations?.some((t) => t.locale === locale))
       throw new NotFoundException('Content translation unavailable.');
@@ -287,15 +293,25 @@ export class PublicContentService {
         .filter(([key]) => typeof row[key] === 'string')
         .map(([key]) => [key, row[key]]),
     );
+    const effectiveHeroMediaId =
+      resource === 'services'
+        ? (row.heroMediaId as string | undefined | null) ??
+          (row.category as Record<string, unknown> | undefined)?.coverMediaId ??
+          null
+        : undefined;
     return {
       id: row.id,
       ...fields,
+      ...(effectiveHeroMediaId !== undefined ? { effectiveHeroMediaId } : {}),
       ...publicRelationIds,
       publishedAt: row.publishedAt,
       updatedAt: row.updatedAt,
       translations: [Object.fromEntries(Object.keys(def.translations).map((k) => [k, tr[k]]))],
       alternates,
-      media: await this.resolveMedia({ ...fields, ...publicRelationIds, ...tr }, locale),
+      media: await this.resolveMedia(
+        { ...fields, ...publicRelationIds, ...tr, effectiveHeroMediaId },
+        locale,
+      ),
     };
   }
   async media(id: string, locale: string) {

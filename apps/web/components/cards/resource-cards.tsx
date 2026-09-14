@@ -17,9 +17,9 @@ function mediaFor(item: Record<string, unknown>, resource?: string) {
   // Build a priority list of candidate IDs based on the resource type.
   let ids: unknown[];
   switch (resource) {
-    // services: heroMediaId (root), iconMediaId (root), then OG from translation
+    // services: effectiveHeroMediaId (root), heroMediaId (root), iconMediaId (root), then OG from translation
     case 'services':
-      ids = [item.heroMediaId, item.iconMediaId, tr.ogMediaId];
+      ids = [item.effectiveHeroMediaId, item.heroMediaId, item.iconMediaId, tr.ogMediaId];
       break;
     // industries: heroMediaId (root), then OG from translation
     case 'industries':
@@ -144,7 +144,7 @@ export function ServiceCard({
       <div>
         <span className="eyebrow">{copy(locale).services}</span>
         <h3>{text(tr.title ?? tr.name)}</h3>
-        <p>{text(tr.context ?? tr.challenge)}</p>
+        <p>{text(tr.shortDescription ?? tr.overview ?? tr.context ?? tr.challenge)}</p>
       </div>
       <Icon name="arrow" className="resource-card__arrow" />
     </CardLink>

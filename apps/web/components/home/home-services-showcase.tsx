@@ -14,6 +14,7 @@ function mediaForService(item: Record<string, unknown>): ServiceMedia | undefine
   const tr = translation(item);
   const media = item.media;
   const candidates: Array<{ id: unknown; mode: ServiceMedia['mode'] }> = [
+    { id: item.effectiveHeroMediaId, mode: 'cover' },
     { id: item.heroMediaId, mode: 'cover' },
     { id: item.iconMediaId, mode: 'contain' },
     { id: tr.ogMediaId, mode: 'cover' },

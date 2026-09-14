@@ -11,6 +11,7 @@ import {
   SectionRenderer,
 } from '@/components/content';
 import { LeadForm } from '@/components/lead-form';
+import { IndustryDetailContent, IndustryDetailHero } from '@/components/industry/industry-detail';
 import { MediaImage } from '@/components/media-image';
 import {
   getDetail,
@@ -23,7 +24,7 @@ import {
 } from '@/lib/api';
 import { list, localizedSetting, resolvedMediaUrl, text, translation } from '@/lib/content';
 import { copy } from '@/lib/ui-copy';
-import type { MediaLike, MediaMap } from '@/lib/media';
+import { mediaFromMap, type MediaLike, type MediaMap } from '@/lib/media';
 import {
   breadcrumbSchema,
   buildMetadata,
@@ -131,6 +132,8 @@ export async function generateMetadata({
   const defaultOgId = settings.values['seo.default_og_media_id'];
   const imageUrl =
     resolvedMediaUrl(entity, tr.ogMediaId) ??
+    resolvedMediaUrl(entity, entity.effectiveHeroMediaId) ??
+    resolvedMediaUrl(entity, entity.heroMediaId) ??
     (typeof defaultOgId === 'string' ? settings.media[defaultOgId]?.url : undefined);
   const siteName = localizedSetting(settings.values, 'company.name', locale, 'GATEVIA');
 
@@ -312,8 +315,6 @@ async function IndustryDetail({
   entity: Record<string, unknown>;
   locale: string;
 }) {
-  const tr = translation(entity);
-  const t = copy(locale);
   const [relServices, relCases, relInsights] = await Promise.all([
     safe(getList('services', locale, `&industry=${String(entity.id)}&pageSize=6`), []),
     safe(getList('case-studies', locale, `&industry=${String(entity.id)}&pageSize=4`), []),
@@ -331,34 +332,13 @@ async function IndustryDetail({
     : (relInsights as Record<string, unknown>[]);
 
   return (
-    <>
-      {tr.overview && (
-        <Section>
-          <p>{text(tr.overview)}</p>
-        </Section>
-      )}
-      <RelatedGrid
-        items={services}
-        locale={locale}
-        resource="services"
-        heading={t.industryServices}
-      />
-      <RelatedGrid items={caseStudies} locale={locale} resource="case-studies" heading={t.cases} />
-      <RelatedGrid
-        items={insights}
-        locale={locale}
-        resource="insights"
-        heading={t.industryInsights}
-      />
-      <section className="section section--accent">
-        <div className="container cta-panel" data-reveal="up">
-          <h2>{t.interestedMarket}</h2>
-          <Link className="gv-button" href={`/${locale}/book-consultation`}>
-            {t.consultation}
-          </Link>
-        </div>
-      </section>
-    </>
+    <IndustryDetailContent
+      entity={entity}
+      locale={locale}
+      services={services}
+      caseStudies={caseStudies}
+      insights={insights}
+    />
   );
 }
 
@@ -659,15 +639,25 @@ export default async function DynamicPage({
 
   const tr = translation(entity);
   const heroTr = tr.title || tr.name ? tr : { title: pageKey.replaceAll('-', ' ') };
-  const imageUrl = resolvedMediaUrl(entity, tr.ogMediaId);
+  const imageUrl =
+    resolvedMediaUrl(entity, tr.ogMediaId) ?? resolvedMediaUrl(entity, entity.heroMediaId);
   const hasSectionHero =
     result.kind === 'page' &&
     Array.isArray(entity.sections) &&
     entity.sections.some((section) => (section as Record<string, unknown>).sectionType === 'hero');
+  const isIndustryDetail = result.kind === 'detail' && result.resource === 'industries';
+
+  const heroMediaId = result.resource === 'services' ? (entity.effectiveHeroMediaId ?? entity.heroMediaId) : entity.heroMediaId;
+  const heroMedia = mediaFromMap(entity.media, heroMediaId);
 
   return (
     <>
-      {!hasSectionHero && <PageHero translation={heroTr} locale={locale} />}
+      {!hasSectionHero &&
+        (isIndustryDetail ? (
+          <IndustryDetailHero entity={entity} locale={locale} />
+        ) : (
+          <PageHero translation={heroTr} locale={locale} media={heroMedia} />
+        ))}
 
       <JsonLd
         schema={breadcrumbSchema([

@@ -4,7 +4,7 @@ import { getList, safe } from '@/lib/api';
 import { list, text, translation } from '@/lib/content';
 import { copy } from '@/lib/ui-copy';
 import { MediaImage } from './media-image';
-import { mediaFromMap, type MediaMap } from '@/lib/media';
+import { mediaFromMap, type MediaMap, type MediaLike } from '@/lib/media';
 import { LeadForm } from './lead-form';
 import { GatewayVisual } from './brand/gateway-visual';
 import { MediaFrame } from './brand/media-frame';
@@ -32,10 +32,12 @@ export function PageHero({
   translation: tr,
   locale,
   home = false,
+  media,
 }: {
   translation: Record<string, unknown>;
   locale: string;
   home?: boolean;
+  media?: MediaLike | undefined;
 }) {
   return (
     <section className={`hero ${home ? 'hero--home' : 'hero--inner'}`}>
@@ -65,7 +67,15 @@ export function PageHero({
             </Link>
           </div>
         </div>
-        <GatewayVisual />
+        {media?.url ? (
+          <MediaFrame
+            media={media}
+            preset="hero"
+            priority
+          />
+        ) : (
+          <GatewayVisual />
+        )}
       </div>
     </section>
   );
