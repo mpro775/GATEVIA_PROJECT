@@ -16,7 +16,12 @@ function firstMedia(item: Record<string, unknown>, ids: unknown[]): MediaLike | 
 
 function serviceMedia(item: Record<string, unknown>): MediaLike | undefined {
   const tr = translation(item);
-  return firstMedia(item, [item.heroMediaId, item.iconMediaId, tr.ogMediaId]);
+  return firstMedia(item, [
+    item.effectiveHeroMediaId,
+    item.heroMediaId,
+    item.iconMediaId,
+    tr.ogMediaId,
+  ]);
 }
 
 function IndustryServiceCard({
