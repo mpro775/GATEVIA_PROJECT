@@ -12,3 +12,4 @@ test-results/
 !.env.staging.example
 !.env.production.example
 *.log
+**/*.tsbuildinfo

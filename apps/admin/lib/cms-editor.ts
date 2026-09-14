@@ -1,5 +1,5 @@
 import { fieldSchema, normalizeCmsFieldRecord, type CmsDefinition } from '@gatevia/contracts';
-import { isTranslationKey, type TranslationKey } from '@/lib/i18n';
+import { isTranslationKey, type TranslationKey } from './i18n';
 
 export function relationOptionLabel(
   row: { id: string; displayName?: string; translations?: Array<Record<string, unknown>> },
