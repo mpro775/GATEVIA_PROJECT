@@ -4,6 +4,7 @@ import type { Language as LangData } from '@gatevia/api-client';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, Field, Input } from '@gatevia/ui';
 import { api } from '@/lib/api';
+import { startAdminNavigation } from '@/lib/navigation-feedback';
 import { useAdminAuth } from './auth-context';
 import { useAdminI18n } from './admin-locale-provider';
 
@@ -68,8 +69,9 @@ export function LanguageEditor({ id, returnPath }: { id?: string; returnPath: st
           await api(`/admin/languages/${saved.id}/set-default`, { method: 'POST' });
         }
         setMessage(t('language.created'));
-        router.replace(`${returnPath}/${saved.id}`);
       }
+      startAdminNavigation();
+      router.replace(returnPath);
     } catch (e) {
       console.error(e);
       setMessage(t('common.saveFailed'));

@@ -17,10 +17,13 @@ import {
   Textarea,
 } from '@gatevia/ui';
 import { api } from '@/lib/api';
+import { putFileWithProgress, uploadAdminMedia, type UploadProgressItem } from '@/lib/media-upload';
+import { showAdminToast } from '@/lib/toast';
 import { useAdminAuth } from './auth-context';
 import { useAdminI18n } from './admin-locale-provider';
 import { AdminFilterBar } from './admin-filter-bar';
 import { MediaBrowserPagination, MediaBrowserTile, MediaFolderNavigation, useMediaBrowser } from './media-browser';
+import { MediaUploadProgress } from './media-upload-progress';
 
 type DrawerTab = 'meta' | 'translations' | 'variants' | 'usages';
 
@@ -84,6 +87,7 @@ function MediaDrawer({
   const [languages, setLanguages] = useState<Language[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [replaceProgress, setReplaceProgress] = useState<UploadProgressItem[]>([]);
   const replaceRef = useRef<HTMLInputElement>(null);
 
   // Load usages when tab is opened
@@ -168,16 +172,25 @@ function MediaDrawer({
         method: 'POST',
         body: JSON.stringify({ filename: file.name, mimeType: file.type, sizeBytes: file.size }),
       });
-      const res = await fetch(session.url, { method: 'PUT', headers: session.headers, body: file });
-      if (!res.ok) throw new Error(t('media.uploadFailed'));
+      const progressId = `replace-${Date.now()}`;
+      setReplaceProgress([{ id: progressId, name: file.name, size: file.size, loaded: 0, percent: 0, phase: 'uploading' }]);
+      await putFileWithProgress(session, file, (loaded, total) => {
+        const percent = Math.max(0, Math.min(100, Math.round((loaded / Math.max(total, 1)) * 100)));
+        setReplaceProgress((current) => current.map((item) => item.id === progressId ? { ...item, loaded, percent, phase: 'uploading' } : item));
+      });
+      setReplaceProgress((current) => current.map((item) => item.id === progressId ? { ...item, loaded: file.size, percent: 100, phase: 'finalizing' } : item));
       await api('/admin/media/finalize', {
         method: 'POST',
         body: JSON.stringify({ uploadToken: session.uploadToken }),
       });
+      setReplaceProgress((current) => current.map((item) => item.id === progressId ? { ...item, phase: 'done' } : item));
       setMessage(t('media.replaced'));
+      showAdminToast({ kind: 'success', message: t('media.replaced') });
       onRefresh();
     } catch (err) {
+      setReplaceProgress((current) => current.map((item) => ({ ...item, phase: 'error' })));
       setMessage(t('media.replaceFailed'));
+      showAdminToast({ kind: 'error', message: t('media.replaceFailed') });
     } finally {
       setBusy(false);
       if (replaceRef.current) replaceRef.current.value = '';
@@ -319,6 +332,8 @@ function MediaDrawer({
           </label>
         )}
       </div>
+
+      <MediaUploadProgress items={replaceProgress} />
 
       {/* Tabs */}
       <div className="tabs" role="tablist" style={{ marginBlockEnd: '.8rem' }}>
@@ -506,6 +521,7 @@ export function MediaLibrary({
   const [selected, setSelected] = useState<MediaRow | null>(null);
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [newFolderName, setNewFolderName] = useState('');
+  const [uploadItems, setUploadItems] = useState<UploadProgressItem[]>([]);
 
   const load = browser.reload;
   const loadFolders = browser.reloadFolders;
@@ -516,35 +532,34 @@ export function MediaLibrary({
 
   async function upload(event: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
+    event.target.value = '';
+    if (!files.length) return;
+    const stamp = Date.now();
+    const entries = files.map((file, index) => ({
+      file,
+      item: { id: `${stamp}-${index}`, name: file.name, size: file.size, loaded: 0, percent: 0, phase: 'queued' as const },
+    }));
+    setUploadItems(entries.map(({ item }) => item));
     setBusy(true);
     setError('');
-    for (const file of files) {
+    let successCount = 0;
+    for (const { file, item } of entries) {
       try {
-        const session = await api<UploadSession>('/admin/media/upload-session', {
-          method: 'POST',
-          body: JSON.stringify({
-            filename: file.name,
-            mimeType: file.type,
-            sizeBytes: file.size,
-            folderId,
-          }),
+        setUploadItems((current) => current.map((row) => row.id === item.id ? { ...row, phase: 'uploading' } : row));
+        await uploadAdminMedia(file, folderId, (loaded, total, phase) => {
+          const percent = phase === 'done' || phase === 'finalizing' ? 100 : Math.max(0, Math.min(100, Math.round((loaded / Math.max(total, 1)) * 100)));
+          setUploadItems((current) => current.map((row) => row.id === item.id ? { ...row, loaded, percent, phase } : row));
         });
-        const res = await fetch(session.url, {
-          method: 'PUT',
-          headers: session.headers,
-          body: file,
-        });
-        if (!res.ok) throw new Error(t('media.uploadFailed'));
-        await api('/admin/media/finalize', {
-          method: 'POST',
-          body: JSON.stringify({ uploadToken: session.uploadToken, folderId }),
-        });
+        successCount += 1;
       } catch {
-        setError(t('media.uploadFailedFor').replace('{fileName}', file.name));
+        const message = t('media.uploadFailedFor').replace('{fileName}', file.name);
+        setUploadItems((current) => current.map((row) => row.id === item.id ? { ...row, phase: 'error' } : row));
+        setError(message);
+        showAdminToast({ kind: 'error', message });
       }
     }
     setBusy(false);
-    event.target.value = '';
+    if (successCount > 0) showAdminToast({ kind: 'success' });
     void load();
   }
 
@@ -603,6 +618,8 @@ export function MediaLibrary({
           </div>
         )}
       </div>
+
+      <MediaUploadProgress items={uploadItems} />
 
       <div className="media-browser-layout">
         {/* Folder sidebar */}

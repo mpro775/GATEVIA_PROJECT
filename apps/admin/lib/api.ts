@@ -5,6 +5,7 @@ import {
   resolveApiPath,
   resolveApiUrl,
 } from '@gatevia/api-client';
+import { showAdminToast } from './toast';
 
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3002/api/v1';
 
@@ -104,6 +105,17 @@ export const getLanguages = () =>
  * @deprecated Prefer typed client helpers (client.GET / client.POST / client.PATCH)
  *   or the named helpers exported from this module for new endpoints.
  */
+function shouldNotifyMutation(path: string): boolean {
+  return ![
+    '/auth/login',
+    '/auth/logout',
+    '/admin/media/upload-session',
+    '/admin/media/finalize',
+    '/replace-session',
+    '/preview',
+  ].some((fragment) => path.includes(fragment));
+}
+
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const fullUrl = `${apiOrigin}${resolveApiPath(path)}`;
   const method = (init.method ?? 'GET').toUpperCase();
@@ -121,13 +133,16 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     },
   });
   const body = (await response.json()) as { data: T; detail?: string; status?: number };
-  if (!response.ok)
+  if (!response.ok) {
+    if (isMutating && shouldNotifyMutation(path)) showAdminToast({ kind: 'error', ...(body.detail ? { message: body.detail } : {}) });
     throw new ApiError({
       type: 'request-error',
       title: 'Request failed',
       status: body.status ?? response.status,
       detail: body.detail ?? 'The request failed.',
     });
+  }
+  if (isMutating && shouldNotifyMutation(path)) showAdminToast({ kind: 'success' });
   return body.data;
 }
 

@@ -4,6 +4,7 @@ import type { Permission, Role as RoleData } from '@gatevia/api-client';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, Field, Input } from '@gatevia/ui';
 import { api } from '@/lib/api';
+import { startAdminNavigation } from '@/lib/navigation-feedback';
 import { useAdminAuth } from './auth-context';
 import { useAdminI18n } from './admin-locale-provider';
 
@@ -75,13 +76,14 @@ export function RoleEditor({ id, returnPath }: { id?: string; returnPath: string
         await api(`/admin/roles/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
         setMessage(t('role.updated'));
       } else {
-        const saved = await api<RoleData>('/admin/roles', {
+        await api<RoleData>('/admin/roles', {
           method: 'POST',
           body: JSON.stringify(payload),
         });
         setMessage(t('role.created'));
-        router.replace(`${returnPath}/${saved.id}`);
       }
+      startAdminNavigation();
+      router.replace(returnPath);
     } catch (e) {
       console.error(e);
       setMessage(t('common.saveFailed'));

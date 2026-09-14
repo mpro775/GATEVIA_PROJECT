@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { Language } from '@gatevia/api-client';
+import { ApiError, type Language } from '@gatevia/api-client';
 import { useRouter } from 'next/navigation';
 import {
   cmsDefinitions,
@@ -11,6 +11,8 @@ import {
 } from '@gatevia/contracts';
 import { Badge, Button, Field, Input, Textarea } from '@gatevia/ui';
 import { api } from '@/lib/api';
+import { startAdminNavigation } from '@/lib/navigation-feedback';
+import { showAdminToast } from '@/lib/toast';
 import {
   formatCmsValidationError,
   makeCmsEditorPayload,
@@ -899,7 +901,7 @@ export function ContentEditor({
       }
     if (issues.length > 0) throw new Error(formatCmsValidationError(issues, t));
   }
-  async function save(publish = false): Promise<Record<string, unknown> | undefined> {
+  async function save(publish = false, returnAfterSave = true): Promise<Record<string, unknown> | undefined> {
     setBusy(true);
     setMessage('');
     setMessageIsError(false);
@@ -926,11 +928,16 @@ export function ContentEditor({
         sections: normalizeSections(result.sections),
       });
       setMessage(publish ? t('contentEditor.published') : t('media.saved'));
-      if (!id) router.replace(`${returnPath}/${String(saved.id)}`);
+      if (returnAfterSave) {
+        startAdminNavigation();
+        router.replace(returnPath);
+      }
       return result;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : t('contentEditor.cannotSave');
       setMessageIsError(true);
-      setMessage(error instanceof Error ? error.message : t('contentEditor.cannotSave'));
+      setMessage(errorMessage);
+      if (!(error instanceof ApiError)) showAdminToast({ kind: 'error', message: errorMessage });
     } finally {
       setBusy(false);
     }
@@ -958,7 +965,7 @@ export function ContentEditor({
     }
   }
   async function preview() {
-    const saved = canEdit ? await save(false) : record;
+    const saved = canEdit ? await save(false, false) : record;
     const previewId = String(saved?.id ?? id ?? '');
     if (!previewId) return;
     try {

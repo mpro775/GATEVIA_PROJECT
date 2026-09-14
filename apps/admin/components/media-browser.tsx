@@ -3,7 +3,11 @@ import { useCallback, useEffect, useState } from 'react';
 import type { Media, MediaFolder } from '@gatevia/api-client';
 import { Badge, EmptyState, ErrorState, Skeleton } from '@gatevia/ui';
 import { api, apiEnvelope } from '@/lib/api';
+import { uploadAdminMedia, type UploadProgressItem } from '@/lib/media-upload';
+import { showAdminToast } from '@/lib/toast';
 import { AdminFilterBar } from './admin-filter-bar';
+import { MediaUploadProgress } from './media-upload-progress';
+import { useAdminAuth } from './auth-context';
 import { useAdminI18n } from './admin-locale-provider';
 
 export type MediaBrowserView = 'grid' | 'list';
@@ -87,9 +91,77 @@ export function MediaBrowserPagination({ page, pageCount, total, onPage }: { pag
   return <footer className="media-browser-pagination"><span>{formatNumber(total)} {t('media.assets')}</span><div><button type="button" className="text-link" disabled={page <= 1} onClick={() => onPage(page - 1)}>‹ {t('action.previous')}</button><span>{t('media.page')} {formatNumber(page)} / {formatNumber(Math.max(pageCount, 1))}</span><button type="button" className="text-link" disabled={page >= pageCount} onClick={() => onPage(page + 1)}>{t('action.next')} ›</button></div></footer>;
 }
 
-export function MediaBrowser({ selectedId, onSelected, onConfirm, mimePrefix, pageSize = 24 }: { selectedId?: string; onSelected: (row: Media) => void; onConfirm?: (row: Media) => void; mimePrefix?: string; pageSize?: number }) {
+function acceptedMime(acceptMimePrefix?: string) {
+  if (!acceptMimePrefix) return 'image/jpeg,image/png,image/webp,image/avif,application/pdf,video/mp4,video/webm';
+  return acceptMimePrefix.endsWith('/') ? `${acceptMimePrefix}*` : acceptMimePrefix;
+}
+
+export function MediaBrowser({ selectedId, onSelected, onConfirm, onUploaded, mimePrefix, pageSize = 24, allowUpload = false }: { selectedId?: string; onSelected: (row: Media) => void; onConfirm?: (row: Media) => void; onUploaded?: (row: Media) => void; mimePrefix?: string; pageSize?: number; allowUpload?: boolean }) {
   const { t } = useAdminI18n();
+  const { can } = useAdminAuth();
   const browser = useMediaBrowser({ pageSize, initialStatus: 'ready', ...(mimePrefix ? { mimePrefix } : {}) });
   const [view, setView] = useState<MediaBrowserView>('grid');
-  return <div className="media-browser-layout"><MediaFolderNavigation folders={browser.folders} folderId={browser.folderId} onFolder={browser.setFolderId}/><div className="media-browser-main"><AdminFilterBar hasActiveFilters={Boolean(browser.q || browser.folderId)} onReset={browser.reset} actions={<div className="media-browser-view-toggle"><button type="button" className="text-link" aria-pressed={view === 'grid'} onClick={() => setView('grid')}>{t('media.grid')}</button><button type="button" className="text-link" aria-pressed={view === 'list'} onClick={() => setView('list')}>{t('media.list')}</button></div>}><input className="gv-input admin-filter-bar__search" type="search" value={browser.q} onChange={(event) => browser.setQ(event.target.value)} placeholder={t('media.search')}/></AdminFilterBar>{browser.error ? <ErrorState title={t('media.error')} description={browser.error}/> : browser.loading ? <div className="panel"><Skeleton/><br/><Skeleton width="70%"/></div> : browser.rows.length === 0 ? <EmptyState title={t('media.noMedia')} description={t('media.noMediaDescription')}/> : view === 'grid' ? <div className="media-browser-grid">{browser.rows.map((row) => <MediaBrowserTile key={row.id} row={row} selected={row.id === selectedId} onSelect={() => onSelected(row)} onDoubleClick={() => onConfirm?.(row)}/>)}</div> : <div className="media-browser-list">{browser.rows.map((row) => <MediaBrowserTile key={row.id} row={row} selected={row.id === selectedId} onSelect={() => onSelected(row)} onDoubleClick={() => onConfirm?.(row)}/>)}</div>}<MediaBrowserPagination page={browser.page} pageCount={browser.meta.pageCount} total={browser.meta.total} onPage={browser.setPage}/></div></div>;
+  const [uploading, setUploading] = useState(false);
+  const [uploadItems, setUploadItems] = useState<UploadProgressItem[]>([]);
+  const canUpload = allowUpload && can('media.upload');
+
+  async function upload(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = '';
+    if (!files.length) return;
+    const stamp = Date.now();
+    const entries = files.map((file, index) => ({
+      file,
+      item: { id: `${stamp}-${index}`, name: file.name, size: file.size, loaded: 0, percent: 0, phase: 'queued' as const },
+    }));
+    setUploadItems(entries.map(({ item }) => item));
+    setUploading(true);
+    let successCount = 0;
+    for (const { file, item } of entries) {
+      try {
+        setUploadItems((current) => current.map((row) => row.id === item.id ? { ...row, phase: 'uploading' } : row));
+        const media = await uploadAdminMedia(file, browser.folderId, (loaded, total, phase) => {
+          const percent = phase === 'done' || phase === 'finalizing' ? 100 : Math.max(0, Math.min(100, Math.round((loaded / Math.max(total, 1)) * 100)));
+          setUploadItems((current) => current.map((row) => row.id === item.id ? { ...row, loaded, percent, phase } : row));
+        });
+        onUploaded?.(media);
+        successCount += 1;
+      } catch (error) {
+        setUploadItems((current) => current.map((row) => row.id === item.id ? { ...row, phase: 'error' } : row));
+        showAdminToast({ kind: 'error', message: t('media.uploadFailedFor').replace('{fileName}', file.name) });
+      }
+    }
+    setUploading(false);
+    if (successCount > 0) showAdminToast({ kind: 'success' });
+    browser.reload();
+  }
+
+  return (
+    <div className="media-browser-layout">
+      <MediaFolderNavigation folders={browser.folders} folderId={browser.folderId} onFolder={browser.setFolderId}/>
+      <div className="media-browser-main">
+        <AdminFilterBar
+          hasActiveFilters={Boolean(browser.q || browser.folderId)}
+          onReset={browser.reset}
+          actions={
+            <div className="media-browser-view-toggle">
+              {canUpload && (
+                <label className="media-browser-upload" aria-disabled={uploading}>
+                  {uploading ? t('action.uploading') : t('action.upload')}
+                  <input type="file" multiple hidden disabled={uploading} accept={acceptedMime(mimePrefix)} onChange={(event) => void upload(event)} />
+                </label>
+              )}
+              <button type="button" className="text-link" aria-pressed={view === 'grid'} onClick={() => setView('grid')}>{t('media.grid')}</button>
+              <button type="button" className="text-link" aria-pressed={view === 'list'} onClick={() => setView('list')}>{t('media.list')}</button>
+            </div>
+          }
+        >
+          <input className="gv-input admin-filter-bar__search" type="search" value={browser.q} onChange={(event) => browser.setQ(event.target.value)} placeholder={t('media.search')}/>
+        </AdminFilterBar>
+        <MediaUploadProgress items={uploadItems} />
+        {browser.error ? <ErrorState title={t('media.error')} description={browser.error}/> : browser.loading ? <div className="panel"><Skeleton/><br/><Skeleton width="70%"/></div> : browser.rows.length === 0 ? <EmptyState title={t('media.noMedia')} description={t('media.noMediaDescription')}/> : view === 'grid' ? <div className="media-browser-grid">{browser.rows.map((row) => <MediaBrowserTile key={row.id} row={row} selected={row.id === selectedId} onSelect={() => onSelected(row)} onDoubleClick={() => onConfirm?.(row)}/>)}</div> : <div className="media-browser-list">{browser.rows.map((row) => <MediaBrowserTile key={row.id} row={row} selected={row.id === selectedId} onSelect={() => onSelected(row)} onDoubleClick={() => onConfirm?.(row)}/>)}</div>}
+        <MediaBrowserPagination page={browser.page} pageCount={browser.meta.pageCount} total={browser.meta.total} onPage={browser.setPage}/>
+      </div>
+    </div>
+  );
 }

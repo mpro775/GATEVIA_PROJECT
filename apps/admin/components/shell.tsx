@@ -7,6 +7,8 @@ import { api } from '@/lib/api';
 import { useAdminAuth } from './auth-context';
 import { useAdminI18n } from './admin-locale-provider';
 import { AdminLanguageToggle } from './admin-language-toggle';
+import { NavigationFeedback } from './navigation-feedback';
+import { startAdminNavigation } from '@/lib/navigation-feedback';
 import type { TranslationKey } from '@/lib/i18n';
 
 const groups: ReadonlyArray<
@@ -136,7 +138,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
-  const { t } = useAdminI18n();
+  const { t, dir } = useAdminI18n();
 
   // Close on Escape
   useEffect(() => {
@@ -154,6 +156,20 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       drawerRef.current.focus();
     }
   }, [mobileOpen]);
+
+  function goBack() {
+    startAdminNavigation();
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    const parts = pathname.split('/').filter(Boolean);
+    if (parts.length >= 3) {
+      router.push(`/${parts.slice(0, -1).join('/')}`);
+      return;
+    }
+    router.push('/dashboard');
+  }
 
   async function logout() {
     try {
@@ -203,16 +219,24 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
       <div className="admin-main">
         <header className="topbar">
-          <button
-            className="gv-theme-toggle mobile-nav"
-            aria-label={t('app.openNavigation')}
-            aria-expanded={mobileOpen}
-            aria-controls="mobile-sidebar"
-            onClick={() => setMobileOpen(true)}
-          >
-            ☰
-          </button>
-          <span>{t('app.administration')}</span>
+          <div className="topbar__leading">
+            <button
+              className="gv-theme-toggle mobile-nav"
+              aria-label={t('app.openNavigation')}
+              aria-expanded={mobileOpen}
+              aria-controls="mobile-sidebar"
+              onClick={() => setMobileOpen(true)}
+            >
+              ☰
+            </button>
+            {pathname !== '/dashboard' && (
+              <button type="button" className="admin-back-button" onClick={goBack}>
+                <span aria-hidden="true">{dir === 'rtl' ? '→' : '←'}</span>
+                {t('action.back')}
+              </button>
+            )}
+            <span className="topbar__title">{t('app.administration')}</span>
+          </div>
           <div className="header-tools">
             <AdminLanguageToggle />
             <ThemeToggle />
@@ -221,6 +245,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </header>
+        <NavigationFeedback />
         {children}
       </div>
     </div>

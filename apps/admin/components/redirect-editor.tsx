@@ -4,6 +4,8 @@ import type { Redirect } from '@gatevia/api-client';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, Field, Input } from '@gatevia/ui';
 import { api } from '@/lib/api';
+import { startAdminNavigation } from '@/lib/navigation-feedback';
+import { showAdminToast } from '@/lib/toast';
 import { useAdminAuth } from './auth-context';
 import { useAdminI18n } from './admin-locale-provider';
 
@@ -36,6 +38,7 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
     ) {
       setMessageIsError(true);
       setMessage(t('redirect.loopError'));
+      showAdminToast({ kind: 'error', message: t('redirect.loopError') });
       setBusy(false);
       return;
     }
@@ -45,14 +48,15 @@ export function RedirectEditor({ id, returnPath }: { id?: string; returnPath: st
         setMessageIsError(false);
         setMessage(t('redirect.updated'));
       } else {
-        const saved = await api<Redirect>('/admin/redirects', {
+        await api<Redirect>('/admin/redirects', {
           method: 'POST',
           body: JSON.stringify(redirect),
         });
         setMessageIsError(false);
         setMessage(t('redirect.created'));
-        router.replace(`${returnPath}/${saved.id}`);
       }
+      startAdminNavigation();
+      router.replace(returnPath);
     } catch (e) {
       console.error(e);
       setMessageIsError(true);

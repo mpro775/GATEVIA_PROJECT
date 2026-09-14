@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import Script from 'next/script';
 import { AdminLocaleProvider } from '@/components/admin-locale-provider';
+import { ToastProvider } from '@/components/toast-provider';
+import { expoArabic } from './fonts';
 import { adminDirection, normalizeAdminLocale } from '@/lib/i18n';
 import './globals.css';
 export const metadata: Metadata = {
@@ -14,9 +16,17 @@ export default async function Layout({ children }: { children: React.ReactNode }
   const saved = store.get('gatevia_theme')?.value;
   const locale = normalizeAdminLocale(store.get('gatevia_admin_locale')?.value);
   return (
-    <html lang={locale} dir={adminDirection(locale)} data-theme={saved === 'light' ? 'light' : 'dark'} suppressHydrationWarning>
+    <html
+      lang={locale}
+      dir={adminDirection(locale)}
+      className={locale.startsWith('ar') ? expoArabic.variable : undefined}
+      data-theme={saved === 'light' ? 'light' : 'dark'}
+      suppressHydrationWarning
+    >
       <body>
-        <AdminLocaleProvider initialLocale={locale}>{children}</AdminLocaleProvider>
+        <AdminLocaleProvider initialLocale={locale}>
+          <ToastProvider>{children}</ToastProvider>
+        </AdminLocaleProvider>
         <Script id="admin-theme" strategy="beforeInteractive">
           {script}
         </Script>
