@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react';
+
 import { list, text } from '@/lib/content';
 
 type StageIconProps = {
@@ -72,32 +74,50 @@ function StageIcon({ index }: StageIconProps) {
   }
 }
 
+type JourneyRow = 'top' | 'bottom';
+
+type JourneyStation = {
+  node: readonly [number, number];
+  cardX: string;
+  row: JourneyRow;
+};
+
+const JOURNEY_VIEWBOX_WIDTH = 1200;
+
 const RTL_ROUTE =
-  'M1290 145 C1245 185 1210 235 1125 250 C1045 265 1010 300 980 360 C950 430 920 500 805 535 C690 570 625 545 535 535 C425 522 360 455 245 430 C195 420 155 425 100 430';
+  'M1008 150 C850 150 760 150 600 150 C440 150 330 150 192 150 C90 150 90 270 192 270 C330 270 440 270 600 270 C760 270 850 270 1008 270';
 const LTR_ROUTE =
-  'M150 145 C195 185 230 235 315 250 C395 265 430 300 460 360 C490 430 520 500 635 535 C750 570 815 545 905 535 C1015 522 1080 455 1195 430 C1245 420 1285 425 1340 430';
+  'M192 150 C350 150 440 150 600 150 C760 150 870 150 1008 150 C1110 150 1110 270 1008 270 C870 270 760 270 600 270 C440 270 350 270 192 270';
 
-const RTL_NODES = [
-  [1290, 145],
-  [1125, 250],
-  [980, 360],
-  [805, 535],
-  [535, 535],
-  [245, 430],
+const RTL_STATIONS: readonly JourneyStation[] = [
+  { node: [1008, 150], cardX: '84%', row: 'top' },
+  { node: [600, 150], cardX: '50%', row: 'top' },
+  { node: [192, 150], cardX: '16%', row: 'top' },
+  { node: [192, 270], cardX: '16%', row: 'bottom' },
+  { node: [600, 270], cardX: '50%', row: 'bottom' },
+  { node: [1008, 270], cardX: '84%', row: 'bottom' },
 ] as const;
 
-const LTR_NODES = RTL_NODES.map(([x, y]) => [1440 - x, y] as const);
+const LTR_STATIONS: readonly JourneyStation[] = RTL_STATIONS.map(({ node: [x, y], cardX, row }) => ({
+  node: [JOURNEY_VIEWBOX_WIDTH - x, y] as const,
+  cardX: `${100 - Number.parseFloat(cardX)}%`,
+  row,
+}));
 
-const RTL_POSITIONS = [
-  ['88%', '7%'],
-  ['78%', '20%'],
-  ['78%', '52%'],
-  ['56%', '72%'],
-  ['36%', '64%'],
-  ['15%', '43%'],
+const RTL_MOBILE_ROUTE =
+  'M78 24 C78 80 22 84 22 138 C22 190 78 194 78 248 C78 300 22 304 22 358 C22 410 78 414 78 468 C78 520 22 524 22 600';
+const LTR_MOBILE_ROUTE =
+  'M22 24 C22 80 78 84 78 138 C78 190 22 194 22 248 C22 300 78 304 78 358 C78 410 22 414 22 468 C22 520 78 524 78 600';
+
+const RTL_MOBILE_NODES = [
+  [78, 24],
+  [22, 138],
+  [78, 248],
+  [22, 358],
+  [78, 468],
+  [22, 600],
 ] as const;
-
-const LTR_POSITIONS = RTL_POSITIONS.map(([x, y]) => [`${100 - Number.parseFloat(x)}%`, y] as const);
+const LTR_MOBILE_NODES = RTL_MOBILE_NODES.map(([x, y]) => [100 - x, y] as const);
 
 export function HomeJourney({
   content,
@@ -109,8 +129,10 @@ export function HomeJourney({
   const steps = (list(content.steps) as Record<string, unknown>[]).slice(0, 6);
   const isArabic = locale.toLowerCase().startsWith('ar');
   const route = isArabic ? RTL_ROUTE : LTR_ROUTE;
-  const nodes = isArabic ? RTL_NODES : LTR_NODES;
-  const positions = isArabic ? RTL_POSITIONS : LTR_POSITIONS;
+  const stations = isArabic ? RTL_STATIONS : LTR_STATIONS;
+  const mobileRoute = isArabic ? RTL_MOBILE_ROUTE : LTR_MOBILE_ROUTE;
+  const mobileNodes = isArabic ? RTL_MOBILE_NODES : LTR_MOBILE_NODES;
+  const arrowId = isArabic ? 'homeJourneyArrowRtl' : 'homeJourneyArrowLtr';
   const intro = text(
     content.body,
     isArabic
@@ -132,12 +154,12 @@ export function HomeJourney({
             )}
 
             {Boolean(content.title) && (
-              <h2 data-reveal="up" style={{ '--reveal-delay': '55ms' } as React.CSSProperties}>
+              <h2 data-reveal="up" style={{ '--reveal-delay': '55ms' } as CSSProperties}>
                 {text(content.title)}
               </h2>
             )}
 
-            <p data-reveal="up" style={{ '--reveal-delay': '105ms' } as React.CSSProperties}>
+            <p data-reveal="up" style={{ '--reveal-delay': '105ms' } as CSSProperties}>
               {intro}
             </p>
           </div>
@@ -149,17 +171,19 @@ export function HomeJourney({
           </span>
         </header>
 
-        <div className={`home-journey__map ${isArabic ? 'is-rtl' : 'is-ltr'}`}>
+        <div
+          className={`home-journey__map ${isArabic ? 'is-rtl' : 'is-ltr'}`}
+          data-reveal="journey-map"
+        >
           <svg
             className="home-journey__path"
-            viewBox="0 0 1440 720"
+            viewBox="0 0 1200 420"
             preserveAspectRatio="none"
             aria-hidden="true"
-            data-reveal="journey-path"
           >
             <defs>
               <marker
-                id="homeJourneyArrow"
+                id={arrowId}
                 markerWidth="10"
                 markerHeight="10"
                 refX="7"
@@ -177,14 +201,22 @@ export function HomeJourney({
               className="home-journey__path-active"
               d={route}
               pathLength="1"
-              markerEnd="url(#homeJourneyArrow)"
+              markerEnd={`url(#${arrowId})`}
             />
 
-            {nodes.slice(0, steps.length).map(([cx, cy], index) => (
-              <g className="home-journey__station" key={`${cx}-${cy}-${index}`}>
-                <circle className="home-journey__station-halo" cx={cx} cy={cy} r="22" />
-                <circle className="home-journey__station-ring" cx={cx} cy={cy} r="12" />
-                <circle className="home-journey__station-core" cx={cx} cy={cy} r="4" />
+            {stations.slice(0, steps.length).map(({ node: [cx, cy] }, index) => (
+              <g
+                className="home-journey__station"
+                key={`${cx}-${cy}-${index}`}
+                style={
+                  {
+                    '--journey-stage-delay': `${260 + index * 245}ms`,
+                  } as CSSProperties
+                }
+              >
+                <circle className="home-journey__station-halo" cx={cx} cy={cy} r="20" />
+                <circle className="home-journey__station-ring" cx={cx} cy={cy} r="11" />
+                <circle className="home-journey__station-core" cx={cx} cy={cy} r="3.8" />
               </g>
             ))}
           </svg>
@@ -195,14 +227,28 @@ export function HomeJourney({
             preserveAspectRatio="none"
             aria-hidden="true"
           >
+            <path className="home-journey__mobile-route-glow" d={mobileRoute} />
+            <path className="home-journey__mobile-route-guide" d={mobileRoute} />
             <path
-              className="home-journey__mobile-route-glow"
-              d="M78 24 C78 80 22 84 22 138 C22 190 78 194 78 248 C78 300 22 304 22 358 C22 410 78 414 78 468 C78 520 22 524 22 600"
+              className="home-journey__mobile-route-active"
+              d={mobileRoute}
+              pathLength="1"
             />
-            <path
-              className="home-journey__mobile-route-line"
-              d="M78 24 C78 80 22 84 22 138 C22 190 78 194 78 248 C78 300 22 304 22 358 C22 410 78 414 78 468 C78 520 22 524 22 600"
-            />
+            {mobileNodes.slice(0, steps.length).map(([cx, cy], index) => (
+              <g
+                className="home-journey__mobile-station"
+                key={`mobile-${cx}-${cy}-${index}`}
+                style={
+                  {
+                    '--journey-stage-delay': `${260 + index * 245}ms`,
+                  } as CSSProperties
+                }
+              >
+                <circle className="home-journey__mobile-station-halo" cx={cx} cy={cy} r="4.8" />
+                <circle className="home-journey__mobile-station-ring" cx={cx} cy={cy} r="2.5" />
+                <circle className="home-journey__mobile-station-core" cx={cx} cy={cy} r="0.9" />
+              </g>
+            ))}
           </svg>
 
           <div className="home-journey__saudi" aria-hidden="true">
@@ -229,19 +275,17 @@ export function HomeJourney({
 
           <ol className="home-journey__steps">
             {steps.map((step, index) => {
-              const [left, top] = positions[index] ?? positions[positions.length - 1]!;
+              const station = stations[index] ?? stations[stations.length - 1]!;
 
               return (
                 <li
-                  className="home-journey__step"
+                  className={`home-journey__step home-journey__step--${station.row}`}
                   key={`${text(step.marker)}-${text(step.title)}-${index}`}
-                  data-reveal="journey-node"
                   style={
                     {
-                      '--reveal-delay': `${220 + index * 115}ms`,
-                      '--journey-card-left': left,
-                      '--journey-card-top': top,
-                    } as React.CSSProperties
+                      '--journey-card-left': station.cardX,
+                      '--journey-stage-delay': `${260 + index * 245}ms`,
+                    } as CSSProperties
                   }
                 >
                   <div className="home-journey__step-topline">
@@ -280,10 +324,6 @@ export function HomeJourney({
               )}
             </span>
           </div>
-
-          <span className="home-journey__signature" aria-hidden="true">
-            GATEVIA
-          </span>
         </div>
       </div>
     </section>

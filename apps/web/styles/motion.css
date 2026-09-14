@@ -41,33 +41,36 @@
   .strategic-pillars__connector[data-reveal='line'].is-revealed {
     transform: scaleX(1);
   }
-  .home-journey__path-active {
+  .home-journey__path-active,
+  .home-journey__mobile-route-active {
     stroke-dasharray: 1;
     stroke-dashoffset: 1;
   }
-  .home-journey__path.is-revealed .home-journey__path-active {
-    animation: home-gateway-route 1700ms var(--motion-ease-enter) 120ms forwards;
+  .home-journey__map.is-revealed .home-journey__path-active,
+  .home-journey__map.is-revealed .home-journey__mobile-route-active {
+    animation: home-journey-route 1660ms var(--motion-ease-enter) 120ms forwards;
   }
-  .home-journey__station {
-    transform-box: fill-box;
-    transform-origin: center;
-    transition:
-      opacity 420ms var(--motion-ease-enter),
-      transform 520ms var(--motion-ease-enter);
-  }
-  .motion-ready .home-journey__path:not(.is-revealed) .home-journey__station {
+  .motion-ready .home-journey__map:not(.is-revealed) .home-journey__station,
+  .motion-ready .home-journey__map:not(.is-revealed) .home-journey__mobile-station,
+  .motion-ready .home-journey__map:not(.is-revealed) .home-journey__step,
+  .motion-ready .home-journey__map:not(.is-revealed) .home-journey__destination,
+  .motion-ready .home-journey__map:not(.is-revealed) .home-journey__arrow {
     opacity: 0;
-    transform: scale(0.58);
   }
-  .home-journey__path.is-revealed .home-journey__station:nth-of-type(1) { transition-delay: 260ms; }
-  .home-journey__path.is-revealed .home-journey__station:nth-of-type(2) { transition-delay: 480ms; }
-  .home-journey__path.is-revealed .home-journey__station:nth-of-type(3) { transition-delay: 700ms; }
-  .home-journey__path.is-revealed .home-journey__station:nth-of-type(4) { transition-delay: 920ms; }
-  .home-journey__path.is-revealed .home-journey__station:nth-of-type(5) { transition-delay: 1140ms; }
-  .home-journey__path.is-revealed .home-journey__station:nth-of-type(6) { transition-delay: 1360ms; }
-  .motion-ready [data-reveal='journey-node']:not(.is-revealed) {
-    opacity: 0;
-    transform: translate(-50%, 0.7rem);
+  .home-journey__map.is-revealed .home-journey__station,
+  .home-journey__map.is-revealed .home-journey__mobile-station {
+    animation: home-journey-station-in 420ms var(--motion-ease-enter)
+      var(--journey-stage-delay, 260ms) backwards;
+  }
+  .home-journey__map.is-revealed .home-journey__step {
+    animation: home-journey-card-in 520ms var(--motion-ease-enter)
+      var(--journey-stage-delay, 260ms) backwards;
+  }
+  .home-journey__map.is-revealed .home-journey__destination {
+    animation: home-journey-finish-in 460ms var(--motion-ease-enter) 1720ms backwards;
+  }
+  .home-journey__map.is-revealed .home-journey__arrow {
+    animation: home-journey-arrow-in 240ms var(--motion-ease-enter) 1640ms backwards;
   }
   .motion-ready [data-reveal='service-row']:not(.is-revealed) {
     opacity: 0;
@@ -232,6 +235,49 @@
     stroke-dashoffset: 0;
   }
 }
+@keyframes home-journey-route {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes home-journey-station-in {
+  from {
+    opacity: 0;
+    transform: scale(0.45);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes home-journey-card-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 0.65rem) scale(0.975);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+@keyframes home-journey-finish-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.35rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes home-journey-arrow-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 @keyframes home-gateway-node {
   from {
     opacity: 0;
@@ -246,8 +292,19 @@
 }
 
 @media (prefers-reduced-motion: no-preference) and (max-width: 48rem) {
-  .motion-ready [data-reveal='journey-node']:not(.is-revealed) {
-    transform: translateY(0.7rem);
+  .home-journey__map.is-revealed .home-journey__step {
+    animation-name: home-journey-card-in-mobile;
+  }
+}
+
+@keyframes home-journey-card-in-mobile {
+  from {
+    opacity: 0;
+    transform: translateY(0.6rem) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -276,9 +333,17 @@
     stroke-dasharray: none !important;
     animation: none !important;
   }
-  .home-journey__path-active {
+  .home-journey__path-active,
+  .home-journey__mobile-route-active {
     stroke-dashoffset: 0 !important;
     stroke-dasharray: none !important;
+    animation: none !important;
+  }
+  .home-journey__station,
+  .home-journey__mobile-station,
+  .home-journey__step,
+  .home-journey__destination {
+    opacity: 1 !important;
     animation: none !important;
   }
   .home-consultation__path {
