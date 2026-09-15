@@ -4,7 +4,12 @@ import { getList, safe } from '@/lib/api';
 import { list, text, translation } from '@/lib/content';
 import { copy } from '@/lib/ui-copy';
 import { MediaImage } from './media-image';
-import { mediaFromMap, type MediaMap, type MediaLike } from '@/lib/media';
+import {
+  mediaFromMap,
+  withDefaultResourceMedia,
+  type MediaMap,
+  type MediaLike,
+} from '@/lib/media';
 import { LeadForm } from './lead-form';
 import { GatewayVisual } from './brand/gateway-visual';
 import { MediaFrame } from './brand/media-frame';
@@ -33,11 +38,13 @@ export function PageHero({
   locale,
   home = false,
   media,
+  mediaMode = 'cover',
 }: {
   translation: Record<string, unknown>;
   locale: string;
   home?: boolean;
   media?: MediaLike | undefined;
+  mediaMode?: 'cover' | 'contain';
 }) {
   return (
     <section className={`hero ${home ? 'hero--home' : 'hero--inner'}`}>
@@ -47,11 +54,11 @@ export function PageHero({
             GATEVIA · SAUDI ARABIA
           </div>
           <h1 data-reveal="up" style={{ '--reveal-delay': '55ms' } as React.CSSProperties}>
-            {text(tr.title, home ? 'GATEVIA' : '')}
+            {text(tr.title ?? tr.name, home ? 'GATEVIA' : '')}
           </h1>
-          {Boolean(tr.excerpt) && (
+          {Boolean(tr.excerpt ?? tr.shortDescription) && (
             <p data-reveal="up" style={{ '--reveal-delay': '105ms' } as React.CSSProperties}>
-              {text(tr.excerpt)}
+              {text(tr.excerpt ?? tr.shortDescription)}
             </p>
           )}
           <div
@@ -70,8 +77,10 @@ export function PageHero({
         {media?.url ? (
           <MediaFrame
             media={media}
+            alt={text(tr.title ?? tr.name)}
             preset="hero"
             priority
+            className={mediaMode === 'contain' ? 'media-frame--contain' : ''}
           />
         ) : (
           <GatewayVisual />
@@ -469,28 +478,37 @@ export async function SectionRenderer({
             }
             const resources =
               type === 'logo_cloud' ? ['clients', 'partners'] : ['brands', 'products'];
-            const items = resources.flatMap(
-              (resource) => (collections?.[resource] ?? []) as Record<string, unknown>[],
+            const entries = resources.flatMap((resource) =>
+              ((collections?.[resource] ?? []) as Record<string, unknown>[]).map((item) => ({
+                item,
+                resource,
+              })),
             );
             return (
               <section className="section section--surface" key={String(row.id)}>
                 <div className="container">
                   {Boolean(content.title) && <h2 data-reveal="up">{text(content.title)}</h2>}
                   <div className="logo-cloud">
-                    {items.map((item) => {
+                    {entries.map(({ item, resource }) => {
                       const itemTr = translation(item);
-                      const itemMedia = item.media;
-                      const logoId = text(item.logoMediaId);
-                      const logo = mediaFromMap(itemMedia, logoId);
+                      const cover =
+                        resource === 'brands' ? mediaFromMap(item.media, item.coverMediaId) : undefined;
+                      const logo = mediaFromMap(item.media, item.logoMediaId);
+                      const visual = withDefaultResourceMedia(cover ?? logo, resource);
+                      const artwork = visual.isFallback || resource === 'products' || Boolean(cover);
                       return (
-                        <div className="logo-card" key={String(item.id)} data-reveal="fade">
-                          {logo?.url && (
+                        <div
+                          className={`logo-card${artwork ? ' logo-card--artwork' : ''}`}
+                          key={`${resource}-${String(item.id)}`}
+                          data-reveal="fade"
+                        >
+                          {visual.media?.url && (
                             <MediaImage
-                              media={logo}
+                              media={visual.media}
                               alt={text(itemTr.name ?? itemTr.title)}
-                              preset="logo"
+                              preset={artwork ? 'card' : 'logo'}
                               width={180}
-                              height={72}
+                              height={artwork ? 180 : 72}
                             />
                           )}
                           <strong>{text(itemTr.name ?? itemTr.title)}</strong>

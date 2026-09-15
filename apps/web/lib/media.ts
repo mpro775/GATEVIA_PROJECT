@@ -19,6 +19,84 @@ export interface MediaLike {
   translations?: Array<Partial<MediaTranslation>> | undefined;
   variants?: Array<Partial<MediaVariant>> | undefined;
 }
+
+export type DefaultMediaResource =
+  | 'clients'
+  | 'partners'
+  | 'brands'
+  | 'products'
+  | 'team'
+  | 'team-members';
+
+export interface ResourceMediaResolution {
+  media: MediaLike | undefined;
+  isFallback: boolean;
+}
+
+const DEFAULT_RESOURCE_MEDIA: Record<Exclude<DefaultMediaResource, 'team-members'>, MediaLike> = {
+  clients: {
+    id: 'default-client',
+    url: '/image/default-client.webp',
+    mimeType: 'image/webp',
+    status: 'ready',
+    width: 800,
+    height: 800,
+  },
+  partners: {
+    id: 'default-partner',
+    url: '/image/default-partner.webp',
+    mimeType: 'image/webp',
+    status: 'ready',
+    width: 800,
+    height: 800,
+  },
+  brands: {
+    id: 'default-brand',
+    url: '/image/default-brand.webp',
+    mimeType: 'image/webp',
+    status: 'ready',
+    width: 800,
+    height: 800,
+  },
+  products: {
+    id: 'default-product',
+    url: '/image/default-product.webp',
+    mimeType: 'image/webp',
+    status: 'ready',
+    width: 800,
+    height: 800,
+  },
+  team: {
+    id: 'default-team',
+    url: '/image/default-team.webp',
+    mimeType: 'image/webp',
+    status: 'ready',
+    width: 800,
+    height: 800,
+  },
+};
+
+function defaultMediaResource(resource: string | undefined): Exclude<DefaultMediaResource, 'team-members'> | undefined {
+  if (resource === 'team-members') return 'team';
+  if (resource === 'clients' || resource === 'partners' || resource === 'brands' || resource === 'products' || resource === 'team') {
+    return resource;
+  }
+  return undefined;
+}
+
+export function getDefaultResourceMedia(resource: string | undefined): MediaLike | undefined {
+  const key = defaultMediaResource(resource);
+  return key ? DEFAULT_RESOURCE_MEDIA[key] : undefined;
+}
+
+export function withDefaultResourceMedia(
+  media: MediaLike | null | undefined,
+  resource: string | undefined,
+): ResourceMediaResolution {
+  if (media?.url) return { media, isFallback: false };
+  const fallback = getDefaultResourceMedia(resource);
+  return { media: fallback, isFallback: Boolean(fallback) };
+}
 export type MediaMap = Record<string, MediaLike | undefined>;
 export interface MediaIdentity {
   name: string;

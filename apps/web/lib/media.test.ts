@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { getMediaAlt, getMediaVariant, resolveMediaSource, type MediaLike } from './media';
+import {
+  getDefaultResourceMedia,
+  getMediaAlt,
+  getMediaVariant,
+  resolveMediaSource,
+  withDefaultResourceMedia,
+  type MediaLike,
+} from './media';
 
 const complete: MediaLike = {
   id: 'media-1',
@@ -49,5 +56,25 @@ describe('media delivery', () => {
   it('is null safe and respects decorative alt metadata', () => {
     expect(resolveMediaSource(null)).toBeUndefined();
     expect(getMediaAlt({ ...complete, translations: [{ locale: 'en', decorative: true, altText: 'ignored' }] }, 'fallback')).toBe('');
+  });
+
+  it('maps resource fallbacks to the five local Gatevia placeholder images', () => {
+    expect(getDefaultResourceMedia('products')?.url).toBe('/image/default-product.webp');
+    expect(getDefaultResourceMedia('brands')?.url).toBe('/image/default-brand.webp');
+    expect(getDefaultResourceMedia('clients')?.url).toBe('/image/default-client.webp');
+    expect(getDefaultResourceMedia('partners')?.url).toBe('/image/default-partner.webp');
+    expect(getDefaultResourceMedia('team-members')?.url).toBe('/image/default-team.webp');
+    expect(getDefaultResourceMedia('services')).toBeUndefined();
+  });
+
+  it('never replaces real CMS media with a fallback', () => {
+    expect(withDefaultResourceMedia(complete, 'products')).toEqual({
+      media: complete,
+      isFallback: false,
+    });
+    expect(withDefaultResourceMedia(undefined, 'products')).toMatchObject({
+      media: { url: '/image/default-product.webp', width: 800, height: 800 },
+      isFallback: true,
+    });
   });
 });

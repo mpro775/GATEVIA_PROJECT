@@ -5,21 +5,37 @@ import Link from 'next/link';
 import { Icon } from '@gatevia/ui';
 import { MediaImage } from '@/components/media-image';
 import { text, translation } from '@/lib/content';
-import { mediaFromMap, type MediaLike } from '@/lib/media';
+import { mediaFromMap, withDefaultResourceMedia, type MediaLike } from '@/lib/media';
 import { copy } from '@/lib/ui-copy';
 
 type EcosystemKind = 'brand' | 'product';
 type MediaMode = 'cover' | 'logo';
 type Filter = 'all' | EcosystemKind;
 
-function identityMedia(item: Record<string, unknown>, kind: EcosystemKind): { media: MediaLike | undefined; mode: MediaMode } {
+function identityMedia(
+  item: Record<string, unknown>,
+  kind: EcosystemKind,
+): { media: MediaLike | undefined; mode: MediaMode; isFallback: boolean } {
   const tr = translation(item);
-  const cover = kind === 'brand'
-    ? mediaFromMap(item.media, item.coverMediaId)
-    : mediaFromMap(item.media, tr.ogMediaId);
-  if (cover?.url) return { media: cover, mode: 'cover' };
-  const logo = mediaFromMap(item.media, item.logoMediaId);
-  return { media: logo, mode: 'logo' };
+
+  if (kind === 'brand') {
+    const cover = mediaFromMap(item.media, item.coverMediaId);
+    if (cover?.url) return { media: cover, mode: 'cover', isFallback: false };
+
+    const logo = mediaFromMap(item.media, item.logoMediaId);
+    if (logo?.url) return { media: logo, mode: 'logo', isFallback: false };
+
+    const og = mediaFromMap(item.media, tr.ogMediaId);
+    if (og?.url) return { media: og, mode: 'cover', isFallback: false };
+
+    const fallback = withDefaultResourceMedia(undefined, 'brands');
+    return { ...fallback, mode: 'cover' };
+  }
+
+  // Product logoMediaId is intentionally the product's primary image.
+  const productImage = mediaFromMap(item.media, item.logoMediaId) ?? mediaFromMap(item.media, tr.ogMediaId);
+  const resolved = withDefaultResourceMedia(productImage, 'products');
+  return { ...resolved, mode: 'cover' };
 }
 
 function metadata(item: Record<string, unknown>, kind: EcosystemKind, locale: string) {

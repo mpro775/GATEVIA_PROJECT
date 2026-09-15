@@ -2,75 +2,95 @@ import Link from 'next/link';
 import { Icon } from '@gatevia/ui';
 import { MediaImage } from '@/components/media-image';
 import { text, translation } from '@/lib/content';
-import { getMediaAlt, mediaFromMap } from '@/lib/media';
+import {
+  getMediaAlt,
+  mediaFromMap,
+  withDefaultResourceMedia,
+  type MediaLike,
+} from '@/lib/media';
 import { copy } from '@/lib/ui-copy';
 
-/**
- * Resource-aware media resolver.
- * Priority order is derived from the CMS contracts in packages/contracts/src/cms.ts.
- * Root-level media IDs take precedence over translation-level ones.
- */
-function mediaFor(item: Record<string, unknown>, resource?: string) {
-  const tr = translation(item);
-  const media = item.media;
+type ResourceMediaMode = 'cover' | 'logo';
 
-  // Build a priority list of candidate IDs based on the resource type.
-  let ids: unknown[];
-  switch (resource) {
-    // services: effectiveHeroMediaId (root), heroMediaId (root), iconMediaId (root), then OG from translation
-    case 'services':
-      ids = [item.effectiveHeroMediaId, item.heroMediaId, item.iconMediaId, tr.ogMediaId];
-      break;
-    // industries: heroMediaId (root), then OG from translation
-    case 'industries':
-      ids = [item.heroMediaId, tr.ogMediaId];
-      break;
-    // case-studies: heroMediaId (root), then OG from translation
-    case 'case-studies':
-      ids = [item.heroMediaId, tr.ogMediaId];
-      break;
-    // insights: coverMediaId (root), then OG from translation
-    case 'insights':
-      ids = [item.coverMediaId, tr.ogMediaId];
-      break;
-    // team-members: photoMediaId (root)
-    case 'team':
-    case 'team-members':
-      ids = [item.photoMediaId];
-      break;
-    // logo-primary resources: logoMediaId (root)
-    case 'clients':
-    case 'partners':
-    case 'certifications':
-    case 'testimonials':
-      ids = [item.logoMediaId];
-      break;
-    // brands: logoMediaId (root) for identity, coverMediaId (root) for card cover
-    case 'brands':
-      ids = [item.coverMediaId, item.logoMediaId, tr.ogMediaId];
-      break;
-    // products/ventures: logoMediaId (root), then OG from translation
-    case 'products':
-      ids = [item.logoMediaId, tr.ogMediaId];
-      break;
-    default:
-      // Generic fallback — maintain backward compat with previous field list
-      ids = [
-        item.heroMediaId,
-        item.coverMediaId,
-        item.imageMediaId,
-        item.photoMediaId,
-        item.logoMediaId,
-        tr.ogMediaId,
-        tr.coverMediaId,
-      ];
-  }
+interface ResourceMedia {
+  media: MediaLike | undefined;
+  mode: ResourceMediaMode;
+  isFallback: boolean;
+}
 
+function firstMedia(item: Record<string, unknown>, ids: unknown[]): MediaLike | undefined {
   for (const id of ids) {
-    const candidate = mediaFromMap(media, id);
+    const candidate = mediaFromMap(item.media, id);
     if (candidate?.url) return candidate;
   }
   return undefined;
+}
+
+/**
+ * Resource-aware media resolver. Real CMS media always wins; the five GATEVIA
+ * placeholder artworks are only used when the matching entity has no media.
+ */
+function mediaFor(item: Record<string, unknown>, resource?: string): ResourceMedia {
+  const tr = translation(item);
+
+  switch (resource) {
+    case 'services':
+      return {
+        media: firstMedia(item, [item.effectiveHeroMediaId, item.heroMediaId, item.iconMediaId, tr.ogMediaId]),
+        mode: 'cover',
+        isFallback: false,
+      };
+    case 'industries':
+      return { media: firstMedia(item, [item.heroMediaId, tr.ogMediaId]), mode: 'cover', isFallback: false };
+    case 'case-studies':
+      return { media: firstMedia(item, [item.heroMediaId, tr.ogMediaId]), mode: 'cover', isFallback: false };
+    case 'insights':
+      return { media: firstMedia(item, [item.coverMediaId, tr.ogMediaId]), mode: 'cover', isFallback: false };
+    case 'team':
+    case 'team-members': {
+      const resolved = withDefaultResourceMedia(firstMedia(item, [item.photoMediaId]), resource);
+      return { ...resolved, mode: 'cover' };
+    }
+    case 'clients':
+    case 'partners': {
+      const actual = firstMedia(item, [item.logoMediaId]);
+      const resolved = withDefaultResourceMedia(actual, resource);
+      return { ...resolved, mode: resolved.isFallback ? 'cover' : 'logo' };
+    }
+    case 'certifications':
+    case 'testimonials':
+      return { media: firstMedia(item, [item.logoMediaId]), mode: 'logo', isFallback: false };
+    case 'brands': {
+      const cover = firstMedia(item, [item.coverMediaId]);
+      if (cover) return { media: cover, mode: 'cover', isFallback: false };
+      const logo = firstMedia(item, [item.logoMediaId]);
+      if (logo) return { media: logo, mode: 'logo', isFallback: false };
+      const og = firstMedia(item, [tr.ogMediaId]);
+      if (og) return { media: og, mode: 'cover', isFallback: false };
+      const fallback = withDefaultResourceMedia(undefined, resource);
+      return { ...fallback, mode: 'cover' };
+    }
+    case 'products': {
+      // Product logoMediaId is the product's primary image by project convention.
+      const actual = firstMedia(item, [item.logoMediaId, tr.ogMediaId]);
+      const resolved = withDefaultResourceMedia(actual, resource);
+      return { ...resolved, mode: 'cover' };
+    }
+    default:
+      return {
+        media: firstMedia(item, [
+          item.heroMediaId,
+          item.coverMediaId,
+          item.imageMediaId,
+          item.photoMediaId,
+          item.logoMediaId,
+          tr.ogMediaId,
+          tr.coverMediaId,
+        ]),
+        mode: 'cover',
+        isFallback: false,
+      };
+  }
 }
 
 function CardLink({
@@ -100,16 +120,19 @@ function CardLink({
 }
 
 function Media({ item, resource }: { item: Record<string, unknown>; resource?: string }) {
-  const media = mediaFor(item, resource);
-  const logoPreset = ['clients', 'partners', 'certifications', 'testimonials', 'products'].includes(
-    resource ?? '',
-  );
-  return media?.url ? (
-    <div className="resource-card__media">
+  const visual = mediaFor(item, resource);
+  const tr = translation(item);
+  const name = text(tr.name ?? tr.title);
+  return visual.media?.url ? (
+    <div
+      className={`resource-card__media${visual.mode === 'logo' ? ' resource-card__media--logo' : ''}${
+        visual.isFallback ? ' resource-card__media--fallback' : ''
+      }`}
+    >
       <MediaImage
-        media={media}
-        alt={getMediaAlt(media)}
-        preset={logoPreset ? 'logo' : 'card'}
+        media={visual.media}
+        alt={getMediaAlt(visual.media, name)}
+        preset={visual.mode === 'logo' ? 'logo' : 'card'}
         width={900}
         height={640}
         sizes="(max-width: 700px) calc(100vw - 2rem), (max-width: 1100px) 50vw, 33vw"

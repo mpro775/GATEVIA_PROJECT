@@ -227,3 +227,10 @@
     font-size: 1.25rem;
   }
 }
+
+@media (max-width: 64rem) {
+  .product-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 48rem) {
+  .product-gallery { grid-template-columns: 1fr; }
+}

@@ -1197,11 +1197,18 @@ async function seedClients(industryIds: Record<string, string>, mediaPool: strin
       clients[index]!;
     const id = stableUuid(`client:${key}`);
     ids[key] = id;
+    const legacyLogoMediaId = mediaAt(mediaPool, index + 2);
+    if (legacyLogoMediaId) {
+      await prisma.client.updateMany({
+        where: { id, logoMediaId: legacyLogoMediaId },
+        data: { logoMediaId: null },
+      });
+    }
     await prisma.client.upsert({
       where: { id },
       create: {
         id,
-        logoMediaId: mediaAt(mediaPool, index + 2),
+        logoMediaId: null,
         website: `https://example.com/${key}`,
         industryId: industryIds[industryKey],
         countryCode,
@@ -1234,12 +1241,19 @@ async function seedPartners(mediaPool: string[]) {
     const [key, enName, arName, partnerType, countryCode, enDescription] = partners[index]!;
     const id = stableUuid(`partner:${key}`);
     ids[key] = id;
+    const legacyLogoMediaId = mediaAt(mediaPool, index + 5);
+    if (legacyLogoMediaId) {
+      await prisma.partner.updateMany({
+        where: { id, logoMediaId: legacyLogoMediaId },
+        data: { logoMediaId: null },
+      });
+    }
     await prisma.partner.upsert({
       where: { id },
       create: {
         id,
         partnerType,
-        logoMediaId: mediaAt(mediaPool, index + 5),
+        logoMediaId: null,
         website: `https://example.com/${key}`,
         countryCode,
         featured: index < 4,
@@ -1276,12 +1290,26 @@ async function seedBrands(industryIds: Record<string, string>, mediaPool: string
       brands[index]!;
     const id = stableUuid(`brand:${key}`);
     ids[key] = id;
+    const legacyLogoMediaId = mediaAt(mediaPool, index + 1);
+    const legacyCoverMediaId = mediaAt(mediaPool, index + 7);
+    if (legacyLogoMediaId) {
+      await prisma.brand.updateMany({
+        where: { id, logoMediaId: legacyLogoMediaId },
+        data: { logoMediaId: null },
+      });
+    }
+    if (legacyCoverMediaId) {
+      await prisma.brand.updateMany({
+        where: { id, coverMediaId: legacyCoverMediaId },
+        data: { coverMediaId: null },
+      });
+    }
     await prisma.brand.upsert({
       where: { id },
       create: {
         id,
-        logoMediaId: mediaAt(mediaPool, index + 1),
-        coverMediaId: mediaAt(mediaPool, index + 7),
+        logoMediaId: null,
+        coverMediaId: null,
         industryId: industryIds[industryKey],
         website: `https://example.com/${key}`,
         relationshipType,
@@ -1333,11 +1361,18 @@ async function seedProducts(industryIds: Record<string, string>, mediaPool: stri
     ] = products[index]!;
     const id = stableUuid(`product:${key}`);
     ids[key] = id;
+    const legacyLogoMediaId = mediaAt(mediaPool, index + 3);
+    if (legacyLogoMediaId) {
+      await prisma.productVenture.updateMany({
+        where: { id, logoMediaId: legacyLogoMediaId },
+        data: { logoMediaId: null },
+      });
+    }
     await prisma.productVenture.upsert({
       where: { id },
       create: {
         id,
-        logoMediaId: mediaAt(mediaPool, index + 3),
+        logoMediaId: null,
         productType,
         industryId: industryIds[industryKey],
         website: `https://example.com/${key}`,
@@ -1382,11 +1417,18 @@ async function seedTeam(mediaPool: string[]) {
     const [key, enName, arName, enPosition, arPosition, enBio, arBio] = team[index]!;
     const id = stableUuid(`team:${key}`);
     ids[key] = id;
+    const legacyPhotoMediaId = mediaAt(mediaPool, index + 4);
+    if (legacyPhotoMediaId) {
+      await prisma.teamMember.updateMany({
+        where: { id, photoMediaId: legacyPhotoMediaId },
+        data: { photoMediaId: null },
+      });
+    }
     await prisma.teamMember.upsert({
       where: { id },
       create: {
         id,
-        photoMediaId: mediaAt(mediaPool, index + 4),
+        photoMediaId: null,
         linkedinUrl: `https://www.linkedin.com/in/${key}`,
         status: 'published',
         sortOrder: (index + 1) * 10,
@@ -2193,7 +2235,7 @@ async function seed() {
           ecosystemDemoSections: 1,
         },
         note: mediaPool.length
-          ? 'Existing ready image media were reused cyclically to make cards visually populated.'
+          ? 'Ready media are reused only by demo content that explicitly needs imagery. Clients, partners, brands, products and team members stay unassigned so the web fallback artwork is used until explicit media is selected.'
           : 'No ready image media found; UI fallback artwork will be used until media is uploaded.',
       },
       null,

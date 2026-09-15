@@ -66,6 +66,21 @@ html[dir='rtl'] .resource-card::after {
     filter var(--motion-duration-base);
   filter: saturate(0.85);
 }
+.resource-card__media--logo {
+  display: grid;
+  place-items: center;
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+.resource-card__media--logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: none;
+}
+.resource-card__media--fallback img {
+  object-fit: cover;
+  filter: none;
+}
 .resource-card:hover .resource-card__media img,
 .resource-card:focus-visible .resource-card__media img {
   transform: scale(1.022);

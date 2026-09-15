@@ -97,6 +97,16 @@ html[dir='rtl'] .timeline::after {
   filter: grayscale(1);
   opacity: 0.78;
 }
+.logo-card--artwork img {
+  width: 5.25rem;
+  height: 5.25rem;
+  max-width: none;
+  max-height: none;
+  object-fit: cover;
+  border-radius: 0.6rem;
+  filter: none;
+  opacity: 1;
+}
 .faq-list {
   display: grid;
   max-width: 56rem;

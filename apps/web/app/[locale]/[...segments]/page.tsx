@@ -26,7 +26,12 @@ import {
 } from '@/lib/api';
 import { list, localizedSetting, resolvedMediaUrl, text, translation } from '@/lib/content';
 import { copy } from '@/lib/ui-copy';
-import { mediaFromMap, type MediaLike } from '@/lib/media';
+import {
+  getMediaAlt,
+  mediaFromMap,
+  withDefaultResourceMedia,
+  type MediaLike,
+} from '@/lib/media';
 import {
   breadcrumbSchema,
   buildMetadata,
@@ -137,6 +142,7 @@ export async function generateMetadata({
     resolvedMediaUrl(entity, entity.coverMediaId) ??
     resolvedMediaUrl(entity, entity.effectiveHeroMediaId) ??
     resolvedMediaUrl(entity, entity.heroMediaId) ??
+    resolvedMediaUrl(entity, entity.logoMediaId) ??
     (typeof defaultOgId === 'string' ? settings.media[defaultOgId]?.url : undefined);
   const siteName = localizedSetting(settings.values, 'company.name', locale, 'GATEVIA');
 
@@ -194,6 +200,35 @@ function RelatedGrid({
       </div>
     </section>
   );
+}
+
+type EcosystemDetailResource = 'brands' | 'products';
+
+function ecosystemDetailMedia(
+  entity: Record<string, unknown>,
+  resource: EcosystemDetailResource,
+): { media: MediaLike | undefined; mode: 'cover' | 'contain'; isFallback: boolean } {
+  const tr = translation(entity);
+
+  if (resource === 'brands') {
+    const cover = mediaFromMap(entity.media, entity.coverMediaId);
+    if (cover?.url) return { media: cover, mode: 'cover', isFallback: false };
+
+    const logo = mediaFromMap(entity.media, entity.logoMediaId);
+    if (logo?.url) return { media: logo, mode: 'contain', isFallback: false };
+
+    const og = mediaFromMap(entity.media, tr.ogMediaId);
+    if (og?.url) return { media: og, mode: 'cover', isFallback: false };
+
+    const fallback = withDefaultResourceMedia(undefined, 'brands');
+    return { ...fallback, mode: 'cover' };
+  }
+
+  // Project convention: product logoMediaId is the product's primary image.
+  const primary =
+    mediaFromMap(entity.media, entity.logoMediaId) ?? mediaFromMap(entity.media, tr.ogMediaId);
+  const resolved = withDefaultResourceMedia(primary, 'products');
+  return { ...resolved, mode: 'cover' };
 }
 
 async function IndustryDetail({
@@ -332,12 +367,19 @@ function CaseStudyDetail({ entity, locale }: { entity: Record<string, unknown>; 
 function BrandOrProductDetail({
   entity,
   locale,
+  resource,
 }: {
   entity: Record<string, unknown>;
   locale: string;
+  resource: EcosystemDetailResource;
 }) {
   const tr = translation(entity);
   const t = copy(locale);
+  const gallery =
+    resource === 'products'
+      ? (list((entity as { gallery?: unknown }).gallery) as Record<string, unknown>[])
+      : [];
+
   return (
     <>
       <Section>
@@ -356,6 +398,39 @@ function BrandOrProductDetail({
           </p>
         )}
       </Section>
+
+      {gallery.length > 0 && (
+        <section className="section">
+          <div className="container">
+            <div className="section-heading" data-reveal="up">
+              <div>
+                <span className="eyebrow">GATEVIA</span>
+                <h2>{locale.startsWith('ar') ? 'معرض المنتج' : 'Product gallery'}</h2>
+              </div>
+            </div>
+            <div className="product-gallery">
+              {gallery.map((rawMedia, index) => {
+                const media = rawMedia as MediaLike;
+                if (!media.url) return null;
+                return (
+                  <figure className="product-gallery__item" key={media.id ?? media.url ?? index}>
+                    <MediaImage
+                      media={media}
+                      alt={getMediaAlt(media, text(tr.name ?? tr.title))}
+                      preset="content"
+                      width={1280}
+                      height={960}
+                      sizes="(max-width: 720px) calc(100vw - 2rem), (max-width: 1100px) 50vw, 33vw"
+                      className="gallery-image"
+                    />
+                  </figure>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="section section--accent">
         <div className="container cta-panel" data-reveal="up">
           <h2>{t.interestedPartnering}</h2>
@@ -500,8 +575,16 @@ export default async function DynamicPage({
     entity.sections.some((section) => (section as Record<string, unknown>).sectionType === 'hero');
   const isIndustryDetail = result.kind === 'detail' && result.resource === 'industries';
 
-  const heroMediaId = result.resource === 'services' ? (entity.effectiveHeroMediaId ?? entity.heroMediaId) : entity.heroMediaId;
-  const heroMedia = mediaFromMap(entity.media, heroMediaId);
+  const ecosystemHero =
+    result.kind === 'detail' && (result.resource === 'brands' || result.resource === 'products')
+      ? ecosystemDetailMedia(entity, result.resource)
+      : undefined;
+  const heroMediaId =
+    result.resource === 'services'
+      ? (entity.effectiveHeroMediaId ?? entity.heroMediaId)
+      : entity.heroMediaId;
+  const heroMedia = ecosystemHero?.media ?? mediaFromMap(entity.media, heroMediaId);
+  const heroMediaMode = ecosystemHero?.mode ?? 'cover';
 
   return (
     <>
@@ -509,7 +592,7 @@ export default async function DynamicPage({
         (isIndustryDetail ? (
           <IndustryDetailHero entity={entity} locale={locale} />
         ) : (
-          <PageHero translation={heroTr} locale={locale} media={heroMedia} />
+          <PageHero translation={heroTr} locale={locale} media={heroMedia} mediaMode={heroMediaMode} />
         ))}
 
       <JsonLd
@@ -600,7 +683,7 @@ export default async function DynamicPage({
       )}
       {result.kind === 'detail' &&
         (result.resource === 'brands' || result.resource === 'products') && (
-          <BrandOrProductDetail entity={entity} locale={locale} />
+          <BrandOrProductDetail entity={entity} locale={locale} resource={result.resource} />
         )}
     </>
   );

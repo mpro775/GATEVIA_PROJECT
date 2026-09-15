@@ -1,11 +1,11 @@
 import { Icon } from '@gatevia/ui';
 import { MediaImage } from '@/components/media-image';
 import { text, translation } from '@/lib/content';
-import { mediaFromMap } from '@/lib/media';
+import { mediaFromMap, withDefaultResourceMedia } from '@/lib/media';
 import { copy } from '@/lib/ui-copy';
 
-function logoFor(item: Record<string, unknown>) {
-  return mediaFromMap(item.media, item.logoMediaId);
+function visualFor(item: Record<string, unknown>, resource: 'clients' | 'partners') {
+  return withDefaultResourceMedia(mediaFromMap(item.media, item.logoMediaId), resource);
 }
 
 function validWebsite(value: unknown): string | undefined {
@@ -15,42 +15,79 @@ function validWebsite(value: unknown): string | undefined {
 function ClientTile({ item, index }: { item: Record<string, unknown>; index: number }) {
   const tr = translation(item);
   const name = text(tr.name);
-  const logo = logoFor(item);
+  const visualMedia = visualFor(item, 'clients');
   const website = validWebsite(item.website);
   const visual = (
     <>
-      <span className="home-network__client-logo">
-        {logo?.url ? (
-          <MediaImage media={logo} alt={name} preset="logo" width={210} height={88} sizes="210px" />
-        ) : (
-          <span className="home-network__monogram" aria-hidden="true">{name.slice(0, 2)}</span>
+      <span
+        className={`home-network__client-logo${visualMedia.isFallback ? ' home-network__client-logo--fallback' : ''}`}
+      >
+        {visualMedia.media?.url && (
+          <MediaImage
+            media={visualMedia.media}
+            alt={name}
+            preset={visualMedia.isFallback ? 'card' : 'logo'}
+            width={210}
+            height={visualMedia.isFallback ? 210 : 88}
+            sizes="210px"
+          />
         )}
       </span>
       <span className="home-network__client-name">{name}</span>
     </>
   );
   return (
-    <li data-reveal="network-item" style={{ '--reveal-delay': `${Math.min(index, 8) * 45}ms` } as React.CSSProperties}>
-      {website ? <a href={website} target="_blank" rel="noopener noreferrer" aria-label={name}>{visual}</a> : <div>{visual}</div>}
+    <li
+      data-reveal="network-item"
+      style={{ '--reveal-delay': `${Math.min(index, 8) * 45}ms` } as React.CSSProperties}
+    >
+      {website ? (
+        <a href={website} target="_blank" rel="noopener noreferrer" aria-label={name}>
+          {visual}
+        </a>
+      ) : (
+        <div>{visual}</div>
+      )}
     </li>
   );
 }
 
-function PartnerCard({ item, locale, index }: { item: Record<string, unknown>; locale: string; index: number }) {
+function PartnerCard({
+  item,
+  locale,
+  index,
+}: {
+  item: Record<string, unknown>;
+  locale: string;
+  index: number;
+}) {
   const t = copy(locale);
   const tr = translation(item);
   const name = text(tr.name);
   const description = text(tr.description ?? tr.shortDescription);
-  const logo = logoFor(item);
+  const visualMedia = visualFor(item, 'partners');
   const website = validWebsite(item.website);
   const partnerType = text(item.partnerType);
-  const partnerLabel = partnerType ? t.partnerTypes[partnerType as keyof typeof t.partnerTypes] : undefined;
+  const partnerLabel = partnerType
+    ? t.partnerTypes[partnerType as keyof typeof t.partnerTypes]
+    : undefined;
   const country = text(item.countryCode);
   const body = (
     <>
       <div className="home-network__partner-top">
-        <span className="home-network__partner-logo">
-          {logo?.url ? <MediaImage media={logo} alt={name} preset="logo" width={180} height={72} sizes="180px" /> : <span className="home-network__monogram" aria-hidden="true">{name.slice(0, 2)}</span>}
+        <span
+          className={`home-network__partner-logo${visualMedia.isFallback ? ' home-network__partner-logo--fallback' : ''}`}
+        >
+          {visualMedia.media?.url && (
+            <MediaImage
+              media={visualMedia.media}
+              alt={name}
+              preset={visualMedia.isFallback ? 'card' : 'logo'}
+              width={180}
+              height={visualMedia.isFallback ? 180 : 72}
+              sizes="180px"
+            />
+          )}
         </span>
         {website && <Icon name="external" />}
       </div>
@@ -65,13 +102,28 @@ function PartnerCard({ item, locale, index }: { item: Record<string, unknown>; l
     </>
   );
   return (
-    <li data-reveal="network-item" style={{ '--reveal-delay': `${Math.min(index, 6) * 55}ms` } as React.CSSProperties}>
-      {website ? <a href={website} target="_blank" rel="noopener noreferrer">{body}</a> : <article>{body}</article>}
+    <li
+      data-reveal="network-item"
+      style={{ '--reveal-delay': `${Math.min(index, 6) * 55}ms` } as React.CSSProperties}
+    >
+      {website ? (
+        <a href={website} target="_blank" rel="noopener noreferrer">
+          {body}
+        </a>
+      ) : (
+        <article>{body}</article>
+      )}
     </li>
   );
 }
 
-export function HomeNetworkRegistry({ content, clients, partners, locale, demo }: {
+export function HomeNetworkRegistry({
+  content,
+  clients,
+  partners,
+  locale,
+  demo,
+}: {
   content: Record<string, unknown>;
   clients: Record<string, unknown>[];
   partners: Record<string, unknown>[];
@@ -95,11 +147,16 @@ export function HomeNetworkRegistry({ content, clients, partners, locale, demo }
         {clients.length > 0 && (
           <section className="home-network__clients" aria-labelledby="network-clients">
             <div className="home-network__subhead" data-reveal="line">
-              <div><span className="eyebrow">{String(clients.length).padStart(2, '0')}</span><h3 id="network-clients">{t.clientsTrust}</h3></div>
+              <div>
+                <span className="eyebrow">{String(clients.length).padStart(2, '0')}</span>
+                <h3 id="network-clients">{t.clientsTrust}</h3>
+              </div>
               <span>{t.clients}</span>
             </div>
             <ul className="home-network__client-grid">
-              {clients.map((item, index) => <ClientTile key={String(item.id ?? index)} item={item} index={index} />)}
+              {clients.map((item, index) => (
+                <ClientTile key={String(item.id ?? index)} item={item} index={index} />
+              ))}
             </ul>
           </section>
         )}
@@ -107,11 +164,21 @@ export function HomeNetworkRegistry({ content, clients, partners, locale, demo }
         {partners.length > 0 && (
           <section className="home-network__partners" aria-labelledby="network-partners">
             <div className="home-network__subhead" data-reveal="line">
-              <div><span className="eyebrow">{String(partners.length).padStart(2, '0')}</span><h3 id="network-partners">{t.partnerNetwork}</h3></div>
+              <div>
+                <span className="eyebrow">{String(partners.length).padStart(2, '0')}</span>
+                <h3 id="network-partners">{t.partnerNetwork}</h3>
+              </div>
               <span>{t.partners}</span>
             </div>
             <ul className="home-network__partner-grid">
-              {partners.map((item, index) => <PartnerCard key={String(item.id ?? index)} item={item} locale={locale} index={index} />)}
+              {partners.map((item, index) => (
+                <PartnerCard
+                  key={String(item.id ?? index)}
+                  item={item}
+                  locale={locale}
+                  index={index}
+                />
+              ))}
             </ul>
           </section>
         )}
