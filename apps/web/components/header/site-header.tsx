@@ -10,7 +10,7 @@ import type { MediaIdentity } from '@/lib/media';
 import { track } from '../analytics';
 import { HeaderBrand } from './brand';
 import { DesktopNavigation } from './desktop-navigation';
-import { fallbackLinks } from './header-utils';
+import { prepareMainNavigation } from './header-utils';
 import { LanguageMenu } from './language-menu';
 import { MobileNavigation } from './mobile-navigation';
 import { useHeaderScrollState } from './use-header-scroll-state';
@@ -24,7 +24,7 @@ export function Header({ locale, languages, navItems, identity }: { locale: stri
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previousPathRef = useRef(pathname);
   const t = copy(locale);
-  const links = navItems.length ? navItems : fallbackLinks(locale);
+  const links = prepareMainNavigation(navItems, locale);
 
   const openDrawer = () => {
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);

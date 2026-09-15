@@ -6,7 +6,8 @@ import { Icon, IconButton, ThemeToggle } from '@gatevia/ui';
 import type { Language, NavItem } from '@/lib/api';
 import type { MediaIdentity } from '@/lib/media';
 import { HeaderBrand } from './brand';
-import { resolveUrl } from './header-utils';
+import { cleanChildren, resolveUrl } from './header-utils';
+import { copy } from '@/lib/ui-copy';
 
 const FOCUSABLE =
   'a[href]:not([tabindex="-1"]), button:not([disabled]):not([tabindex="-1"]), summary:not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])';
@@ -25,6 +26,7 @@ export function MobileNavigation({ active, mounted, locale, languages, links, id
   const rootRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const t = copy(locale);
   useEffect(() => {
     if (!mounted) return;
     const previous = document.body.style.overflow;
@@ -57,15 +59,16 @@ export function MobileNavigation({ active, mounted, locale, languages, links, id
         <nav className="mobile-nav" aria-label={labels.menu}>
           {links.map((item, index) => {
             const expanded = expandedId === item.id;
-            return item.children?.length ? (
+            const children = cleanChildren(item, locale);
+            return children.length ? (
               <div className="mobile-nav__group" key={item.id} style={{ '--nav-index': Math.min(index, 6) } as React.CSSProperties}>
                 <button type="button" aria-expanded={expanded} aria-controls={`mobile-group-${item.id}`} onClick={() => setExpandedId((value) => value === item.id ? null : item.id)}>
                   <span><small>{String(index + 1).padStart(2, '0')}</small>{item.label}</span><Icon name="plus" />
                 </button>
                 <div id={`mobile-group-${item.id}`} className="mobile-nav__disclosure" data-open={expanded}>
                   <div>
-                    {item.href && <Link onClick={onClose} href={resolveUrl(item, locale)}>{item.label}<Icon name="arrow" /></Link>}
-                    {item.children.map((child) => (
+                    {item.href && <Link onClick={onClose} href={resolveUrl(item, locale)}>{t.overview}<Icon name="arrow" /></Link>}
+                    {children.map((child) => (
                       <Link key={child.id} onClick={onClose} href={resolveUrl(child, locale)} {...(child.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>{child.label}<Icon name={child.external ? 'external' : 'arrow'} /></Link>
                     ))}
                   </div>

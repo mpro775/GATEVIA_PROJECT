@@ -1,3 +1,6 @@
+'use client';
+
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Icon } from '@gatevia/ui';
 import { MediaImage } from '@/components/media-image';
@@ -7,24 +10,16 @@ import { copy } from '@/lib/ui-copy';
 
 type EcosystemKind = 'brand' | 'product';
 type MediaMode = 'cover' | 'logo';
+type Filter = 'all' | EcosystemKind;
 
-function identityMedia(
-  item: Record<string, unknown>,
-  kind: EcosystemKind,
-): { media: MediaLike | undefined; mode: MediaMode } {
-  const mediaMap = item.media;
-  // brand with cover image → cover presentation
-  const cover = mediaFromMap(mediaMap, item.coverMediaId);
-  if (kind === 'brand' && cover?.url) {
-    return { media: cover, mode: 'cover' };
-  }
-  // brand logo-only OR product logo → logo presentation
-  const logoId = kind === 'brand' ? item.logoMediaId : item.logoMediaId;
-  const logo = mediaFromMap(mediaMap, logoId);
-  if (logo?.url) {
-    return { media: logo, mode: 'logo' };
-  }
-  return { media: undefined, mode: 'logo' };
+function identityMedia(item: Record<string, unknown>, kind: EcosystemKind): { media: MediaLike | undefined; mode: MediaMode } {
+  const tr = translation(item);
+  const cover = kind === 'brand'
+    ? mediaFromMap(item.media, item.coverMediaId)
+    : mediaFromMap(item.media, tr.ogMediaId);
+  if (cover?.url) return { media: cover, mode: 'cover' };
+  const logo = mediaFromMap(item.media, item.logoMediaId);
+  return { media: logo, mode: 'logo' };
 }
 
 function metadata(item: Record<string, unknown>, kind: EcosystemKind, locale: string) {
@@ -33,165 +28,120 @@ function metadata(item: Record<string, unknown>, kind: EcosystemKind, locale: st
   const productType = text(item.productType);
   const launchStatus = text(item.launchStatus);
   return [
-    relationship
-      ? t.relationshipTypes[relationship as keyof typeof t.relationshipTypes]
-      : undefined,
-    kind === 'product' && productType
-      ? t.productTypes[productType as keyof typeof t.productTypes]
-      : undefined,
-    kind === 'product' && launchStatus
-      ? t.launchStatuses[launchStatus as keyof typeof t.launchStatuses]
-      : undefined,
+    relationship ? t.relationshipTypes[relationship as keyof typeof t.relationshipTypes] : undefined,
+    kind === 'product' && productType ? t.productTypes[productType as keyof typeof t.productTypes] : undefined,
+    kind === 'product' && launchStatus ? t.launchStatuses[launchStatus as keyof typeof t.launchStatuses] : undefined,
   ].filter(Boolean) as string[];
 }
 
-function EcosystemRow({
-  item,
-  kind,
-  locale,
-  index,
-}: {
-  item: Record<string, unknown>;
-  kind: EcosystemKind;
-  locale: string;
-  index: number;
-}) {
+function EcosystemCard({ item, kind, locale, index }: { item: Record<string, unknown>; kind: EcosystemKind; locale: string; index: number }) {
+  const t = copy(locale);
   const tr = translation(item);
   const name = text(tr.name);
+  const description = text(tr.shortDescription ?? tr.fullDescription);
   const slug = text(tr.slug);
   const route = kind === 'brand' ? 'brands' : 'products';
+  const visual = identityMedia(item, kind);
   const meta = metadata(item, kind, locale);
-  const content = (
+  const card = (
     <>
-      <span aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
-      <strong>{name}</strong>
-      <small>{meta.join(' · ')}</small>
-      {slug && <Icon name="arrow" />}
+      <div className={`home-ecosystem-card__visual home-ecosystem-card__visual--${visual.mode}`}>
+        {visual.media?.url ? (
+          <MediaImage media={visual.media} alt={name} preset={visual.mode === 'cover' ? 'card' : 'logo'} fill sizes="(max-width: 720px) 88vw, (max-width: 1100px) 45vw, 28vw" />
+        ) : (
+          <span className="home-ecosystem-card__monogram" aria-hidden="true">{name.slice(0, 2)}</span>
+        )}
+        <span className="home-ecosystem-card__kind">{kind === 'brand' ? t.brands : t.productsVentures}</span>
+      </div>
+      <div className="home-ecosystem-card__copy">
+        <span className="home-ecosystem-card__index">{String(index + 1).padStart(2, '0')}</span>
+        <h3>{name}</h3>
+        {description && <p>{description}</p>}
+        {meta.length > 0 && <small>{meta.join(' · ')}</small>}
+        {slug && <span className="home-ecosystem-card__arrow"><Icon name="arrow" /></span>}
+      </div>
     </>
   );
   return (
-    <li
-      data-reveal="ecosystem-row"
-      style={{ '--reveal-delay': `${Math.min(index, 6) * 55}ms` } as React.CSSProperties}
-    >
-      {slug ? <Link href={`/${locale}/${route}/${slug}`}>{content}</Link> : <div>{content}</div>}
-    </li>
+    <article className="home-ecosystem-card" data-reveal="up" style={{ '--reveal-delay': `${Math.min(index, 6) * 55}ms` } as React.CSSProperties}>
+      {slug ? <Link href={`/${locale}/${route}/${slug}`} aria-label={`${t.readMore}: ${name}`}>{card}</Link> : <div>{card}</div>}
+    </article>
   );
 }
 
-export function HomeEcosystemAtlas({
-  content,
-  brands,
-  products,
-  locale,
-  demo,
-}: {
+export function HomeEcosystemAtlas({ content, brands, products, locale, demo, fullPage = false }: {
   content: Record<string, unknown>;
   brands: Record<string, unknown>[];
   products: Record<string, unknown>[];
   locale: string;
   demo: boolean;
+  fullPage?: boolean;
 }) {
   const t = copy(locale);
-  const combined = [
+  const ecosystemHref = `/${locale}/${locale.startsWith('ar') ? 'منظومة-الأعمال' : 'ecosystem'}`;
+  const [filter, setFilter] = useState<Filter>('all');
+  const combined = useMemo(() => [
     ...brands.map((item) => ({ item, kind: 'brand' as const })),
     ...products.map((item) => ({ item, kind: 'product' as const })),
-  ];
+  ], [brands, products]);
   if (combined.length === 0) return null;
-  const featuredIndex = Math.max(
-    0,
-    combined.findIndex(({ item }) => item.featured === true),
-  );
-  const featured = combined[featuredIndex]!;
+
+  const featured = combined.find(({ item }) => item.featured === true) ?? combined[0]!;
   const featuredTr = translation(featured.item);
   const featuredName = text(featuredTr.name);
+  const featuredDescription = text(featuredTr.shortDescription ?? featuredTr.fullDescription);
   const featuredSlug = text(featuredTr.slug);
   const featuredRoute = featured.kind === 'brand' ? 'brands' : 'products';
-  const featuredMediaResult = identityMedia(featured.item, featured.kind);
-  const featuredMedia = featuredMediaResult.media;
-  const featuredMediaMode = featuredMediaResult.mode;
+  const featuredVisual = identityMedia(featured.item, featured.kind);
   const featuredMeta = metadata(featured.item, featured.kind, locale);
-  const visibleBrands = brands.filter((item) => item !== featured.item);
-  const visibleProducts = products.filter((item) => item !== featured.item);
+
+  const filtered = combined.filter((entry) => {
+    if (entry.item === featured.item) return false;
+    return filter === 'all' || entry.kind === filter;
+  });
 
   return (
-    <section className="section home-ecosystem" data-home-section="ecosystem">
+    <section className={`section home-ecosystem${fullPage ? ' home-ecosystem--full' : ''}`} data-home-section="ecosystem">
       <div className="container-wide">
         <header className="home-section-header home-ecosystem__header">
           <div data-reveal="up">
             {Boolean(content.eyebrow) && <span className="eyebrow">{text(content.eyebrow)}</span>}
             {Boolean(content.title) && <h2>{text(content.title)}</h2>}
+            {Boolean(content.body) && <p>{text(content.body)}</p>}
             {demo && <span className="home-demo-badge">{t.demoContent}</span>}
           </div>
-          <Link className="home-section-action" href={`/${locale}/ecosystem`}>
-            {t.viewEcosystem}
-            <Icon name="arrow" />
-          </Link>
+          {!fullPage && <Link className="home-section-action" href={ecosystemHref}>{t.viewEcosystem}<Icon name="arrow" /></Link>}
         </header>
 
         <article className="home-ecosystem__featured" data-reveal="ecosystem-feature">
-          <div className={`home-ecosystem__identity home-ecosystem__identity--${featuredMediaMode}`}>
-            {featuredMedia?.url ? (
-              <MediaImage
-                media={featuredMedia}
-                alt={featuredName}
-                preset={featuredMediaMode === 'logo' ? 'logo' : 'content'}
-                fill
-                sizes="(max-width: 768px) 100vw, 38vw"
-              />
-            ) : (
-              <span aria-hidden="true">{featuredName.slice(0, 2)}</span>
-            )}
+          <div className={`home-ecosystem__identity home-ecosystem__identity--${featuredVisual.mode}`}>
+            {featuredVisual.media?.url ? <MediaImage media={featuredVisual.media} alt={featuredName} preset={featuredVisual.mode === 'logo' ? 'logo' : 'content'} fill sizes="(max-width: 768px) 100vw, 48vw" /> : <span aria-hidden="true">{featuredName.slice(0, 2)}</span>}
           </div>
           <div className="home-ecosystem__featured-copy">
             <span className="eyebrow">{t.featuredIdentity}</span>
             <h3>{featuredName}</h3>
-            {text(featuredTr.shortDescription) && <p>{text(featuredTr.shortDescription)}</p>}
+            {featuredDescription && <p>{featuredDescription}</p>}
             {featuredMeta.length > 0 && <small>{featuredMeta.join(' · ')}</small>}
-            {featuredSlug && (
-              <Link
-                href={`/${locale}/${featuredRoute}/${featuredSlug}`}
-                aria-label={`${t.readMore}: ${featuredName}`}
-              >
-                <Icon name="arrow" />
-              </Link>
-            )}
+            {featuredSlug && <Link href={`/${locale}/${featuredRoute}/${featuredSlug}`} className="home-ecosystem__featured-link">{t.readMore}<Icon name="arrow" /></Link>}
           </div>
         </article>
 
-        <div className="home-ecosystem__groups">
-          {visibleBrands.length > 0 && (
-            <section aria-labelledby="ecosystem-brands">
-              <h3 id="ecosystem-brands">{t.brands}</h3>
-              <ol>
-                {visibleBrands.map((item, index) => (
-                  <EcosystemRow
-                    key={String(item.id ?? index)}
-                    item={item}
-                    kind="brand"
-                    locale={locale}
-                    index={index}
-                  />
-                ))}
-              </ol>
-            </section>
-          )}
-          {visibleProducts.length > 0 && (
-            <section aria-labelledby="ecosystem-products">
-              <h3 id="ecosystem-products">{t.productsVentures}</h3>
-              <ol>
-                {visibleProducts.map((item, index) => (
-                  <EcosystemRow
-                    key={String(item.id ?? index)}
-                    item={item}
-                    kind="product"
-                    locale={locale}
-                    index={index}
-                  />
-                ))}
-              </ol>
-            </section>
-          )}
+        <div className="home-ecosystem__toolbar" aria-label={t.explorePortfolio}>
+          <div className="home-ecosystem__tabs" role="tablist" aria-label={t.explorePortfolio}>
+            {([
+              ['all', t.ecosystemAll, combined.length],
+              ['brand', t.ecosystemBrands, brands.length],
+              ['product', t.ecosystemProducts, products.length],
+            ] as const).map(([value, label, count]) => (
+              <button key={value} type="button" role="tab" aria-selected={filter === value} onClick={() => setFilter(value)}>
+                <span>{label}</span><small>{String(count).padStart(2, '0')}</small>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="home-ecosystem__card-grid">
+          {filtered.map(({ item, kind }, index) => <EcosystemCard key={`${kind}-${String(item.id ?? index)}`} item={item} kind={kind} locale={locale} index={index} />)}
         </div>
       </div>
     </section>

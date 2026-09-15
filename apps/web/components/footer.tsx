@@ -134,14 +134,25 @@ export function Footer({
                   className="footer-logo"
                 />
               ) : (
-                <Image
-                  src="/brand/gatevia-logo-dark.svg"
-                  alt={identity.name}
-                  width={190}
-                  height={58}
-                  className="footer-logo"
-                  unoptimized
-                />
+                <span className="footer-logo-pair">
+                  <Image
+                    src="/brand/gatevia-logo-dark.svg"
+                    alt={identity.name}
+                    width={190}
+                    height={58}
+                    className="footer-logo footer-logo--on-light"
+                    unoptimized
+                  />
+                  <Image
+                    src="/brand/gatevia-logo-light.svg"
+                    alt=""
+                    aria-hidden="true"
+                    width={190}
+                    height={58}
+                    className="footer-logo footer-logo--on-dark"
+                    unoptimized
+                  />
+                </span>
               )}
             </div>
             <p>

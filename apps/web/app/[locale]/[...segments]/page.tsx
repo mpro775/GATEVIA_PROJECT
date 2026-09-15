@@ -7,12 +7,14 @@ import {
   ContentGrid,
   ContentItems,
   PageHero,
-  RichBlocks,
   SectionRenderer,
 } from '@/components/content';
 import { LeadForm } from '@/components/lead-form';
 import { IndustryDetailContent, IndustryDetailHero } from '@/components/industry/industry-detail';
 import { MediaImage } from '@/components/media-image';
+import { ServiceDetailPage } from '@/components/detail/service-detail';
+import { InsightDetailPage } from '@/components/detail/insight-detail';
+import { EcosystemPage } from '@/components/detail/ecosystem-page';
 import {
   getDetail,
   getList,
@@ -24,7 +26,7 @@ import {
 } from '@/lib/api';
 import { list, localizedSetting, resolvedMediaUrl, text, translation } from '@/lib/content';
 import { copy } from '@/lib/ui-copy';
-import { mediaFromMap, type MediaLike, type MediaMap } from '@/lib/media';
+import { mediaFromMap, type MediaLike } from '@/lib/media';
 import {
   breadcrumbSchema,
   buildMetadata,
@@ -132,6 +134,7 @@ export async function generateMetadata({
   const defaultOgId = settings.values['seo.default_og_media_id'];
   const imageUrl =
     resolvedMediaUrl(entity, tr.ogMediaId) ??
+    resolvedMediaUrl(entity, entity.coverMediaId) ??
     resolvedMediaUrl(entity, entity.effectiveHeroMediaId) ??
     resolvedMediaUrl(entity, entity.heroMediaId) ??
     (typeof defaultOgId === 'string' ? settings.media[defaultOgId]?.url : undefined);
@@ -190,121 +193,6 @@ function RelatedGrid({
         <ContentGrid items={items} locale={locale} resource={resource} />
       </div>
     </section>
-  );
-}
-
-async function ServiceDetail({
-  entity,
-  locale,
-}: {
-  entity: Record<string, unknown>;
-  locale: string;
-}) {
-  const tr = translation(entity);
-  const t = copy(locale);
-  const [relIndustries, relCases, relInsights] = await Promise.all([
-    safe(getList('industries', locale, `&service=${String(entity.id)}&pageSize=6`), []),
-    safe(getList('case-studies', locale, `&service=${String(entity.id)}&pageSize=4`), []),
-    safe(getList('insights', locale, `&service=${String(entity.id)}&pageSize=4`), []),
-  ]);
-  const inline = entity as Record<string, Record<string, unknown>[]>;
-  const industries = inline.industries?.length
-    ? inline.industries
-    : (relIndustries as Record<string, unknown>[]);
-  const caseStudies = inline.caseStudies?.length
-    ? inline.caseStudies
-    : (relCases as Record<string, unknown>[]);
-  const insights = inline.insights?.length
-    ? inline.insights
-    : (relInsights as Record<string, unknown>[]);
-  const faqs = inline.faqs ?? [];
-
-  return (
-    <>
-      {tr.overview && (
-        <Section>
-          <p>{text(tr.overview)}</p>
-        </Section>
-      )}
-      {tr.whoFor && (
-        <Section className="section--surface">
-          <h2>{t.whoFor}</h2>
-          <ContentItems items={tr.whoFor} />
-        </Section>
-      )}
-      {tr.problems && (
-        <Section>
-          <h2>{t.problems}</h2>
-          <ContentItems items={tr.problems} />
-        </Section>
-      )}
-      {tr.deliverables && (
-        <Section className="section--surface">
-          <h2>{t.deliverables}</h2>
-          <ContentItems items={tr.deliverables} />
-        </Section>
-      )}
-      {tr.process && (
-        <Section>
-          <h2>{t.process}</h2>
-          <ContentItems items={tr.process} />
-        </Section>
-      )}
-      {tr.benefits && (
-        <Section className="section--surface">
-          <h2>{t.benefits}</h2>
-          <ContentItems items={tr.benefits} />
-        </Section>
-      )}
-      {tr.timelineText && (
-        <Section>
-          <h2>{t.timeline}</h2>
-          <p>{text(tr.timelineText)}</p>
-        </Section>
-      )}
-      <RelatedGrid
-        items={industries}
-        locale={locale}
-        resource="industries"
-        heading={t.relatedIndustries}
-      />
-      <RelatedGrid
-        items={caseStudies}
-        locale={locale}
-        resource="case-studies"
-        heading={t.relatedCases}
-      />
-      <RelatedGrid
-        items={insights}
-        locale={locale}
-        resource="insights"
-        heading={t.relatedInsights}
-      />
-      {faqs.length > 0 && (
-        <Section>
-          <h2>{t.faqs}</h2>
-          <div className="faq-list">
-            {faqs.map((faq) => {
-              const ft = translation(faq);
-              return (
-                <details key={String(faq.id)} className="faq-item">
-                  <summary>{text(ft.title ?? ft.question)}</summary>
-                  <p>{text(ft.answer ?? ft.content)}</p>
-                </details>
-              );
-            })}
-          </div>
-        </Section>
-      )}
-      <section className="section section--accent">
-        <div className="container cta-panel" data-reveal="up">
-          <h2>{t.readyMarket}</h2>
-          <Link className="gv-button" href={`/${locale}/book-consultation`}>
-            {t.consultation}
-          </Link>
-        </div>
-      </section>
-    </>
   );
 }
 
@@ -432,53 +320,6 @@ function CaseStudyDetail({ entity, locale }: { entity: Record<string, unknown>; 
       <section className="section section--accent">
         <div className="container cta-panel" data-reveal="up">
           <h2>{t.similarResults}</h2>
-          <Link className="gv-button" href={`/${locale}/book-consultation`}>
-            {t.consultation}
-          </Link>
-        </div>
-      </section>
-    </>
-  );
-}
-
-function InsightDetail({ entity, locale }: { entity: Record<string, unknown>; locale: string }) {
-  const tr = translation(entity);
-  const t = copy(locale);
-  const inline = entity as Record<string, Record<string, unknown>[]>;
-  const services = inline.services ?? [];
-  const industries = inline.industries ?? [];
-
-  return (
-    <>
-      <Section>
-        {Boolean(entity.publishedAt) && (
-          <p className="cell-meta">
-            {new Intl.DateTimeFormat('en', { dateStyle: 'long' }).format(
-              new Date(String(entity.publishedAt)),
-            )}
-          </p>
-        )}
-        {tr.content ? (
-          <RichBlocks
-            blocks={tr.content}
-            media={
-              (entity.media as MediaMap | undefined) ?? {}
-            }
-          />
-        ) : (
-          <p>{text(tr.overview ?? tr.excerpt)}</p>
-        )}
-      </Section>
-      <RelatedGrid items={services} locale={locale} resource="services" heading={t.services} />
-      <RelatedGrid
-        items={industries}
-        locale={locale}
-        resource="industries"
-        heading={t.relatedIndustries}
-      />
-      <section className="section section--accent">
-        <div className="container cta-panel" data-reveal="up">
-          <h2>{t.actInsights}</h2>
           <Link className="gv-button" href={`/${locale}/book-consultation`}>
             {t.consultation}
           </Link>
@@ -640,7 +481,19 @@ export default async function DynamicPage({
   const tr = translation(entity);
   const heroTr = tr.title || tr.name ? tr : { title: pageKey.replaceAll('-', ' ') };
   const imageUrl =
-    resolvedMediaUrl(entity, tr.ogMediaId) ?? resolvedMediaUrl(entity, entity.heroMediaId);
+    resolvedMediaUrl(entity, tr.ogMediaId) ??
+    resolvedMediaUrl(entity, entity.coverMediaId) ??
+    resolvedMediaUrl(entity, entity.heroMediaId);
+  const isEcosystemPage = result.kind === 'page' && entity.templateKey === 'ecosystem';
+
+  if (isEcosystemPage) {
+    return (
+      <>
+        <JsonLd schema={breadcrumbSchema([{ name: 'Home', url: `/${locale}` }, { name: text(tr.title, 'Ecosystem'), url: `/${locale}/${segments.join('/')}` }])} />
+        <EcosystemPage entity={entity} locale={locale} />
+      </>
+    );
+  }
   const hasSectionHero =
     result.kind === 'page' &&
     Array.isArray(entity.sections) &&
@@ -652,7 +505,7 @@ export default async function DynamicPage({
 
   return (
     <>
-      {!hasSectionHero &&
+      {!hasSectionHero && result.resource !== 'services' && result.resource !== 'insights' &&
         (isIndustryDetail ? (
           <IndustryDetailHero entity={entity} locale={locale} />
         ) : (
@@ -707,6 +560,7 @@ export default async function DynamicPage({
                 ? entity.publishedAt
                 : new Date().toISOString(),
             updatedAt: typeof entity.updatedAt === 'string' ? entity.updatedAt : undefined,
+            authorName: typeof entity.authorName === 'string' ? entity.authorName : undefined,
             locale,
           })}
         />
@@ -733,7 +587,7 @@ export default async function DynamicPage({
 
       {/* Resource detail templates */}
       {result.kind === 'detail' && result.resource === 'services' && (
-        <ServiceDetail entity={entity} locale={locale} />
+        <ServiceDetailPage entity={entity} locale={locale} />
       )}
       {result.kind === 'detail' && result.resource === 'industries' && (
         <IndustryDetail entity={entity} locale={locale} />
@@ -742,7 +596,7 @@ export default async function DynamicPage({
         <CaseStudyDetail entity={entity} locale={locale} />
       )}
       {result.kind === 'detail' && result.resource === 'insights' && (
-        <InsightDetail entity={entity} locale={locale} />
+        <InsightDetailPage entity={entity} locale={locale} />
       )}
       {result.kind === 'detail' &&
         (result.resource === 'brands' || result.resource === 'products') && (

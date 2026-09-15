@@ -9,6 +9,8 @@
 @import '../styles/home.css';
 @import '../styles/cards.css';
 @import '../styles/industry-detail.css';
+@import '../styles/detail-pages.css';
 @import '../styles/forms.css';
 @import '../styles/motion.css';
+@import '../styles/route-loading.css';
 @import '../styles/responsive.css';

@@ -1,3 +1,4 @@
+import { Icon } from '@gatevia/ui';
 import { MediaImage } from '@/components/media-image';
 import { text, translation } from '@/lib/content';
 import { mediaFromMap } from '@/lib/media';
@@ -11,109 +12,66 @@ function validWebsite(value: unknown): string | undefined {
   return typeof value === 'string' && /^https?:\/\//i.test(value) ? value : undefined;
 }
 
-function RegistryItem({
-  item,
-  type,
-  locale,
-  index,
-}: {
-  item: Record<string, unknown>;
-  type: 'client' | 'partner';
-  locale: string;
-  index: number;
-}) {
-  const t = copy(locale);
+function ClientTile({ item, index }: { item: Record<string, unknown>; index: number }) {
   const tr = translation(item);
   const name = text(tr.name);
   const logo = logoFor(item);
   const website = validWebsite(item.website);
-  const partnerType = text(item.partnerType);
-  const partnerLabel =
-    type === 'partner' && partnerType
-      ? t.partnerTypes[partnerType as keyof typeof t.partnerTypes]
-      : undefined;
-  const content = (
+  const visual = (
     <>
-      <span className="home-network__index" aria-hidden="true">
-        {String(index + 1).padStart(2, '0')}
-      </span>
-      <span className="home-network__logo">
+      <span className="home-network__client-logo">
         {logo?.url ? (
-          <MediaImage
-            media={logo}
-            alt={name}
-            preset="logo"
-            width={180}
-            height={72}
-            sizes="180px"
-          />
+          <MediaImage media={logo} alt={name} preset="logo" width={210} height={88} sizes="210px" />
         ) : (
-          <span className="home-network__monogram" aria-hidden="true">
-            {name.slice(0, 2)}
-          </span>
+          <span className="home-network__monogram" aria-hidden="true">{name.slice(0, 2)}</span>
         )}
       </span>
-      <strong>{name}</strong>
-      {partnerLabel && <small>{partnerLabel}</small>}
+      <span className="home-network__client-name">{name}</span>
     </>
   );
-
   return (
-    <li
-      data-reveal="network-item"
-      style={{ '--reveal-delay': `${Math.min(index, 8) * 45}ms` } as React.CSSProperties}
-    >
-      {website ? (
-        <a href={website} target="_blank" rel="noopener noreferrer">
-          {content}
-        </a>
-      ) : (
-        <div>{content}</div>
-      )}
+    <li data-reveal="network-item" style={{ '--reveal-delay': `${Math.min(index, 8) * 45}ms` } as React.CSSProperties}>
+      {website ? <a href={website} target="_blank" rel="noopener noreferrer" aria-label={name}>{visual}</a> : <div>{visual}</div>}
     </li>
   );
 }
 
-function RegistryGroup({
-  title,
-  items,
-  type,
-  locale,
-}: {
-  title: string;
-  items: Record<string, unknown>[];
-  type: 'client' | 'partner';
-  locale: string;
-}) {
-  if (items.length === 0) return null;
+function PartnerCard({ item, locale, index }: { item: Record<string, unknown>; locale: string; index: number }) {
+  const t = copy(locale);
+  const tr = translation(item);
+  const name = text(tr.name);
+  const description = text(tr.description ?? tr.shortDescription);
+  const logo = logoFor(item);
+  const website = validWebsite(item.website);
+  const partnerType = text(item.partnerType);
+  const partnerLabel = partnerType ? t.partnerTypes[partnerType as keyof typeof t.partnerTypes] : undefined;
+  const country = text(item.countryCode);
+  const body = (
+    <>
+      <div className="home-network__partner-top">
+        <span className="home-network__partner-logo">
+          {logo?.url ? <MediaImage media={logo} alt={name} preset="logo" width={180} height={72} sizes="180px" /> : <span className="home-network__monogram" aria-hidden="true">{name.slice(0, 2)}</span>}
+        </span>
+        {website && <Icon name="external" />}
+      </div>
+      <div className="home-network__partner-copy">
+        <div className="home-network__partner-meta">
+          {partnerLabel && <span>{partnerLabel}</span>}
+          {country && <span>{country}</span>}
+        </div>
+        <h4>{name}</h4>
+        {description && <p>{description}</p>}
+      </div>
+    </>
+  );
   return (
-    <section className="home-network__group" aria-labelledby={`network-${type}`}>
-      <header data-reveal="line">
-        <h3 id={`network-${type}`}>{title}</h3>
-        <span aria-hidden="true">{String(items.length).padStart(2, '0')}</span>
-      </header>
-      <ul>
-        {items.map((item, index) => (
-          <RegistryItem
-            key={String(item.id ?? index)}
-            item={item}
-            type={type}
-            locale={locale}
-            index={index}
-          />
-        ))}
-      </ul>
-    </section>
+    <li data-reveal="network-item" style={{ '--reveal-delay': `${Math.min(index, 6) * 55}ms` } as React.CSSProperties}>
+      {website ? <a href={website} target="_blank" rel="noopener noreferrer">{body}</a> : <article>{body}</article>}
+    </li>
   );
 }
 
-export function HomeNetworkRegistry({
-  content,
-  clients,
-  partners,
-  locale,
-  demo,
-}: {
+export function HomeNetworkRegistry({ content, clients, partners, locale, demo }: {
   content: Record<string, unknown>;
   clients: Record<string, unknown>[];
   partners: Record<string, unknown>[];
@@ -129,13 +87,34 @@ export function HomeNetworkRegistry({
           <div data-reveal="up">
             {Boolean(content.eyebrow) && <span className="eyebrow">{text(content.eyebrow)}</span>}
             {Boolean(content.title) && <h2>{text(content.title)}</h2>}
+            {Boolean(content.body) && <p>{text(content.body)}</p>}
             {demo && <span className="home-demo-badge">{t.demoContent}</span>}
           </div>
         </header>
-        <div className="home-network__registry">
-          <RegistryGroup title={t.clients} items={clients} type="client" locale={locale} />
-          <RegistryGroup title={t.partners} items={partners} type="partner" locale={locale} />
-        </div>
+
+        {clients.length > 0 && (
+          <section className="home-network__clients" aria-labelledby="network-clients">
+            <div className="home-network__subhead" data-reveal="line">
+              <div><span className="eyebrow">{String(clients.length).padStart(2, '0')}</span><h3 id="network-clients">{t.clientsTrust}</h3></div>
+              <span>{t.clients}</span>
+            </div>
+            <ul className="home-network__client-grid">
+              {clients.map((item, index) => <ClientTile key={String(item.id ?? index)} item={item} index={index} />)}
+            </ul>
+          </section>
+        )}
+
+        {partners.length > 0 && (
+          <section className="home-network__partners" aria-labelledby="network-partners">
+            <div className="home-network__subhead" data-reveal="line">
+              <div><span className="eyebrow">{String(partners.length).padStart(2, '0')}</span><h3 id="network-partners">{t.partnerNetwork}</h3></div>
+              <span>{t.partners}</span>
+            </div>
+            <ul className="home-network__partner-grid">
+              {partners.map((item, index) => <PartnerCard key={String(item.id ?? index)} item={item} locale={locale} index={index} />)}
+            </ul>
+          </section>
+        )}
       </div>
     </section>
   );

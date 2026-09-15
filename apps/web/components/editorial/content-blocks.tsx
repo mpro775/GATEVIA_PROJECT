@@ -3,6 +3,17 @@ import { MediaImage } from '@/components/media-image';
 import { list, text } from '@/lib/content';
 import { mediaFromMap, type MediaMap } from '@/lib/media';
 
+export function editorialHeadingId(value: unknown, index: number): string {
+  const base = text(value)
+    .normalize('NFKD')
+    .toLowerCase()
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 64);
+  return `section-${index + 1}${base ? `-${base}` : ''}`;
+}
+
 export function RichBlocks({
   blocks,
   media = {},
@@ -15,7 +26,15 @@ export function RichBlocks({
       {list(blocks).map((raw, index) => {
         const block = raw as Record<string, unknown>;
         const type = text(block.type);
-        if (type === 'heading') return <h2 key={index} data-reveal="up">{text(block.text)}</h2>;
+        if (type === 'heading') {
+          const id = editorialHeadingId(block.text, index);
+          const level = Number(block.level) === 3 ? 3 : 2;
+          return level === 3 ? (
+            <h3 id={id} key={index} data-reveal="up">{text(block.text)}</h3>
+          ) : (
+            <h2 id={id} key={index} data-reveal="up">{text(block.text)}</h2>
+          );
+        }
         if (type === 'quote')
           return (
             <blockquote key={index} data-reveal="up">
